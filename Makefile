@@ -16,7 +16,7 @@ bin/%: obj/%.o $(OBJECTS)
 
 # Pattern for objects:
 obj/%.o: src/%.cpp
-	@test -d $(dir $@) || mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	${CXX} $(CXXFLAGS) -MMD -c -o $@ $<
 
 clean:
