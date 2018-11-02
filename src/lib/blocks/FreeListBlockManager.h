@@ -4,7 +4,9 @@
 #include "../BlockManager.h"
 #include "MemoryBlockManager.h"
 #include "../DatablockFreeList.h"
+#include "../Superblock.h"
 #include <cstring>
+#include <stdexcept>
 
 class FreeListBlockManager: public BlockManager {
 uint64_t top_block_num;
