@@ -3,6 +3,7 @@
 
 #include "../BlockManager.h"
 #include "MemoryBlockManager.h"
+#include "../DatablockFreeList.h"
 #include <cstring>
 
 class FreeListBlockManager: public BlockManager {
