@@ -39,20 +39,25 @@ void DatablockFreelist::insert(uint64_t free_block_num) {
 }
 
 uint64_t DatablockFreelist::remove() {
+
   // Read top block
   Block *block = new Block;
   struct DatablockNode *node = (struct DatablockNode *) block;
   this->disk->get(this->top_block_num, *block);
 
-  // Get next free block if possible
-  if (this->index == -1) {
-    if (!node->next_block)
-      throw std::out_of_range("Can't remove any more disk blocks - free list is empty!");
+  // Check if free list is almost empty and refuse allocation of last block
+  if (!node->next_block && !this->index) {
+      throw std::out_of_range("Can't get any more free blocks - free list is empty!");
+  }
+
+  // Get next free block
+  uint64_t free_block_num = node->free_blocks[this->index];
+  if (!this->index) {
     this->index = NUM_FREE_BLOCKS - 1;
     this->top_block_num = node->next_block;
-    this->disk->get(this->top_block_num, *block);
+  } else {
+    this->index--;
   }
-  free_block_num = node->free_blocks[this->index--];
 
   // Update superblock
   struct Superblock *super_block = (struct Superblock*) block;

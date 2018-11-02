@@ -1,7 +1,6 @@
 #ifndef SIGSEGV_DATABLOCKFREELIST_H
 #define SIGSEGV_DATABLOCKFREELIST_H
 
-#include <cstring>
 #include <stdexcept>
 #include <cstdint>
 #include "BlockManager.h"
