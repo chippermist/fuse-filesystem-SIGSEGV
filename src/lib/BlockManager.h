@@ -3,6 +3,12 @@
 
 #include "Block.h"
 
+#define FILE_NAME_MAX_SIZE 28
+
+#define DIR_INODE_INFO_SIZE 32
+
+#define DIR_BLOCK_INODE_COUNT BlockSize/DIR_INODE_INFO_SIZE
+
 class BlockManager {
 public:
   virtual ~BlockManager() {}

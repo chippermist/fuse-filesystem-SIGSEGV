@@ -4,8 +4,6 @@
 #include "BlockManager.h"
 #include "INodeManager.h"
 
-#include "fuse.h"
-
 class Filesystem {
   BlockManager& blocks;
   INodeManager& inodes;
