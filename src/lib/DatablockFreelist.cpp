@@ -1,9 +1,9 @@
 #include "DatablockFreelist.h"
 
-DatablockFreelist::DatablockFreelist(Block::ID top_block_num, uint64_t index, BlockManager& block_manager) {
+DatablockFreelist::DatablockFreelist(Block::ID top_block_num, uint64_t index, Storage& storage) {
   this->top_block_num = top_block_num;
   this->index = index;
-  this->disk = &block_manager;
+  this->disk = &storage;
 }
 
 DatablockFreelist::~DatablockFreelist() {}

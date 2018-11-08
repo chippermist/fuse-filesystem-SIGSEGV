@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 #include <cstdint>
-#include "BlockManager.h"
+#include "Storage.h"
 #include "Superblock.h"
 
 struct DatablockNode {
@@ -17,9 +17,9 @@ struct DatablockNode {
 class DatablockFreelist {
   Block::ID top_block_num;
   uint64_t index;
-  BlockManager* disk;
+  Storage* disk;
 public:
-  DatablockFreelist(Block::ID top_block_num, uint64_t index, BlockManager& disk);
+  DatablockFreelist(Block::ID top_block_num, uint64_t index, Storage& disk);
   ~DatablockFreelist();
   virtual void insert(Block::ID block_number);
   virtual Block::ID remove();
