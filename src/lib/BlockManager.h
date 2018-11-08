@@ -1,5 +1,5 @@
-#ifndef SIGSEGV_DATABLOCKFREELIST_H
-#define SIGSEGV_DATABLOCKFREELIST_H
+#ifndef SIGSEGV_BLOCKMANAGER_H
+#define SIGSEGV_BLOCKMANAGER_H
 
 #include <stdexcept>
 #include <cstdint>
@@ -14,13 +14,13 @@ struct DatablockNode {
   Block::ID free_blocks[NREFS];
 };
 
-class DatablockFreelist {
+class BlockManager {
   Block::ID top_block_num;
   uint64_t index;
   Storage* disk;
 public:
-  DatablockFreelist(Block::ID top_block_num, uint64_t index, Storage& disk);
-  ~DatablockFreelist();
+  BlockManager(Block::ID top_block_num, uint64_t index, Storage& disk);
+  ~BlockManager();
   virtual void insert(Block::ID block_number);
   virtual Block::ID remove();
 };

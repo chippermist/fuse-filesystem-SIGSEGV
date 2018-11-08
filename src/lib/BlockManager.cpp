@@ -1,14 +1,14 @@
-#include "DatablockFreelist.h"
+#include "BlockManager.h"
 
-DatablockFreelist::DatablockFreelist(Block::ID top_block_num, uint64_t index, Storage& storage) {
+BlockManager::BlockManager(Block::ID top_block_num, uint64_t index, Storage& storage) {
   this->top_block_num = top_block_num;
   this->index = index;
   this->disk = &storage;
 }
 
-DatablockFreelist::~DatablockFreelist() {}
+BlockManager::~BlockManager() {}
 
-void DatablockFreelist::insert(Block::ID free_block_num) {
+void BlockManager::insert(Block::ID free_block_num) {
   // Read top block in freelist from disk
   Block block;
   DatablockNode *node = (DatablockNode *) &block;
@@ -38,7 +38,7 @@ void DatablockFreelist::insert(Block::ID free_block_num) {
   this->disk->set(0, block);
 }
 
-Block::ID DatablockFreelist::remove() {
+Block::ID BlockManager::remove() {
 
   // Read top block
   Block block;
