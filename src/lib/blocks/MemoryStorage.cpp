@@ -1,18 +1,18 @@
-#include "MemoryBlockManager.h"
+#include "MemoryStorage.h"
 
 #include <cstring>
 #include <stdexcept>
 
-MemoryBlockManager::MemoryBlockManager(uint64_t nblocks) {
+MemoryStorage::MemoryStorage(uint64_t nblocks) {
   data = new char[nblocks * 4096];
   size = nblocks;
 }
 
-MemoryBlockManager::~MemoryBlockManager() {
+MemoryStorage::~MemoryStorage() {
   delete [] data;
 }
 
-void MemoryBlockManager::get(Block::ID id, Block& dst) {
+void MemoryStorage::get(Block::ID id, Block& dst) {
   if(id >= size) {
     throw std::length_error("Block read out of range.");
   }
@@ -21,7 +21,7 @@ void MemoryBlockManager::get(Block::ID id, Block& dst) {
   std::memcpy(dst.data, src, 4096);
 }
 
-void MemoryBlockManager::set(Block::ID id, const Block& src) {
+void MemoryStorage::set(Block::ID id, const Block& src) {
   if(id >= size) {
     throw std::length_error("Block write out of range.");
   }
