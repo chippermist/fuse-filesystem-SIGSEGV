@@ -1,4 +1,7 @@
 #include "lib/Filesystem.h"
+
+#include <sys/statfs.h>
+#include <sys/stat.h>
 #include <fuse.h>
 
 #ifndef NDEBUG
@@ -74,7 +77,7 @@ namespace FUSE {
   }
 
   int read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
-    debug("read        %s %zub at %lld\n", path, size, offset);
+    debug("read        %s %lldb at %lld\n", path, (int64_t) size, (int64_t) offset);
     return FILESYSTEM->read(path, buffer, size, offset, info);
   }
 
@@ -121,7 +124,7 @@ namespace FUSE {
   }
 
   int truncate(const char* path, off_t offset) {
-    debug("truncate  %s to %lldb\n", path, offset);
+    debug("truncate  %s to %lldb\n", path, (int64_t) offset);
     return FILESYSTEM->truncate(path, offset);
   }
 
@@ -136,7 +139,7 @@ namespace FUSE {
   }
 
   int write(const char* path, const char* data, size_t size, off_t offset, fuse_file_info* info) {
-    debug("write     %s %zub at %lld\n", path, size, offset);
+    debug("write     %s %lldb at %lld\n", path, (int64_t) size, (int64_t) offset);
     return FILESYSTEM->write(path, data, size, offset, info);
   }
 }
