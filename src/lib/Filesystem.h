@@ -4,9 +4,9 @@
 #include "BlockManager.h"
 #include "INodeManager.h"
 
-#include <sys/statfs.h>
-#include <sys/stat.h>
 #include <fuse.h>
+struct statfs;
+struct stat;
 
 class Filesystem {
   BlockManager& blocks;

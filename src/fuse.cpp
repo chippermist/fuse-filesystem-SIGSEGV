@@ -1,8 +1,8 @@
 #include "lib/Filesystem.h"
 
-#include <sys/statfs.h>
-#include <sys/stat.h>
 #include <fuse.h>
+struct statfs;
+struct stat;
 
 #ifndef NDEBUG
   #include <cstdio>
