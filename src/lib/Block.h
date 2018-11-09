@@ -3,10 +3,8 @@
 
 #include <cstdint>
 
-#define BLOCK_SIZE 4096
-static uint16_t BlockSize = BLOCK_SIZE;
-
 struct Block {
+  static const uint64_t BLOCK_SIZE = 4096;
   typedef uint64_t ID;
 
   char data[BLOCK_SIZE];

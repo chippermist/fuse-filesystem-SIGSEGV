@@ -32,15 +32,17 @@ enum FileType : int {
 };
 
 struct INode {
+  static const uint64_t INODE_SIZE = 128;
+
   typedef uint32_t ID;
 
   // TODO: not sure what is this ? => inode can be accessed using inode number. Why do we need a inode ID
   //INode::ID id;
 
-  // TODO: Currently supporting only regular and directory type 
+  // TODO: Currently supporting only regular and directory type
   FileType type;
 
-  uint64_t  size;  
+  uint64_t  size;
 
   // For a total of 128 bytes:
   //  10 direct blocks, 1 single indirect block, 1 double indirect block, 1 triple indirect block
