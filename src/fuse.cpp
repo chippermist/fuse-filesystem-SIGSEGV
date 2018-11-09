@@ -1,3 +1,4 @@
+#include "lib/Filesystem.h"
 #include <fuse.h>
 
 #ifndef NDEBUG
@@ -142,31 +143,40 @@ namespace FUSE {
 
 int main(int argc, char** argv) {
   const fuse_operations ops {
+    .getattr     = &FUSE::getattr,
+    .readlink    = &FUSE::readlink,
+    .mknod       = &FUSE::mknod,
+    .mkdir       = &FUSE::mkdir,
+    .unlink      = &FUSE::unlink,
+    .rmdir       = &FUSE::rmdir,
+    .symlink     = &FUSE::symlink,
+    .rename      = &FUSE::rename,
+    .link        = &FUSE::link,
     .chmod       = &FUSE::chmod,
     .chown       = &FUSE::chown,
-    .flush       = &FUSE::flush,
-    .fsync       = &FUSE::fsync,
-    .getattr     = &FUSE::getattr,
-    .getdir      = &FUSE::getdir,
-    // .getxattr    = &FUSE::getxattr,
-    .link        = &FUSE::link,
-    // .listxattr   = &FUSE::listxattr,
-    .mkdir       = &FUSE::mkdir,
-    .mknod       = &FUSE::mknod,
+    .truncate    = &FUSE::truncate,
     .open        = &FUSE::open,
     .read        = &FUSE::read,
-    .readlink    = &FUSE::readlink,
-    .release     = &FUSE::release,
-    // .removexattr = &FUSE::removexattr,
-    .rename      = &FUSE::rename,
-    .rmdir       = &FUSE::rmdir,
-    // .setxattr    = &FUSE::setxattr,
+    .write       = &FUSE::write,
     .statfs      = &FUSE::statfs,
-    .symlink     = &FUSE::symlink,
-    .truncate    = &FUSE::truncate,
-    .unlink      = &FUSE::unlink,
-    .utime       = &FUSE::utime,
-    .write       = &FUSE::write
+    .flush       = &FUSE::flush,
+    .release     = &FUSE::release,
+    .fsync       = &FUSE::fsync,
+    .setxattr    = &FUSE::setxattr,
+    .getxattr    = &FUSE::getxattr,
+    .listxattr   = &FUSE::listxattr,
+    .removexattr = &FUSE::removexattr
+
+    // .opendir     = &FUSE::opendir,
+    // .readdir     = &FUSE::readdir,
+    // .releasedir  = &FUSE::releasedir,
+    // .fsyncdir    = &FUSE::fsyncdir,
+
+    // .init        = &FUSE::init,
+    // .destroy     = &FUSE::destroy,
+
+    // .getdir      = &FUSE::getdir,
+    // .utime       = &FUSE::utime,
   };
 
   FUSE::FILESYSTEM = new Filesystem;

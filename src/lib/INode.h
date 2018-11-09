@@ -1,5 +1,5 @@
-#ifndef SIGSEGV_BLOCK_H
-#define SIGSEGV_BLOCK_H
+#ifndef SIGSEGV_INODE_H
+#define SIGSEGV_INODE_H
 
 #include <cstdint>
 #include "Block.h"
@@ -7,7 +7,7 @@
 struct INode {
   typedef uint64_t ID;
 
-  INode::ID id
+  INode::ID id;
   uint64_t  size;
   uint64_t  flags;
   uint32_t  uid;
