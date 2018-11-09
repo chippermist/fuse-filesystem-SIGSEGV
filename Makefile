@@ -20,7 +20,7 @@ ifeq ($(UNAME_S),Darwin)
 	LIBS = -losxfuse
 endif
 
-CXXFLAGS = -std=c++11 -Wall -Wextra
+CXXFLAGS = -std=c++11 -Wall -Wextra -D_FILE_OFFSET_BITS=64
 
 #LDFLAGS  = -lfuse
 

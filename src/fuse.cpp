@@ -183,5 +183,5 @@ int main(int argc, char** argv) {
   };
 
   FUSE::FILESYSTEM = new Filesystem;
-  return fuse_main(argc, argv, &ops, 0);
+  return fuse_main(argc, argv, &ops);
 }
