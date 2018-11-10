@@ -1,12 +1,13 @@
-// #ifndef SIGSEGV_INODEMANAGER_H
-// #define SIGSEGV_INODEMANAGER_H
+#ifndef SIGSEGV_INODEMANAGER_H
+#define SIGSEGV_INODEMANAGER_H
 
-// #include "INode.h"
+#include "INode.h"
 
-// class INodeManager {
-// public:
-//   virtual INode::ID reserve() = 0;
-//   virtual void release(INode::ID id) = 0;
-// };
+class INodeManager {
+public:
+  virtual INode::ID reserve() = 0;
+  virtual void release(INode::ID id) = 0;
+  virtual void iget(INode::ID inode_n, INode& user_inode);
+};
 
-// #endif
+#endif

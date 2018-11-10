@@ -14,12 +14,6 @@ struct DatablockNode {
   Block::ID free_blocks[NREFS];
 };
 
-#define FILE_NAME_MAX_SIZE 28
-
-#define DIR_INODE_INFO_SIZE 32
-
-#define DIR_BLOCK_INODE_COUNT BlockSize/DIR_INODE_INFO_SIZE
-
 class BlockManager {
   Block::ID top_block_num;
   uint64_t index;

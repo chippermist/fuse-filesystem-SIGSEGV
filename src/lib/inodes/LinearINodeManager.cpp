@@ -2,7 +2,7 @@
 
 LinearINodeManager::LinearINodeManager(uint64_t num_inodes, Storage& storage)
 {
-	this->storage = &storage;
+	this->disk = &storage;
 	this->num_inodes = num_inodes;
 }
 
@@ -10,15 +10,15 @@ LinearINodeManager::~LinearINodeManager() {}
 
 // Get an inode from the freelist and return it
 INode::ID LinearINodeManager::reserve(Block &block) {
-	uint64_t num_inodes_per_block = Block::BLOCK_SIZE / Inode::INODE_SIZE;
-	for (int block_index = 0; block_index < this->num_inodes / num_inodes_per_block; block_index++) {
+	uint64_t num_inodes_per_block = Block::BLOCK_SIZE / INode::INODE_SIZE;
+	for (uint64_t block_index = 0; block_index < this->num_inodes / num_inodes_per_block; block_index++) {
 
 		// Read in inode block from disk, into the block passed in by user
 		this->disk->get(1 + block_index, block);
 
 		// Check each inode in the block and see if it's free
-		for (int inode_index = 0; inode_index < num_inodes_per_block; inode_index++) {
-			Inode *inode = (Inode *) &(block.data[inode_index * INode::INODE_SIZE]);
+		for (uint64_t inode_index = 0; inode_index < num_inodes_per_block; inode_index++) {
+			INode *inode = (INode *) &(block.data[inode_index * INode::INODE_SIZE]);
 			if (inode->type == FileType::Free) {
 				return inode_index + num_inodes_per_block * block_index;
 			}
@@ -30,13 +30,18 @@ INode::ID LinearINodeManager::reserve(Block &block) {
 // Free an inode and return to the freelist
 void LinearINodeManager::release(INode::ID id) {
 
+	// Check if valid id
+	if (id >= this->num_inodes) {
+		throw std::out_of_range("INode index is out of range!");
+	}
+
 	uint64_t block_index = id / Block::BLOCK_SIZE;
 	uint64_t inode_index = id % Block::BLOCK_SIZE;
 
 	// Load the inode and modify attribute
 	Block block;
 	this->disk->get(1 + block_index, block);
-	INode *inode = (Inode *) &(block.data[inode_index * INode::INODE_SIZE]);
+	INode *inode = (INode *) &(block.data[inode_index * INode::INODE_SIZE]);
 	inode->type = FileType::Free;
 
 	// Write the inode back to disk
@@ -45,12 +50,18 @@ void LinearINodeManager::release(INode::ID id) {
 
 // Reads an inode from disk into the memory provided by the user
 void LinearINodeManager::iget(INode::ID inode_n, INode& user_inode) {
+
+	// Check if valid id
+	if (inode_n >= this->num_inodes) {
+		throw std::out_of_range("INode index is out of range!");
+	}
+
 	uint64_t block_index = inode_n / Block::BLOCK_SIZE;
 	uint64_t inode_index = inode_n % Block::BLOCK_SIZE;
 
 	Block block;
 	this->disk->get(1 + block_index, block);
-	INode *inode = (Inode *) &(block.data[inode_index * INode::INODE_SIZE]);
+	INode *inode = (INode *) &(block.data[inode_index * INode::INODE_SIZE]);
 
-	memcpy(user_inode, inode, INode::INODE_SIZE);
+	memcpy(&user_inode, inode, INode::INODE_SIZE);
 }
