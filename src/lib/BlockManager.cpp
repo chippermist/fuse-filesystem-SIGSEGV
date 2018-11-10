@@ -38,6 +38,45 @@ void BlockManager::insert(Block::ID free_block_num) {
   this->disk->set(0, block);
 }
 
+void BlockManager::mkfs() {
+  Block block;
+  this->disk->get(0, block);
+  Superblock* superblock = (Superblock*) &block;
+
+  Block::ID start = superblock->data_block_start;
+  uint64_t  count = superblock->data_block_count;
+
+  Block::ID prev = 0;
+  Block::ID curr = start;
+  Block::ID free = start + count - 1;
+  DatablockNode* data = (DatablockNode*) &block;
+
+  while(true) {
+    data->prev_block = prev;
+    data->next_block = curr + 1;
+
+    for(int i = 0; i < DatablockNode::NREFS; ++i) {
+      if(free == curr) {
+        data->next_block = 0;
+        disk->set(curr, block);
+
+        disk->get(0, block);
+        superblock->free_list_block = curr;
+        superblock->free_list_index = i;
+        disk->set(0, block);
+        return;
+      }
+
+      data->free_blocks[i] = free;
+      free -= 1;
+    }
+
+    disk->set(curr, block);
+    prev = curr;
+    curr += 1;
+  }
+}
+
 Block::ID BlockManager::remove() {
 
   // Read top block
@@ -47,7 +86,7 @@ Block::ID BlockManager::remove() {
 
   // Check if free list is almost empty and refuse allocation of last block
   if (!node->next_block && !this->index) {
-      throw std::out_of_range("Can't get any more free blocks - free list is empty!");
+    throw std::out_of_range("Can't get any more free blocks - free list is empty!");
   }
 
   // Get next free block

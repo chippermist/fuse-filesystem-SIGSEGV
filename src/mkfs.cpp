@@ -1,4 +1,7 @@
+#include "lib/Filesystem.h"
+
 int main() {
-  // Main function for MKFS.
+  Filesystem filesystem;
+  filesystem.mkfs();
   return 0;
 }
