@@ -2,9 +2,11 @@ BINARIES = mkfs fuse fsck
 SOURCES  = $(shell find src/lib -name '*.cpp')
 OBJECTS  = $(patsubst src/%.cpp, obj/%.o, $(SOURCES))
 
+CXXFLAGS  = -std=c++11 -Wall -Wextra
+CXXFLAGS += -DFUSE_USE_VERSION=26
+CXXFLAGS += -D_FILE_OFFSET_BITS=64
 
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
+ifeq ($(shell uname -s), Darwin)
 	# Root for OSXFUSE includes and libraries
 	OSXFUSE_ROOT = /usr/local
 	#OSXFUSE_ROOT = /opt/local
@@ -12,17 +14,13 @@ ifeq ($(UNAME_S),Darwin)
 	INCLUDE_DIR = $(OSXFUSE_ROOT)/include/osxfuse/fuse
 	LIBRARY_DIR = $(OSXFUSE_ROOT)/lib
 
-
-	CXXFLAGS_OSXFUSE = -I$(INCLUDE_DIR) -L$(LIBRARY_DIR)
-	CXXFLAGS_OSXFUSE += -DFUSE_USE_VERSION=26
-	CXXFLAGS_OSXFUSE += -D_FILE_OFFSET_BITS=64
-	CXXFLAGS_OSXFUSE += -D_DARWIN_USE_64_BIT_INODE
-	LIBS = -losxfuse
+	CXXFLAGS += -I$(INCLUDE_DIR) -L$(LIBRARY_DIR)
+	CXXFLAGS += -D_DARWIN_USE_64_BIT_INODE
+	LDFLAGS   = -losxfuse
+else
+	LDFLAGS   = -lfuse
 endif
 
-CXXFLAGS = -std=c++11 -Wall -Wextra -D_FILE_OFFSET_BITS=64
-
-#LDFLAGS  = -lfuse
 
 all: $(BINARIES)
 mkfs: bin/mkfs
@@ -31,12 +29,12 @@ fsck: bin/fsck
 
 # Pattern for executables:
 bin/%: obj/%.o $(OBJECTS)
-	${CXX} $(CXXFLAGS) $(CXXFLAGS_OSXFUSE) $(LDFLAGS) -o $@ $^
+	${CXX} $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 
 # Pattern for objects:
 obj/%.o: src/%.cpp
 	@mkdir -p $(dir $@)
-	${CXX} $(CXXFLAGS) $(CXXFLAGS_OSXFUSE) -MMD -c -o $@ $<
+	${CXX} $(CXXFLAGS) -MMD -c -o $@ $<
 
 clean:
 	rm -rf bin/* obj/*
