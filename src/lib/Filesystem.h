@@ -16,6 +16,11 @@ public:
     // All done.
   }
 
+  void mkfs() {
+    inodes.mkfs();
+    blocks.mkfs();
+  }
+
   // FUSE Operations:
   int chmod(const char*, mode_t);
   int chown(const char*, uid_t, gid_t);
