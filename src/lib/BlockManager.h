@@ -21,8 +21,10 @@ class BlockManager {
 public:
   BlockManager(Block::ID top_block_num, uint64_t index, Storage& disk);
   ~BlockManager();
-  virtual void insert(Block::ID block_number);
-  virtual Block::ID remove();
+
+  virtual void mkfs() = 0;
+  virtual void insert(Block::ID block_number) = 0;
+  virtual Block::ID remove() = 0;
 };
 
 #endif

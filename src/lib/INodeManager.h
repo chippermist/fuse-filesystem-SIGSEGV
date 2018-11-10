@@ -5,6 +5,7 @@
 
 class INodeManager {
 public:
+  virtual void mkfs() = 0;
   virtual INode::ID reserve() = 0;
   virtual void release(INode::ID id) = 0;
 };
