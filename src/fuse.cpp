@@ -1,7 +1,7 @@
 #include "lib/Filesystem.h"
 
 #include <sys/statfs.h>
-#include <sys/stat.h>
+#include <sys/vfs.h>
 #include <fuse.h>
 
 #ifndef NDEBUG
@@ -114,7 +114,7 @@ extern "C" {
     return -1;
   }
 
-  int fs_statfs(const char* path, struct statfs* info) {
+  int fs_statfs(const char* path, struct statvfs* info) {
     debug("statfs    %s\n", path);
     return FILESYSTEM->statfs(path, info);
   }

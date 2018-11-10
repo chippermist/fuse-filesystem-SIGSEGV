@@ -5,7 +5,7 @@
 #include "INodeManager.h"
 
 #include <sys/statfs.h>
-#include <sys/stat.h>
+#include <sys/vfs.h>
 #include <fuse.h>
 
 class Filesystem {
@@ -37,7 +37,7 @@ public:
   int rename(const char*, const char*);
   int rmdir(const char*);
   int setxattr(const char*, const char*, const char*, size_t, int);
-  int statfs(const char*, struct statfs*);
+  int statfs(const char*, struct statvfs*);
   int symlink(const char*, const char*);
   int truncate(const char*, off_t);
   int unlink(const char*);
