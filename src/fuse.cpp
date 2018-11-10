@@ -1,8 +1,8 @@
 #include "lib/Filesystem.h"
 
+#include <sys/statfs.h>
+#include <sys/stat.h>
 #include <fuse.h>
-struct statfs;
-struct stat;
 
 #ifndef NDEBUG
   #include <cstdio>
@@ -35,7 +35,7 @@ extern "C" {
     return FILESYSTEM->fsync(path, unknown, info);
   }
 
-  int fs_getattr(const char* path, stat* info) {
+  int fs_getattr(const char* path, struct stat* info) {
     debug("getattr     %s\n", path);
     return FILESYSTEM->getattr(path, info);
   }
@@ -114,7 +114,7 @@ extern "C" {
     return -1;
   }
 
-  int fs_statfs(const char* path, statfs* info) {
+  int fs_statfs(const char* path, struct statfs* info) {
     debug("statfs    %s\n", path);
     return FILESYSTEM->statfs(path, info);
   }
