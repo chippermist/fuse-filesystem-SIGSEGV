@@ -3,6 +3,7 @@
 #include <sys/statfs.h>
 #include <sys/stat.h>
 #include <fuse.h>
+#include <string.h>
 
 #ifndef NDEBUG
   #include <cstdio>
@@ -185,5 +186,5 @@ int main(int argc, char** argv) {
   // .utime       = &FUSE::utime,
 
   FILESYSTEM = new Filesystem;
-  return fuse_main(argc, argv, &ops);
+  return fuse_main(argc, argv, &ops, NULL);
 }
