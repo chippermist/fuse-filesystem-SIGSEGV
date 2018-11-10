@@ -11,3 +11,8 @@ public:
   virtual void insert(Block::ID block_number) = 0;
   virtual Block::ID remove() = 0;
 };
+
+  virtual void mkfs() = 0;
+  virtual void insert(Block::ID block_number) = 0;
+  virtual Block::ID remove() = 0;
+};
