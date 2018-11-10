@@ -143,46 +143,47 @@ extern "C" {
     debug("write     %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
     return FILESYSTEM->write(path, data, size, offset, info);
   }
+}
 
-  int main(int argc, char** argv) {
-    const fuse_operations ops {
-      .getattr     = &fs_getattr,
-      .readlink    = &fs_readlink,
-      .mknod       = &fs_mknod,
-      .mkdir       = &fs_mkdir,
-      .unlink      = &fs_unlink,
-      .rmdir       = &fs_rmdir,
-      .symlink     = &fs_symlink,
-      .rename      = &fs_rename,
-      .link        = &fs_link,
-      .chmod       = &fs_chmod,
-      .chown       = &fs_chown,
-      .truncate    = &fs_truncate,
-      .open        = &fs_open,
-      .read        = &fs_read,
-      .write       = &fs_write,
-      .statfs      = &fs_statfs,
-      .flush       = &fs_flush,
-      .release     = &fs_release,
-      .fsync       = &fs_fsync,
-      .setxattr    = &fs_setxattr,
-      .getxattr    = &fs_getxattr,
-      .listxattr   = &fs_listxattr,
-      .removexattr = &fs_removexattr
+int main(int argc, char** argv) {
+  fuse_operations ops;
+  memset(&ops, 0, sizeof(ops));
 
-      // .opendir     = &FUSE::opendir,
-      // .readdir     = &FUSE::readdir,
-      // .releasedir  = &FUSE::releasedir,
-      // .fsyncdir    = &FUSE::fsyncdir,
+  ops.chmod       = &fs_chmod;
+  ops.chown       = &fs_chown;
+  ops.flush       = &fs_flush;
+  ops.fsync       = &fs_fsync;
+  ops.getattr     = &fs_getattr;
+  ops.getxattr    = &fs_getxattr;
+  ops.link        = &fs_link;
+  ops.listxattr   = &fs_listxattr;
+  ops.mkdir       = &fs_mkdir;
+  ops.mknod       = &fs_mknod;
+  ops.open        = &fs_open;
+  ops.read        = &fs_read;
+  ops.readlink    = &fs_readlink;
+  ops.release     = &fs_release;
+  ops.removexattr = &fs_removexattr;
+  ops.rename      = &fs_rename;
+  ops.rmdir       = &fs_rmdir;
+  ops.setxattr    = &fs_setxattr;
+  ops.statfs      = &fs_statfs;
+  ops.symlink     = &fs_symlink;
+  ops.truncate    = &fs_truncate;
+  ops.unlink      = &fs_unlink;
+  ops.write       = &fs_write;
 
-      // .init        = &FUSE::init,
-      // .destroy     = &FUSE::destroy,
+  // .opendir     = &FUSE::opendir,
+  // .readdir     = &FUSE::readdir,
+  // .releasedir  = &FUSE::releasedir,
+  // .fsyncdir    = &FUSE::fsyncdir,
 
-      // .getdir      = &FUSE::getdir,
-      // .utime       = &FUSE::utime,
-    };
+  // .init        = &FUSE::init,
+  // .destroy     = &FUSE::destroy,
 
-    FUSE::FILESYSTEM = new Filesystem;
-    return fuse_main(argc, argv, &ops);
-  }
+  // .getdir      = &FUSE::getdir,
+  // .utime       = &FUSE::utime,
+
+  FILESYSTEM = new Filesystem;
+  return fuse_main(argc, argv, &ops);
 }
