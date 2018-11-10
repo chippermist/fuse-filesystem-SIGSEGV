@@ -25,12 +25,12 @@ extern "C" {
     return FILESYSTEM->chown(path, uid, gid);
   }
 
-  int fs_flush(const char* path, fuse_file_info* info) {
+  int fs_flush(const char* path, struct fuse_file_info* info) {
     debug("flush       %s\n", path);
     return FILESYSTEM->flush(path, info);
   }
 
-  int fs_fsync(const char* path, int unknown, fuse_file_info* info) {
+  int fs_fsync(const char* path, int unknown, struct fuse_file_info* info) {
     debug("fsync       %s\n", path);
     return FILESYSTEM->fsync(path, unknown, info);
   }
@@ -72,12 +72,12 @@ extern "C" {
     return FILESYSTEM->mknod(path, mode, dev);
   }
 
-  int fs_open(const char* path, fuse_file_info* info) {
+  int fs_open(const char* path, struct fuse_file_info* info) {
     debug("open        %s\n", path);
     return FILESYSTEM->open(path, info);
   }
 
-  int fs_read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
+  int fs_read(const char* path, char* buffer, size_t size, off_t offset, struct fuse_file_info* info) {
     debug("read        %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
     return FILESYSTEM->read(path, buffer, size, offset, info);
   }
@@ -87,7 +87,7 @@ extern "C" {
     return FILESYSTEM->readlink(path, buffer, size);
   }
 
-  int fs_release(const char* path, fuse_file_info* info) {
+  int fs_release(const char* path, struct fuse_file_info* info) {
     debug("release     %s\n", path);
     return FILESYSTEM->release(path, info);
   }
@@ -139,7 +139,7 @@ extern "C" {
     return FILESYSTEM->utime(path, buffer);
   }
 
-  int fs_write(const char* path, const char* data, size_t size, off_t offset, fuse_file_info* info) {
+  int fs_write(const char* path, const char* data, size_t size, off_t offset, struct fuse_file_info* info) {
     debug("write     %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
     return FILESYSTEM->write(path, data, size, offset, info);
   }
