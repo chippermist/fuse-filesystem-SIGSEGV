@@ -38,17 +38,21 @@ void BlockManager::insert(Block::ID free_block_num) {
   this->disk->set(0, block);
 }
 
+// Initialize block on mkfs call
 void BlockManager::mkfs() {
   Block block;
   this->disk->get(0, block);
+  // get the first block from the disk 
   Superblock* superblock = (Superblock*) &block;
+  // create a superblock object
 
   Block::ID start = superblock->data_block_start;
   uint64_t  count = superblock->data_block_count;
+  // retrive current count and start position from superblock
 
   Block::ID prev = 0;
   Block::ID curr = start;
-  Block::ID free = start + count - 1;
+  Block::ID free_block = start + count - 1;
   DatablockNode* data = (DatablockNode*) &block;
 
   while(true) {
@@ -56,7 +60,7 @@ void BlockManager::mkfs() {
     data->next_block = curr + 1;
 
     for(int i = 0; i < DatablockNode::NREFS; ++i) {
-      if(free == curr) {
+      if(free_block == curr) {
         data->next_block = 0;
         disk->set(curr, block);
 
@@ -67,8 +71,8 @@ void BlockManager::mkfs() {
         return;
       }
 
-      data->free_blocks[i] = free;
-      free -= 1;
+      data->free_blocks[i] = free_block;
+      free_block -= 1;
     }
 
     disk->set(curr, block);
