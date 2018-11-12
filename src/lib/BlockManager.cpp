@@ -65,8 +65,11 @@ void BlockManager::mkfs() {
         disk->set(curr, block);
 
         disk->get(0, block);
+        // set the location for the current block as next free
         superblock->free_list_block = curr;
+        // set the index for the next free list as current index
         superblock->free_list_index = i;
+        // write it back to disk
         disk->set(0, block);
         return;
       }
@@ -75,6 +78,7 @@ void BlockManager::mkfs() {
       free_block -= 1;
     }
 
+    // write the superblock/superblock changes to disk
     disk->set(curr, block);
     prev = curr;
     curr += 1;
