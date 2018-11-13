@@ -9,8 +9,9 @@ enum FileType: uint8_t {
 };
 
 struct INode {
-
-  typedef uint32_t ID;
+  
+  // TODO: Pad out to actually be 256 bytes!
+  typedef uint64_t ID;
   static const uint64_t INODE_SIZE = 256;
   static const uint64_t REF_BLOCKS_COUNT = 13;
 
@@ -24,7 +25,7 @@ struct INode {
   uint32_t mtime; // what time was this file last modified?
   uint16_t links_count; // how many hard links are there to this file?
   uint32_t blocks; // how many blocks have been allocated to this file?
-  uint32_t size; // how many bytes are in this file?
+  uint64_t size; // how many bytes are in this file?
   uint32_t flags; // how should our FS use this inode?
   uint8_t type; // what kind of inode is this
 
