@@ -18,18 +18,19 @@ enum FileType: uint8_t {
 struct INode {
 
   typedef uint32_t ID;
-  static const uint64_t INODE_SIZE = 128;
+  static const uint64_t INODE_SIZE = 256;
 
   // Taken from page 6 of http://pages.cs.wisc.edu/~remzi/OSTEP/file-implementation.pdf
+  // TODO: Check if the field sizes make sense for us
   uint16_t mode; // can it be read/written/executed?
   uint16_t uid; // who owns this file?
-  uint32_t size; // how many bytes are in this file? TODO: determine max file size?
+  uint16_t gid; // which group does this file belong to?
   uint32_t time; // what time was the file last accessed?
   uint32_t ctime; // what time was the file created?
   uint32_t mtime; // what time was this file last modified?
-  uint16_t gid; // which group does this file belong to?
-  uint16_t links_count; // how many hard links are there to this file? TODO: max size of this?
-  uint32_t blocks; // how many blocks have been allocated to this file? TODO: max size of this?
+  uint16_t links_count; // how many hard links are there to this file?
+  uint32_t blocks; // how many blocks have been allocated to this file?
+  uint32_t size; // how many bytes are in this file?
   uint32_t flags; // how should our FS use this inode?
   uint8_t type; // what kind of inode is this
 
