@@ -2,13 +2,6 @@
 
 #include "Block.h"
 
-#define BLOCK_NUMBER_BYTES (sizeof(Block::ID)/sizeof(uint8_t))
-#define DIRECT_BLOCKS_COUNT 10
-#define REF_BLOCKS_COUNT 13
-
-// 4096/sizeof(uint64_t)
-#define INDIRECT_REF_COUNT 64
-
 enum FileType: uint8_t {
   FREE = 0,
   REGULAR = 1,
@@ -19,6 +12,7 @@ struct INode {
 
   typedef uint32_t ID;
   static const uint64_t INODE_SIZE = 256;
+  static const uint64_t REF_BLOCKS_COUNT = 13;
 
   // Taken from page 6 of http://pages.cs.wisc.edu/~remzi/OSTEP/file-implementation.pdf
   // TODO: Check if the field sizes make sense for us
