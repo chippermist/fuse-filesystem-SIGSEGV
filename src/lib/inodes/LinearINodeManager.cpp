@@ -49,15 +49,15 @@ void LinearINodeManager::release(INode::ID id) {
 }
 
 // Reads an inode from disk into the memory provided by the user
-void LinearINodeManager::get(INode::ID inode_n, INode& user_inode) {
+void LinearINodeManager::get(INode::ID inode_num, INode& user_inode) {
 
-	// Check if valid id
-	if (inode_n >= this->num_inodes) {
+	// Check if valid ID
+	if (inode_num >= this->num_inodes) {
 		throw std::out_of_range("INode index is out of range!");
 	}
 
-	uint64_t block_index = inode_n / Block::BLOCK_SIZE;
-	uint64_t inode_index = inode_n % Block::BLOCK_SIZE;
+	uint64_t block_index = inode_num / Block::BLOCK_SIZE;
+	uint64_t inode_index = inode_num % Block::BLOCK_SIZE;
 
 	Block block;
 	this->disk->get(1 + block_index, block);
@@ -66,6 +66,19 @@ void LinearINodeManager::get(INode::ID inode_n, INode& user_inode) {
 	memcpy(&user_inode, inode, INode::INODE_SIZE);
 }
 
-void set(INode::ID inode_num, INode& user_inode) {
-	// TODO!
+void LinearINodeManager::set(INode::ID inode_num, const INode& user_inode) {
+
+	// Check if valid ID
+	if (inode_num >= this->num_inodes) {
+		throw std::out_of_range("INode index is out of range!");
+	}
+
+	uint64_t block_index = inode_num / Block::BLOCK_SIZE;
+	uint64_t inode_index = inode_num % Block::BLOCK_SIZE;
+
+	Block block;
+	this->disk->get(1 + block_index, block);
+	INode *inode = (INode *) &(block.data[inode_index * INode::INODE_SIZE]);
+
+	memcpy(inode, &user_inode, INode::INODE_SIZE);
 }
