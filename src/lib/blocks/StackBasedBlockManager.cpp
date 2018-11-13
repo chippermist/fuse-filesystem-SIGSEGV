@@ -1,14 +1,14 @@
-#include "BlockManager.h"
+#include "StackBasedBlockManager.h"
 
-BlockManager::BlockManager(Block::ID top_block_num, uint64_t index, Storage& storage) {
+StackBasedBlockManager::StackBasedBlockManager(Block::ID top_block_num, uint64_t index, Storage& storage) {
   this->top_block_num = top_block_num;
   this->index = index;
   this->disk = &storage;
 }
 
-BlockManager::~BlockManager() {}
+StackBasedBlockManager::~StackBasedBlockManager() {}
 
-void BlockManager::insert(Block::ID free_block_num) {
+void StackBasedBlockManager::release(Block::ID free_block_num) {
   // Read top block in freelist from disk
   Block block;
   DatablockNode *node = (DatablockNode *) &block;
@@ -38,7 +38,7 @@ void BlockManager::insert(Block::ID free_block_num) {
   this->disk->set(0, block);
 }
 
-Block::ID BlockManager::remove() {
+Block::ID StackBasedBlockManager::reserve() {
 
   // Read top block
   Block block;

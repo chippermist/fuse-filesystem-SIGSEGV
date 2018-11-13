@@ -1,5 +1,4 @@
-#ifndef SIGSEGV_INODESYSCALLS_H
-#define SIGSEGV_INODESYSCALLS_H
+#pragma once
 
 #include <cstdint>
 #include <string.h>
@@ -44,5 +43,3 @@ private:
 	void getNextPathNameComponent(char* pathname, uint16_t& index, char *name);
 	bool isINodeExists(Block* block, uint16_t start, uint16_t end, char* name, INode::ID inode_n);
 };
-
-#endif

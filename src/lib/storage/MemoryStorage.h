@@ -1,5 +1,4 @@
-#ifndef SIGSEGV_MEMORYSTORAGE_H
-#define SIGSEGV_MEMORYSTORAGE_H
+#pragma once
 
 #include "../Storage.h"
 
@@ -13,5 +12,3 @@ public:
   void get(Block::ID id, Block& dst);
   void set(Block::ID id, const Block& src);
 };
-
-#endif

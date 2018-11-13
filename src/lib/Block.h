@@ -1,5 +1,4 @@
-#ifndef SIGSEGV_BLOCK_H
-#define SIGSEGV_BLOCK_H
+#pragma once
 
 #include <cstdint>
 
@@ -9,5 +8,3 @@ struct Block {
 
   char data[BLOCK_SIZE];
 };
-
-#endif

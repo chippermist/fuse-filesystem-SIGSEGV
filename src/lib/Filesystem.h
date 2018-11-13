@@ -1,5 +1,4 @@
-#ifndef SIGSEGV_FILESYSTEM_H
-#define SIGSEGV_FILESYSTEM_H
+#pragma once
 
 #include "BlockManager.h"
 #include "INodeManager.h"
@@ -40,5 +39,3 @@ public:
   int utime(const char*, utimbuf*);
   int write(const char*, const char*, size_t, off_t, fuse_file_info*);
 };
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef SIGSEGV_LINEARINODEMANAGER_H
-#define SIGSEGV_LINEARINODEMANAGER_H
+#pragma once
 
 #include <stdexcept>
 #include <cstdint>
@@ -14,11 +13,10 @@ public:
 	~LinearINodeManager();
 	INode::ID reserve(Block &block);
 	void release(INode::ID id);
-	void iget(INode::ID inode_n, INode& user_inode);
+	void get(INode::ID inode_num, INode& user_inode);
+	void set(INode::ID inode_num, const INode& user_inode);
 
 private:
 	Storage *disk;
 	uint64_t num_inodes;
 };
-
-#endif

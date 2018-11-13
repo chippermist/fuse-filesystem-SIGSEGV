@@ -2,8 +2,8 @@
 
 LinearINodeManager::LinearINodeManager(uint64_t num_inodes, Storage& storage)
 {
-	this->disk = &storage;
 	this->num_inodes = num_inodes;
+	this->disk = &storage;
 }
 
 LinearINodeManager::~LinearINodeManager() {}
@@ -19,7 +19,7 @@ INode::ID LinearINodeManager::reserve(Block &block) {
 		// Check each inode in the block and see if it's free
 		for (uint64_t inode_index = 0; inode_index < num_inodes_per_block; inode_index++) {
 			INode *inode = (INode *) &(block.data[inode_index * INode::INODE_SIZE]);
-			if (inode->type == FileType::Free) {
+			if (inode->type == FileType::FREE) {
 				return inode_index + num_inodes_per_block * block_index;
 			}
 		}
@@ -42,14 +42,14 @@ void LinearINodeManager::release(INode::ID id) {
 	Block block;
 	this->disk->get(1 + block_index, block);
 	INode *inode = (INode *) &(block.data[inode_index * INode::INODE_SIZE]);
-	inode->type = FileType::Free;
+	inode->type = FileType::FREE;
 
 	// Write the inode back to disk
 	this->disk->set(1 + block_index, block);
 }
 
 // Reads an inode from disk into the memory provided by the user
-void LinearINodeManager::iget(INode::ID inode_n, INode& user_inode) {
+void LinearINodeManager::get(INode::ID inode_n, INode& user_inode) {
 
 	// Check if valid id
 	if (inode_n >= this->num_inodes) {
@@ -64,4 +64,8 @@ void LinearINodeManager::iget(INode::ID inode_n, INode& user_inode) {
 	INode *inode = (INode *) &(block.data[inode_index * INode::INODE_SIZE]);
 
 	memcpy(&user_inode, inode, INode::INODE_SIZE);
+}
+
+void set(INode::ID inode_num, INode& user_inode) {
+	// TODO!
 }
