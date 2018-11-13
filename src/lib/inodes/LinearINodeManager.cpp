@@ -82,3 +82,7 @@ void LinearINodeManager::set(INode::ID inode_num, const INode& user_inode) {
 
 	memcpy(inode, &user_inode, INode::INODE_SIZE);
 }
+
+INode::ID LinearINodeManager::getRoot() {
+	return 2;
+}

@@ -13,24 +13,27 @@
 struct FileBlockInfo
 {
 	// block number in file system
-	Block::ID block_n;
+	Block::ID block_num;
 
 	// byte offset into block
-	uint16_t offset_b;
+	uint16_t byte_offset;
 
 	// bytes of I/O in block
-	uint16_t block_io;
+	uint16_t bytes_block_io;
 
 	// read ahead block number
 	Block::ID read_ahead_block_n;
 };
 
-class INodeSyscalls {
+class FileAccessManager {
 	INodeManager *inode_manager;
 	Storage *disk;
 public:
-	INodeSyscalls(INodeManager& inode_manager, Storage &storage);
-	~INodeSyscalls();
+	FileAccessManager(INodeManager& inode_manager, Storage &storage);
+	~FileAccessManager();
+	INode::ID accessFileByName(char *path);
+
+/*
 	void bmap(INode& inode, uint64_t offset, FileBlockInfo& fileBlockInfo);
 	bool namei(char *pathname, INode::ID root_inode_n, INode::ID curr_dir_inode_n, INode& inode);
 
@@ -42,4 +45,5 @@ private:
 	uint64_t getFileBlockNumber(uint8_t step, uint64_t current_offset_block_n);
 	void getNextPathNameComponent(char* pathname, uint16_t& index, char *name);
 	bool isINodeExists(Block* block, uint16_t start, uint16_t end, char* name, INode::ID inode_n);
+*/
 };

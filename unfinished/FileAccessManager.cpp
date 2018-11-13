@@ -1,25 +1,40 @@
-#include "INodeSyscalls.h"
+#include "FileAccessManager.h"
 
-INodeSyscalls::INodeSyscalls(INodeManager& inode_manager, Storage& storage)
+FileAccessManager::FileAccessManager(INodeManager& inode_manager, Storage& storage)
 {
 	this->inode_manager = &inode_manager;
 	this->disk = &storage;
 }
 
-INodeSyscalls::~INodeSyscalls() {}
+FileAccessManager::~FileAccessManager() {}
+
+INode::ID FileAccessManager::accessFileByName(char *path) {
+
+	char *path_component = strtok(path, "/");
+	while (path_component) {
+
+
+
+		// Move forward in the path
+		path_component = strtok(NULL, "/");
+	}
+}
+
+
+/*
 
 // TODO: currently supporting directory size of only 1 data block
-bool INodeSyscalls::namei(char *pathname, INode::ID root_inode_n, INode::ID curr_dir_inode_n, INode& inode) {
+bool FileAccessManager::namei(char *pathname, INode::ID root_inode_num, INode::ID curr_dir_inode_num, INode& inode) {
 	INode working_dir_inode;
 	uint16_t index = 0;
 	bool is_root = false;
 	if (pathname[0] == '/') {
-		this->inode_manager->iget(root_inode_n, working_dir_inode);
+		this->inode_manager->get(root_inode_num, working_dir_inode);
 		index++;
 		is_root = true;
 	}
 	else {
-		this->inode_manager->iget(curr_dir_inode_n, working_dir_inode);
+		this->inode_manager->get(curr_dir_inode_num, working_dir_inode);
 	}
 
 	char next_path_name[FILE_NAME_MAX_SIZE];
@@ -44,12 +59,12 @@ bool INodeSyscalls::namei(char *pathname, INode::ID root_inode_n, INode::ID curr
 			bmap(working_dir_inode, offset, file_block_info);
 
 			Block block;
-			this->disk->get(file_block_info.block_n, block);
+			this->disk->get(file_block_info.block_num, block);
 
 			INode::ID inode_n;
-			if (isINodeExists(&block, file_block_info.offset_b, file_block_info.block_io, next_path_name, inode_n)) {
+			if (isINodeExists(&block, file_block_info.byte_offset, file_block_info.bytes_block_io, next_path_name, inode_n)) {
 				memset(&working_dir_inode, 0x00, sizeof(INode));
-				this->inode_manager->iget(inode_n, working_dir_inode);
+				this->inode_manager->get(inode_n, working_dir_inode);
 			}
 			else {
 				return false;
@@ -60,22 +75,22 @@ bool INodeSyscalls::namei(char *pathname, INode::ID root_inode_n, INode::ID curr
 	return true;
 }
 
-void INodeSyscalls::bmap(INode& inode, uint64_t offset, FileBlockInfo& fileBlockInfo) {
+void FileAccessManager::bmap(INode& inode, uint64_t offset, FileBlockInfo& fileBlockInfo) {
 	bool isReadAheadBlockExists = false;
 	// calculate logical block number in file
 	uint64_t file_offset_block_n = offset/Block::BLOCK_SIZE;
 
 	// calculate start byte in block for I/O
-	fileBlockInfo.offset_b = offset % Block::BLOCK_SIZE;
+	fileBlockInfo.byte_offset = offset % Block::BLOCK_SIZE;
 
 	// calculate number of bytes to copy to user
 	uint64_t total_block_n = (inode.size - 1) / Block::BLOCK_SIZE;
 	if (total_block_n > file_offset_block_n) {
-		fileBlockInfo.block_io = Block::BLOCK_SIZE - fileBlockInfo.offset_b;
+		fileBlockInfo.bytes_block_io = Block::BLOCK_SIZE - fileBlockInfo.byte_offset;
 		isReadAheadBlockExists = true;
 	}
 	else {
-		fileBlockInfo.block_io = inode.size - offset;
+		fileBlockInfo.bytes_block_io = inode.size - offset;
 	}
 
 	uint8_t indirection_level = getIndirectionLevel(offset);
@@ -97,7 +112,7 @@ void INodeSyscalls::bmap(INode& inode, uint64_t offset, FileBlockInfo& fileBlock
 		}
 
 		if (indirection_level == 0) {
-			fileBlockInfo.block_n = disk_block_indexber;
+			fileBlockInfo.block_num = disk_block_indexber;
 		}
 
 		this->disk->get(disk_block_indexber, block);
@@ -109,7 +124,7 @@ void INodeSyscalls::bmap(INode& inode, uint64_t offset, FileBlockInfo& fileBlock
 	}
 }
 
-void INodeSyscalls::getNextPathNameComponent(char* pathname, uint16_t& index, char *name) {
+void FileAccessManager::getNextPathNameComponent(char* pathname, uint16_t& index, char *name) {
 	if (pathname[index] == '\0') {
 		return;
 	}
@@ -124,7 +139,7 @@ void INodeSyscalls::getNextPathNameComponent(char* pathname, uint16_t& index, ch
 	name[i] = '\0';
 }
 
-bool INodeSyscalls::isINodeExists(Block* block, uint16_t start, uint16_t end, char* name, INode::ID inode_n) {
+bool FileAccessManager::isINodeExists(Block* block, uint16_t start, uint16_t end, char* name, INode::ID inode_n) {
 	char inode_info[DIR_INODE_INFO_SIZE];
 	uint8_t inode_read_n = (end - start) / DIR_INODE_INFO_SIZE;
 
@@ -141,7 +156,7 @@ bool INodeSyscalls::isINodeExists(Block* block, uint16_t start, uint16_t end, ch
 	return false;
 }
 
-uint64_t INodeSyscalls::getFileBlockNumber(uint8_t step, uint64_t current_offset_block_n) {
+uint64_t FileAccessManager::getFileBlockNumber(uint8_t step, uint64_t current_offset_block_n) {
 	switch (step)
 	{
 	case 0:
@@ -159,11 +174,11 @@ uint64_t INodeSyscalls::getFileBlockNumber(uint8_t step, uint64_t current_offset
 	return current_offset_block_n;
 }
 
-Block::ID INodeSyscalls::getDiskBlockNumber(uint8_t index, INode& inode) {
-	return inode.blocks[index];
+Block::ID FileAccessManager::getDiskBlockNumber(uint8_t index, INode& inode) {
+	return inode.block_pointers[index];
 }
 
-Block::ID INodeSyscalls::getDiskBlockNumber(uint8_t index, Block& block) {
+Block::ID FileAccessManager::getDiskBlockNumber(uint8_t index, Block& block) {
 	uint16_t char_index = index * BLOCK_NUMBER_BYTES;
 	char block_number_content[BLOCK_NUMBER_BYTES];
 	for (uint8_t i = 0; i < BLOCK_NUMBER_BYTES; i++)
@@ -175,7 +190,7 @@ Block::ID INodeSyscalls::getDiskBlockNumber(uint8_t index, Block& block) {
 	return disk_block_indexber;
 }
 
-uint8_t INodeSyscalls::getBlockIndex(uint8_t step, uint8_t indirection_level, uint64_t offset_block_n) {
+uint8_t FileAccessManager::getBlockIndex(uint8_t step, uint8_t indirection_level, uint64_t offset_block_n) {
 	uint8_t index;
 	if (step == 0) {
 		if (indirection_level == 0) {
@@ -205,8 +220,7 @@ uint8_t INodeSyscalls::getBlockIndex(uint8_t step, uint8_t indirection_level, ui
 	return index;
 }
 
-
-uint8_t INodeSyscalls::getIndirectionLevel(uint64_t offset) {
+uint8_t FileAccessManager::getIndirectionLevel(uint64_t offset) {
 	uint8_t level = 0;
 	uint64_t single_indirect_block_offset = DIRECT_BLOCKS_SIZE;
 	uint64_t double_indirect_block_offset = single_indirect_block_offset + SINGLE_INDIRECT_BLOCK_SIZE;
@@ -227,3 +241,5 @@ uint8_t INodeSyscalls::getIndirectionLevel(uint64_t offset) {
 	}
 	return level;
 }
+
+*/

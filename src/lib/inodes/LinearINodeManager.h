@@ -15,6 +15,7 @@ public:
 	void release(INode::ID id);
 	void get(INode::ID inode_num, INode& user_inode);
 	void set(INode::ID inode_num, const INode& user_inode);
+	INode::ID getRoot();
 
 private:
 	Storage *disk;
