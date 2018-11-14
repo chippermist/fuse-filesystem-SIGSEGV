@@ -8,17 +8,74 @@ FileAccessManager::FileAccessManager(INodeManager& inode_manager, Storage& stora
 
 FileAccessManager::~FileAccessManager() {}
 
-INode::ID FileAccessManager::accessFileByName(char *path) {
+/**
+ * Given a NULL terminated string path, returns the INode
+ * number associated with the file. If the path cannot
+ * be found, an error is thrown.
+ *
+ * @param path: A NULL terminated sequence of characters.
+ * @return: The INode number associated with the path.
+ */
+INode::ID FileAccessManager::getINode(std::string path) {
 
-	char *path_component = strtok(path, "/");
-	while (path_component) {
-
-
-
-		// Move forward in the path
-		path_component = strtok(NULL, "/");
+	// Handle just root directory
+	if (path == "/") {
+		return this->inode_manager->getRoot();
 	}
+
+	// Split the path into components
+	path = path.substr(1);
+	size_t pos = std::string::npos;
+	INode::ID cur_inode_num = this->inode_manager->getRoot();
+
+	while ((pos = path.find("/")) != std::string::npos) {
+		std::string component = path.substr(0, path.find("/"));
+		path = path.substr(pos + 1);
+		cur_inode_num = INodeLookup(cur_inode_num, component);
+	}
+
+	cur_inode_num = INodeLookup(cur_inode_num, path);
 }
+
+/**
+ * Searches a directory INode for a member path string
+ * and returns the associated INode ID.
+ * @param cur_inode_num: The ID of the directory INode to search.
+ * @param filename: The filename or dirname to look for in the directory.
+ * @return: The INode ID associated with the path in the directory.
+ */
+INode::ID FileAccessManager::INodeLookup(INode::ID cur_inode_num, std::string filename) {
+	// Read the directory inode
+	INode dir_inode;
+	this->inode_manager->get(cur_inode_num, dir_inode);
+
+	// Search the directory's direct block pointers
+	for (size_t i = 0; i < INode::DIRECT_POINTERS; i++) {
+
+		if (dir_inode.block_pointers[i] == 0) {
+			throw std::out_of_range("No such file or directory!");
+		}
+
+		// Read in the data block for this directory pointer
+		Block block;
+		this->disk->get(dir_inode.block_pointers[i], block);
+
+		// Check block for the desired filename
+		// TODO: Parse block as list of variable length directory entries.
+
+	}
+
+	// TODO: Check indirect pointers
+
+}
+
+// Read data from a file
+//
+
+// Write data to a file
+// Write data to an inode
+// Write data to a directory
+// Given inode ID, write x data to y offset
 
 
 /*

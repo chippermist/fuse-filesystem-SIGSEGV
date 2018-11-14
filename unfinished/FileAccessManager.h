@@ -1,7 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <string.h>
+#include <cstring>
+#include <string>
 #include "Block.h"
 #include "INode.h"
 #include "INodeManager.h"
@@ -31,7 +32,8 @@ class FileAccessManager {
 public:
 	FileAccessManager(INodeManager& inode_manager, Storage &storage);
 	~FileAccessManager();
-	INode::ID accessFileByName(char *path);
+	INode::ID getINode(std::string path);
+	INode::ID INodeLookup(INode::ID cur_inode_num, std::string filename);
 
 /*
 	void bmap(INode& inode, uint64_t offset, FileBlockInfo& fileBlockInfo);

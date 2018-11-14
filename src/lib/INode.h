@@ -9,11 +9,15 @@ enum FileType: uint8_t {
 };
 
 struct INode {
-  
+
   // TODO: Pad out to actually be 256 bytes!
   typedef uint64_t ID;
   static const uint64_t INODE_SIZE = 256;
   static const uint64_t REF_BLOCKS_COUNT = 13;
+  static const uint64_t DIRECT_POINTERS = 10;
+  static const uint64_t SINGLE_INDIRECT_POINTERS = 1;
+  static const uint64_t DOUBLE_INDIRECT_POINTERS = 1;
+  static const uint64_t TRIPLE_INDIRECT_POINTERS = 1;
 
   // Taken from page 6 of http://pages.cs.wisc.edu/~remzi/OSTEP/file-implementation.pdf
   // TODO: Check if the field sizes make sense for us
