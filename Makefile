@@ -14,9 +14,9 @@ ifeq ($(shell uname -s), Darwin)
 	INCLUDE_DIR = $(OSXFUSE_ROOT)/include/osxfuse/fuse
 	LIBRARY_DIR = $(OSXFUSE_ROOT)/lib
 
-	CXXFLAGS += -I$(INCLUDE_DIR) -L$(LIBRARY_DIR)
+	CXXFLAGS += -I$(INCLUDE_DIR)
 	CXXFLAGS += -D_DARWIN_USE_64_BIT_INODE
-	LDFLAGS   = -losxfuse
+	LDFLAGS   = -losxfuse -L$(LIBRARY_DIR)
 else
 	LDFLAGS   = -lfuse
 endif

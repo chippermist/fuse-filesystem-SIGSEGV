@@ -7,7 +7,7 @@ public:
   virtual ~INodeManager() {}
   virtual INode::ID reserve() = 0;
   virtual void release(INode::ID id) = 0;
-  virtual void get(INode::ID inode_num, INode& user_inode) = 0;
-  virtual void set(INode::ID inode_num, INode& user_inode) = 0;
+  virtual void get(INode::ID id, INode& dst) = 0;
+  virtual void set(INode::ID id, const INode& src) = 0;
   virtual INode::ID getRoot() = 0;
 };
