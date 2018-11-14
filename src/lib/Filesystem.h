@@ -3,9 +3,11 @@
 #include "BlockManager.h"
 #include "INodeManager.h"
 
+#if defined(__linux__)
+  #include <sys/statfs.h>
+  #include <sys/vfs.h>
+#endif
 
-#include <sys/statfs.h>
-#include <sys/vfs.h>
 #include <fuse.h>
 
 class Filesystem {
