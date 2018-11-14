@@ -1,15 +1,23 @@
 #include "LinearINodeManager.h"
+#include "../Superblock.h"
 
-LinearINodeManager::LinearINodeManager(uint64_t num_inodes, Storage& storage)
-{
-	this->num_inodes = num_inodes;
-	this->disk = &storage;
+#include <cstring>
+#include <stdexcept>
+
+LinearINodeManager::LinearINodeManager(Storage& storage): disk(&storage) {
+	Block block;
+  Superblock* superblock = (Superblock*) &block;
+  this->disk->get(0, block);
+
+  uint64_t num_inodes_per_block = Block::BLOCK_SIZE / INode::INODE_SIZE;
+  this->num_inodes = num_inodes_per_block * superblock->inode_block_count;
 }
 
 LinearINodeManager::~LinearINodeManager() {}
 
 // Get an inode from the freelist and return it
-INode::ID LinearINodeManager::reserve(Block &block) {
+INode::ID LinearINodeManager::reserve() {
+  Block block;
 	uint64_t num_inodes_per_block = Block::BLOCK_SIZE / INode::INODE_SIZE;
 	for (uint64_t block_index = 0; block_index < this->num_inodes / num_inodes_per_block; block_index++) {
 
