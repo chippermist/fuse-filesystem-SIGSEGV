@@ -3,6 +3,7 @@
 #include "BlockManager.h"
 #include "INodeManager.h"
 
+// Added conditional so it compiles on OSX without issues
 #if defined(__linux__)
   #include <sys/statfs.h>
   #include <sys/vfs.h>
