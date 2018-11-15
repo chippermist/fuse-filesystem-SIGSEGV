@@ -147,6 +147,10 @@ extern "C" {
 }
 
 int main(int argc, char** argv) {
+  // added initialization for fuse arguments
+  // can also be changed to 0, NULL for testing empty
+  struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
+
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
 
@@ -186,5 +190,5 @@ int main(int argc, char** argv) {
   // .utime       = &FUSE::utime,
 
   FILESYSTEM = new Filesystem;
-  return fuse_main(argc, argv, &ops, NULL);
+  return fuse_main(args.argc, args.argv, &ops, NULL);
 }
