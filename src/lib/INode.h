@@ -12,7 +12,7 @@ struct INode {
 
   // TODO: Pad out to actually be 256 bytes!
   typedef uint64_t ID;
-  static const uint64_t INODE_SIZE = 256;
+  static const uint64_t SIZE = 256;
   static const uint64_t REF_BLOCKS_COUNT = 13;
   static const uint64_t DIRECT_POINTERS = 10;
   static const uint64_t SINGLE_INDIRECT_POINTERS = 1;

@@ -1,12 +1,12 @@
 #pragma once
 
 #include <cstdint>
-#include <cstring>
 #include <string>
 #include "Block.h"
 #include "INode.h"
 #include "INodeManager.h"
 #include "Storage.h"
+#include "DirectoryRecord.h"
 
 #define FILE_NAME_MAX_SIZE 28
 #define DIR_INODE_INFO_SIZE 32
@@ -32,8 +32,13 @@ class FileAccessManager {
 public:
 	FileAccessManager(INodeManager& inode_manager, Storage &storage);
 	~FileAccessManager();
-	INode::ID getINode(std::string path);
-	INode::ID INodeLookup(INode::ID cur_inode_num, std::string filename);
+	INode::ID getINodeFromPath(std::string path);
+private:
+	INode::ID componentLookup(INode::ID cur_inode_num, std::string filename);
+	INode::ID directLookup(Block *directory, std::string filename);
+	INode::ID singleIndirectLookup(Block::ID *directory_ptrs, std::string filename);
+	INode::ID doubleIndirectLookup(Block::ID *single_indirect_ptrs, std::string filename);
+	INode::ID tripleIndirectLookup(Block::ID *double_indirect_ptrs, std::string filename);
 
 /*
 	void bmap(INode& inode, uint64_t offset, FileBlockInfo& fileBlockInfo);
