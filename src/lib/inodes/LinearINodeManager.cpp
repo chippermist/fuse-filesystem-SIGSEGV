@@ -38,8 +38,12 @@ void LinearINodeManager::mkfs() {
     // Go through all inodes in the block and set it to zero
     for(uint64_t inode_index = 0; inode_index < num_inodes_per_block; ++inode_index) {
       INode *inode = (INode *) &(block.data[inode_index * INode::INODE_SIZE]);
-      memset(&inode, 0, sizeof(inode)); // could also do inode = {0}
-      inode->type = FileType::FREE; //unnecessary since it's 0
+      if(block_index == 0 && inode_index == 0) {
+        memset(&inode, 1, sizeof(inode));
+      } else {
+        memset(&inode, 0, sizeof(inode)); // could also do inode = {0}
+        inode->type = FileType::FREE; //unnecessary since it's 0
+      }
     }
     this->disk->set(1 + block_index, block);
   }
