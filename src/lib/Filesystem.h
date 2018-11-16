@@ -20,6 +20,8 @@ public:
     // All done.
   }
 
+  ~Filesystem() {}
+
   void mkfs() {
     inodes.mkfs();
     blocks.mkfs();

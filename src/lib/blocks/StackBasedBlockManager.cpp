@@ -35,19 +35,26 @@ void StackBasedBlockManager::mkfs() {
   this->disk->get(0,block);
   Superblock* superblock = (Superblock*) &block;
 
+  // Setting up the start and count of blocks from superblock
   Block::ID start = superblock->data_block_start;
   uint64_t count  = superblock->data_block_count;
 
+  // The intial block will start from 0
   Block::ID prev = 0;
+  // If the superblock start was set then curr = start
   Block::ID curr = start;
+  // The first available free block 
   Block::ID free_block = start + count - 1;
   DatablockNode* data = (DatablockNode*) &block;
 
+  // create the free_blocks[] list
   while(true) {
     data->prev_block = prev;
     data->next_block = curr + 1;
 
     for(int i = 0; i < DatablockNode::NREFS; ++i) {
+      // If there is a collision
+      // exit condition
       if(free_block == curr) {
         data->next_block = 0;
         disk->set(curr, block);
@@ -59,10 +66,12 @@ void StackBasedBlockManager::mkfs() {
         return;
       }
 
+      //otherwise set the first free_block into the free block list
       data->free_blocks[i] = free_block;
       free_block -= 1;
     }
 
+    // write the block to disk
     disk->set(curr, block);
     prev = curr;
     curr += 1;

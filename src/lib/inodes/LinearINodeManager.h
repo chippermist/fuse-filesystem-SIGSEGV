@@ -14,6 +14,7 @@ public:
 	void get(INode::ID id, INode& dst);
 	void set(INode::ID id, const INode& src);
 	INode::ID getRoot();
+	virtual void mkfs() = 0;
 
 private:
 	Storage *disk;

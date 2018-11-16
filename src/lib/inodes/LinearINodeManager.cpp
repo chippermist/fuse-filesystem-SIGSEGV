@@ -15,6 +15,20 @@ LinearINodeManager::LinearINodeManager(Storage& storage): disk(&storage) {
 
 LinearINodeManager::~LinearINodeManager() {}
 
+// Initialize inodes during mkfs()
+void LinearINodeManager::mkfs() {
+  Block block;
+  this->disk->get(0, block);
+  Superblock* superblock = (Superblock*) &block;
+
+  // Setting up start of inodes and the count from superblock
+  Block::ID start = superblock->inode_block_start;
+  uint64_t count  = superblock->inode_block_count;
+
+  // TODO: 
+}
+
+
 // Get an inode from the freelist and return it
 INode::ID LinearINodeManager::reserve() {
   Block block;
