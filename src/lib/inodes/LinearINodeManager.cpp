@@ -38,6 +38,7 @@ void LinearINodeManager::mkfs() {
     // Go through all inodes in the block and set it to zero
     for(uint64_t inode_index = 0; inode_index < num_inodes_per_block; ++inode_index) {
       INode *inode = (INode *) &(block.data[inode_index * INode::INODE_SIZE]);
+      // 2) Make INode 0 unusable
       if(block_index == 0 && inode_index == 0) {
         memset(&inode, 1, sizeof(inode));
       } else {
@@ -47,7 +48,7 @@ void LinearINodeManager::mkfs() {
     }
     this->disk->set(1 + block_index, block);
   }
-  // 2) Make INode 0 unusable
+
 
 
 }
