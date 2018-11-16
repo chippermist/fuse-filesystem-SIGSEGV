@@ -29,6 +29,8 @@ void LinearINodeManager::mkfs() {
   uint64_t num_inodes_per_block = Block::BLOCK_SIZE / INode::INODE_SIZE;
   // TODO: 
   // 1) Zero out the list
+
+  // Going through all blocks
   for(uint64_t block_index = 0; block_index < this->num_inodes / num_inodes_per_block; block_index++) {
     //read in the block
     this->disk->get(1 + block_index, block);
