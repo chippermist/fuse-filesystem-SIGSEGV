@@ -32,7 +32,7 @@ void LinearINodeManager::mkfs() {
 
   // Going through all blocks
   for(uint64_t block_index = 0; block_index < this->num_inodes / num_inodes_per_block; block_index++) {
-    //read in the block
+    // read in the block
     this->disk->get(1 + block_index, block);
 
     // Go through all inodes in the block and set it to zero

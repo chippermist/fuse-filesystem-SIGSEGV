@@ -10,7 +10,7 @@ enum FileType: uint8_t {
 
 struct INode {
 
-  // TODO: Pad out to actually be 256 bytes!
+  // TODO: Pad out to actually be 256 bytes! -- DONE
   typedef uint64_t ID;
   static const uint64_t INODE_SIZE = 256;
   static const uint64_t REF_BLOCKS_COUNT = 13;
@@ -39,4 +39,5 @@ struct INode {
     (10 + 1024 + 1024 ** 2 + 1024 ** 3) * 4096 = 4402345713664 ~= pow(2, 42) bytes = 4 TB
    */
   Block::ID block_pointers[REF_BLOCKS_COUNT];
+  uint64_t __padding[23]; // padding to 256 bytes
 };
