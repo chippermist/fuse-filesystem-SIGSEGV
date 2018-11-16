@@ -60,8 +60,8 @@ void StackBasedBlockManager::mkfs() {
         this->disk->set(curr, block);
 
         this->disk->get(0, block);
-        superblock->free_list_block = curr;
-        superblock->free_list_index = i;
+        superblock->data_block_start = curr;
+        superblock->data_block_count = i;
         this->disk->set(0, block);
         return;
       }
