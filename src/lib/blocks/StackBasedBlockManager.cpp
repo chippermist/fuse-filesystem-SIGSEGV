@@ -57,12 +57,12 @@ void StackBasedBlockManager::mkfs() {
       // exit condition
       if(free_block == curr) {
         data->next_block = 0;
-        disk->set(curr, block);
+        this->disk->set(curr, block);
 
-        disk->get(0, block);
+        this->disk->get(0, block);
         superblock->free_list_block = curr;
         superblock->free_list_index = i;
-        disk->set(0, block);
+        this->disk->set(0, block);
         return;
       }
 
@@ -72,7 +72,7 @@ void StackBasedBlockManager::mkfs() {
     }
 
     // write the block to disk
-    disk->set(curr, block);
+    this->disk->set(curr, block);
     prev = curr;
     curr += 1;
   }

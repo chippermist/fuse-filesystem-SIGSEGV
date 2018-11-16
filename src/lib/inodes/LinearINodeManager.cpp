@@ -24,8 +24,26 @@ void LinearINodeManager::mkfs() {
   // Setting up start of inodes and the count from superblock
   Block::ID start = superblock->inode_block_start;
   uint64_t count  = superblock->inode_block_count;
-
+  // Write the data back to disk
+  this->disk->set(0, block);
+  uint64_t num_inodes_per_block = Block::BLOCK_SIZE / INode::INODE_SIZE;
   // TODO: 
+  // 1) Zero out the list
+  for(uint64_t block_index = 0; block_index < this->num_inodes / num_inodes_per_block; block_index++) {
+    //read in the block
+    this->disk->get(1 + block_index, block);
+
+    // Go through all inodes in the block and set it to zero
+    for(uint64_t inode_index = 0; inode_index < num_inodes_per_block; ++inode_index) {
+      INode *inode = (INode *) &(block.data[inode_index * INode::INODE_SIZE]);
+      memset(&inode, 0, sizeof(inode)); // could also do inode = {0}
+      inode->type = FileType::FREE; //unnecessary since it's 0
+    }
+    this->disk->set(1 + block_index, block);
+  }
+  // 2) Make INode 0 unusable
+
+
 }
 
 

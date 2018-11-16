@@ -5,7 +5,7 @@
 enum FileType: uint8_t {
   FREE = 0,
   REGULAR = 1,
-  DIRECTORY = 2,
+  DIRECTORY = 2
 };
 
 struct INode {
