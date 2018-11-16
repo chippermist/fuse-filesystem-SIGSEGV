@@ -29,6 +29,46 @@ StackBasedBlockManager::StackBasedBlockManager(Storage& storage): disk(&storage)
 
 StackBasedBlockManager::~StackBasedBlockManager() {}
 
+
+void StackBasedBlockManager::mkfs() {
+  Block block;
+  this->disk->get(0,block);
+  Superblock* superblock = (Superblock*) &block;
+
+  Block::ID start = superblock->data_block_start;
+  uint64_t count  = superblock->data_block_count;
+
+  Block::ID prev = 0;
+  Block::ID curr = start;
+  Block::ID free_block = start + count - 1;
+  DatablockNode* data = (DatablockNode*) &block;
+
+  while(true) {
+    data->prev_block = prev;
+    data->next_block = curr + 1;
+
+    for(int i = 0; i < DatablockNode::NREFS; ++i) {
+      if(free_block == curr) {
+        data->next_block = 0;
+        disk->set(curr, block);
+
+        disk->get(0, block);
+        superblock->free_list_block = curr;
+        superblock->free_list_index = i;
+        disk->set(0, block);
+        return;
+      }
+
+      data->free_blocks[i] = free_block;
+      free_block -= 1;
+    }
+
+    disk->set(curr, block);
+    prev = curr;
+    curr += 1;
+  }
+}
+
 void StackBasedBlockManager::update_superblock() {
   Block block;
   Superblock* superblock = (Superblock*) &block;

@@ -13,6 +13,7 @@ public:
 
   virtual void release(Block::ID block_num);
   virtual Block::ID reserve();
+  virtual void mkfs() = 0;
 
   void update_superblock();
 
