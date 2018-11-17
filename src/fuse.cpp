@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
   // .getdir      = &FUSE::getdir,
   // .utime       = &FUSE::utime,
 
-  FILESYSTEM = new Filesystem;
+  //FILESYSTEM = new Filesystem;
   int fuse_return_value = fuse_main(args.argc, args.argv, &ops, NULL);
   fuse_opt_free_args(&args);
   return fuse_return_value;
