@@ -3,12 +3,12 @@
 #include "lib/inodes/LinearINodeManager.h"
 #include "lib/storage/MemoryStorage.h"
 
-int main() {
+int main(int argc, char** argv) {
   // Need to know how to initialize filesystem from mkfs
   // since we don't have a BlockManager or an INodeManager object
-  MemoryStorage storage(2048);
-  LinearINodeManager inodes(storage);
-  StackBasedBlockManager blocks(storage);
+  Storage *str = new MemoryStorage(2048);
+  LinearINodeManager inodes(*str);
+  StackBasedBlockManager blocks(*str);
 
   Filesystem filesystem(blocks, inodes);
   filesystem.mkfs();
