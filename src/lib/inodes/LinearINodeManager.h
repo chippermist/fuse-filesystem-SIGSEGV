@@ -6,17 +6,18 @@
 
 class LinearINodeManager: public INodeManager {
 public:
-	LinearINodeManager(Storage& storage);
-	~LinearINodeManager();
+  LinearINodeManager(Storage& storage);
+  ~LinearINodeManager();
 
-	INode::ID reserve();
-	void release(INode::ID id);
-	void get(INode::ID id, INode& dst);
-	void set(INode::ID id, const INode& src);
-	INode::ID getRoot();
-	virtual void mkfs() = 0;
+  virtual void mkfs();
+  INode::ID reserve();
+  void release(INode::ID id);
+  void get(INode::ID id, INode& dst);
+  void set(INode::ID id, const INode& src);
+  INode::ID getRoot();
+
 
 private:
-	Storage *disk;
-	uint64_t num_inodes;
+  Storage *disk;
+  uint64_t num_inodes;
 };
