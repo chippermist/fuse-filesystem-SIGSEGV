@@ -196,7 +196,9 @@ void FileAccessManager::allocateNextBlock(INode& file_inode) {
 
   if (logical_blk_num <= INode::DIRECT_POINTERS) {
 
-    // Direct block - just allocate in inode
+    // Direct block
+
+    // 1. Just allocate in inode
     file_inode.block_pointers[file_inode.blocks] = this->block_manager->reserve();
 
   } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale) {
@@ -218,11 +220,11 @@ void FileAccessManager::allocateNextBlock(INode& file_inode) {
     direct_ptrs[logical_blk_num - 1] = this->block_manager->reserve();
     this->disk->set(file_inode.block_pointers[INode::DIRECT_POINTERS], direct_ptrs_blk);
 
-  } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale + scale * scale) {
+  } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale + (scale * scale)) {
 
     // Double-indirect
 
-    // 1. Check if need block for the single-indirect pointers
+    // 1. Check if need block for single-indirect pointers
     if (logical_blk_num == INode::DIRECT_POINTERS + scale + 1) {
       file_inode.block_pointers[INode::DIRECT_POINTERS + 1] = this->block_manager->reserve();
     }
@@ -245,7 +247,7 @@ void FileAccessManager::allocateNextBlock(INode& file_inode) {
     this->disk->get(single_indirect_ptrs[block_num_in_level / scale], direct_ptrs_blk);
 
     // 5. Allocate the direct block
-    direct_ptrs[block_num_in_level % scale - 1] = this->block_manager->reserve();
+    direct_ptrs[(block_num_in_level % scale) - 1] = this->block_manager->reserve();
     this->disk->set(single_indirect_ptrs[block_num_in_level / scale], direct_ptrs_blk);
 
   } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale + (scale * scale) + (scale * scale * scale)) {
@@ -274,9 +276,11 @@ void FileAccessManager::allocateNextBlock(INode& file_inode) {
     this->disk->get(double_indirect_ptrs[block_num_in_level / (scale * scale)], single_indirect_ptrs_blk);
 
     // 5. Check if need block for direct pointers
+    size_t orig_block_num_in_level = block_num_in_level;
+    block_num_in_level = block_num_in_level % (scale * scale);
     if (block_num_in_level % scale == 1) {
       single_indirect_ptrs[block_num_in_level / scale] = this->block_manager->reserve();
-      this->disk->set(double_indirect_ptrs[block_num_in_level / (scale * scale)], single_indirect_ptrs_blk);
+      this->disk->set(double_indirect_ptrs[orig_block_num_in_level / (scale * scale)], single_indirect_ptrs_blk);
     }
 
     // 6. Load in third level block
@@ -290,7 +294,7 @@ void FileAccessManager::allocateNextBlock(INode& file_inode) {
 
   } else {
     // Can't allocate any more blocks for this file!
-    throw std::out_of_range("Offset greater than maximum file size!");
+    throw std::out_of_range("Reached max number of blocks allocated for a single file!");
   }
 
   // Update the number of allocated data blocks in this inode
