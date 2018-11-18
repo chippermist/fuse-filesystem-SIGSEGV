@@ -77,20 +77,18 @@ size_t FileAccessManager::write(std::string path, char *buf, size_t size, size_t
     total_written += to_write;
   }
 
-  if (size <= 0) {
-    assert(size == 0);
+  if (size == 0) {
     return total_written;
   }
 
   // 2. If the offset > file size, insert NULL filler.
   size_t null_filler = offset - file_inode.size;
   if (null_filler > 0) {
-      total_written += appendData(file_inode, buf, null_filler, file_inode.size, null_filler);
+      total_written += appendData(file_inode, buf, null_filler, file_inode.size, true);
   }
 
   // 3. Write actual data from offset (which should be file size).
-  assert(offset == file_inode.size);
-  total_written += appendData(file_inode, buf, size, offset, 0);
+  total_written += appendData(file_inode, buf, size, offset, false);
 
   // 4. Write back changes to file_inode
   this->inode_manager->set(file_inode_num, file_inode);
@@ -104,8 +102,9 @@ size_t FileAccessManager::write(std::string path, char *buf, size_t size, size_t
  * Invariant upon entering the function:
  * - Offset == file size, since we are adding to the end of the file.
  */
-size_t FileAccessManager::appendData(INode& file_inode, char *buf, size_t size, size_t offset, size_t null_filler) {
+size_t FileAccessManager::appendData(INode& file_inode, char *buf, size_t size, size_t offset, bool null_filler) {
 
+  assert(offset == file_inode.size);
   size_t total_written = 0;
 
   // 1. Fill in the last block already allocated if it has space.
@@ -125,10 +124,10 @@ size_t FileAccessManager::appendData(INode& file_inode, char *buf, size_t size, 
     }
 
     // Copy the data and write to disk
-    if (null_filler == 0) {
-      memcpy(block.data  + (offset % Block::SIZE), buf, to_write);
-    } else {
+    if (null_filler) {
       memset(block.data + (offset % Block::SIZE), 0, to_write);
+    } else {
+      memcpy(block.data  + (offset % Block::SIZE), buf, to_write);
     }
     this->disk->set(block_num, block);
 
@@ -141,16 +140,18 @@ size_t FileAccessManager::appendData(INode& file_inode, char *buf, size_t size, 
     total_written += to_write;
   }
 
-  if (size <= 0) {
-    assert(size == 0);
+  if (size == 0) {
     return total_written;
   }
 
   // 2. Need to allocate new blocks.
   while (size > 0) {
 
+    // Should be block-aligned now
+    assert(offset % Block::SIZE == 0);
+
     // Allocate the next data block
-    appendBlock(file_inode);
+    allocateNextBlock(file_inode);
 
     Block block;
     Block::ID block_num = blockAt(file_inode, offset);
@@ -166,10 +167,10 @@ size_t FileAccessManager::appendData(INode& file_inode, char *buf, size_t size, 
     }
 
     // Copy the data and write to disk
-    if (null_filler == 0) {
-      memcpy(block.data, buf, to_write);
-    } else {
+    if (null_filler) {
       memset(block.data, 0, to_write);
+    } else {
+      memcpy(block.data, buf, to_write);
     }
     this->disk->set(block_num, block);
 
@@ -178,9 +179,9 @@ size_t FileAccessManager::appendData(INode& file_inode, char *buf, size_t size, 
     buf += to_write;
     size -= to_write;
 
+    file_inode.size += to_write;
     total_written += to_write;
   }
-  assert(size == 0);
   return total_written;
 }
 
@@ -188,7 +189,7 @@ size_t FileAccessManager::appendData(INode& file_inode, char *buf, size_t size, 
  * Allocates a new data block for a file's inode.
  * Also allocates any needed new blocks for indirect pointers.
  */
-void FileAccessManager::appendBlock(INode& file_inode) {
+void FileAccessManager::allocateNextBlock(INode& file_inode) {
 
   size_t scale = Block::SIZE / sizeof(Block::ID);
   size_t logical_blk_num = file_inode.blocks + 1;
