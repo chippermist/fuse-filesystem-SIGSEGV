@@ -304,11 +304,6 @@ void FileAccessManager::allocateNextBlock(INode& file_inode) {
   file_inode.blocks++;
 }
 
-
-
-// -------------------------------------------------------------------------------------
-
-
 size_t FileAccessManager::read(std::string path, char *buf, size_t size, size_t offset) {
 
   // Read the file's inode and do some sanity checks
@@ -323,35 +318,50 @@ size_t FileAccessManager::read(std::string path, char *buf, size_t size, size_t 
     return -1; // File is not a regular file
   }
 
-  // Don't read past end of file
-  if (offset + size >= file_inode.size) {
+  if (offset >= file_inode.size) {
+    return -1; // Can't begin reading from after file
+  }
+
+  // Only read until the end of the file
+  if (offset + size > file_inode.size) {
     size = file_inode.size - offset;
   }
 
-  // Read until either no more data in file or size bytes read
   size_t total_read = 0;
-  size_t cur_offset = offset;
-  while (cur_offset < offset + size) {
+  while (size > 0) {
 
     // Get datablock of current offset
-    Block::ID cur_block_id = blockAt(file_inode, cur_offset);
+    Block::ID cur_block_id = blockAt(file_inode, offset);
     Block block;
     this->disk->get(cur_block_id, block);
 
-    // Calculate bytes to read from this block
-    size_t to_read = Block::SIZE;
-    if (cur_offset % Block::SIZE != 0) {
-      to_read = Block::SIZE - (cur_offset % Block::SIZE);
+    /*
+      How many bytes to read?
+      a) Normally read whole blocks at a time.
+      b) If the offset isn't block aligned though
+         (which could happen for the first block),
+         then only read until the end of the block.
+      c) Don't read past the end of the file.
+      d) Of course, don't read more than what was asked!
+    */
+    size_t to_read = Block::SIZE - (offset % Block::SIZE);
+
+    if (offset + to_read > file_inode.size) {
+      to_read = file_inode.size - offset;
     }
 
-    if (total_read + to_read > size) {
-      to_read = size - total_read;
+    if (to_read > size) {
+      to_read = size;
     }
 
     // Copy data from block into buffer
-    memcpy(buf, block.data, to_read);
-    cur_offset += to_read;
+    memcpy(buf, block.data + (offset % Block::SIZE), to_read);
+
+    // Update offset, buf pointer, and num bytes left to read
+    offset += to_read;
     buf += to_read;
+    size -= to_read;
+
     total_read += to_read;
   }
   return total_read;
