@@ -44,7 +44,7 @@ void LinearINodeManager::mkfs() {
         memset(&inode, 1, sizeof(inode));
       } else {
         memset(&inode, 0, sizeof(inode)); // could also do inode = {0}
-        inode->type = FileType::FREE; //unnecessary since it's 0
+        // inode->type = FileType::FREE; //unnecessary since it's 0 -- need to set it (was causing SEGFAULT)
       }
     }
     this->disk->set(1 + block_index, block);
