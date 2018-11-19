@@ -151,10 +151,8 @@ size_t FileAccessManager::appendData(INode& file_inode, char *buf, size_t size, 
     assert(offset % Block::SIZE == 0);
 
     // Allocate the next data block
-    allocateNextBlock(file_inode);
-
+    Block::ID block_num = allocateNextBlock(file_inode);
     Block block;
-    Block::ID block_num = blockAt(file_inode, offset);
 
     /*
       How many bytes to write?
@@ -189,17 +187,19 @@ size_t FileAccessManager::appendData(INode& file_inode, char *buf, size_t size, 
  * Allocates a new data block for a file's inode.
  * Also allocates any needed new blocks for indirect pointers.
  */
-void FileAccessManager::allocateNextBlock(INode& file_inode) {
+Block::ID FileAccessManager::allocateNextBlock(INode& file_inode) {
 
   size_t scale = Block::SIZE / sizeof(Block::ID);
   size_t logical_blk_num = file_inode.blocks + 1;
+  Block::ID data_block_num = 0;
 
   if (logical_blk_num <= INode::DIRECT_POINTERS) {
 
     // Direct block
 
     // 1. Just allocate in inode
-    file_inode.block_pointers[file_inode.blocks] = this->block_manager->reserve();
+    data_block_num = this->block_manager->reserve();
+    file_inode.block_pointers[file_inode.blocks] = data_block_num;
 
   } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale) {
 
@@ -217,7 +217,8 @@ void FileAccessManager::allocateNextBlock(INode& file_inode) {
 
     // 3. Allocate the direct block
     logical_blk_num -= INode::DIRECT_POINTERS;
-    direct_ptrs[logical_blk_num - 1] = this->block_manager->reserve();
+    data_block_num = this->block_manager->reserve();
+    direct_ptrs[logical_blk_num - 1] = data_block_num;
     this->disk->set(file_inode.block_pointers[INode::DIRECT_POINTERS], direct_ptrs_blk);
 
   } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale + (scale * scale)) {
@@ -247,7 +248,8 @@ void FileAccessManager::allocateNextBlock(INode& file_inode) {
     this->disk->get(single_indirect_ptrs[block_idx_in_level / scale], direct_ptrs_blk);
 
     // 5. Allocate the direct block
-    direct_ptrs[block_idx_in_level % scale] = this->block_manager->reserve();
+    data_block_num = this->block_manager->reserve();
+    direct_ptrs[block_idx_in_level % scale] = data_block_num;
     this->disk->set(single_indirect_ptrs[block_idx_in_level / scale], direct_ptrs_blk);
 
   } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale + (scale * scale) + (scale * scale * scale)) {
@@ -288,7 +290,8 @@ void FileAccessManager::allocateNextBlock(INode& file_inode) {
     this->disk->get(single_indirect_ptrs[block_idx_in_level_two / scale], direct_ptrs_blk);
 
     // 7. Allocate direct block
-    direct_ptrs[block_idx_in_level_two % scale] = this->block_manager->reserve();
+    data_block_num = this->block_manager->reserve();
+    direct_ptrs[block_idx_in_level_two % scale] = data_block_num;
     this->disk->set(single_indirect_ptrs[block_idx_in_level_two / scale], direct_ptrs_blk);
 
   } else {
@@ -298,6 +301,7 @@ void FileAccessManager::allocateNextBlock(INode& file_inode) {
 
   // Update the number of allocated data blocks in this inode
   file_inode.blocks++;
+  return data_block_num;
 }
 
 size_t FileAccessManager::read(std::string path, char *buf, size_t size, size_t offset) {
