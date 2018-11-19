@@ -85,6 +85,9 @@ void StackBasedBlockManager::mkfs() {
     this->disk->set(curr, block);
     prev = curr;
     curr += 1;
+
+    // debugging statement
+    std::cout << "curr is: " << curr << std::endl;
   }
 }
 

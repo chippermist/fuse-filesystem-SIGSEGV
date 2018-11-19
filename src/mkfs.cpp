@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   if(argc < 2) {
     std::cout << "Not Enough Arguments." << std::endl;
   }
-  
+
   uint64_t nblocks = atoi(argv[1]);
   // std::cout << nblocks << std::endl;
   Storage *str = new MemoryStorage(nblocks);
@@ -34,7 +34,12 @@ int main(int argc, char** argv) {
 
 
   // debugging statements to check value within superblock
-  std::cout << superblock->data_block_start << std::endl;
+  std::cout << "Current block_size is: " << superblock->block_size << std::endl;
+  std::cout << "Current block_count is: " << superblock->block_count << std::endl;
+  std::cout << "Current inode_block_start is: " << superblock->inode_block_start << std::endl;
+  std::cout << "Current inode_block_count is: " << superblock->inode_block_count << std::endl;
+  std::cout << "Current data_block_start is: " << superblock->data_block_start << std::endl;
+  std::cout << "Current data_block_count is: " << superblock->data_block_count << std::endl;
 
   // setting the updated superblock to disk
   str->set(0, (Block&)*superblock);
