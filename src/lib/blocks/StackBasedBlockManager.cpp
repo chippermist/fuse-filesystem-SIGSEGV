@@ -37,6 +37,7 @@ void StackBasedBlockManager::mkfs() {
   Superblock* superblock = (Superblock*) &block;
 
   // Setting up the start and count of blocks from superblock
+  // this should be setup before calling mkfs()
   Block::ID start = superblock->data_block_start;
   uint64_t count  = superblock->data_block_count;
 

@@ -22,6 +22,7 @@ void LinearINodeManager::mkfs() {
   Superblock* superblock = (Superblock*) &block;
 
   // Setting up start of inodes and the count from superblock
+  // this should be setup initially before calling mkfs()
   Block::ID start = superblock->inode_block_start;
   uint64_t count  = superblock->inode_block_count;
   // Write the data back to disk
