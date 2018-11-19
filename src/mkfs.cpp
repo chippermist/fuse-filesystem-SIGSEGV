@@ -13,9 +13,10 @@ int main(int argc, char** argv) {
   if(argc < 2) {
     std::cout << "Not Enough Arguments." << std::endl;
   }
-
-  // segfault since the nblocks in MemoryStorage is 0 ??
-  Storage *str = new MemoryStorage(atoi(argv[1]));
+  
+  uint64_t nblocks = atoi(argv[1]);
+  // std::cout << nblocks << std::endl;
+  Storage *str = new MemoryStorage(nblocks);
 
   //Super block needs to be set before the mkfs() functions are called
   Block block;
