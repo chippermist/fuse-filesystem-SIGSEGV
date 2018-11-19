@@ -4,8 +4,6 @@
 #include "lib/inodes/LinearINodeManager.h"
 #include "lib/storage/MemoryStorage.h"
 
-static const uint64_t BLOCK_SIZE = 4096;
-
 int main(int argc, char** argv) {
   // Need to know how to initialize filesystem from mkfs
   // since we don't have a BlockManager or an INodeManager object
@@ -23,7 +21,7 @@ int main(int argc, char** argv) {
   Superblock* superblock = (Superblock*) &block;
   str->get(0, block);
 
-  superblock->block_size = BLOCK_SIZE;
+  superblock->block_size = Block::BLOCK_SIZE;
   superblock->block_count = atoi(argv[1]);
 
   //part that is not working -- unsure of -- very brute force association
