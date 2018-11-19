@@ -50,7 +50,8 @@ void StackBasedBlockManager::mkfs() {
   DatablockNode* data = (DatablockNode*) &block;
 
   //debugging statements
-  std::cout << "The current free_block is: " << free_block << std::endl;
+  std::cout << "-------------\nWithin StackBasedBlockManager::mkfs()\n-------------\n";
+  std::cout << "\nCurrent free_block is: " << free_block << std::endl;
 
   // needs to be changed since the superblock should have count of total blocks
   if(free_block == -1) {
@@ -62,7 +63,11 @@ void StackBasedBlockManager::mkfs() {
     data->prev_block = prev;
     data->next_block = curr + 1;
 
+    // debugging statement
+    // std::cout << "Current start is: " << curr << std::endl;
+
     for(int i = 0; i < DatablockNode::NREFS; ++i) {
+      std::cout << "Current free_block is: " << free_block << std::endl;
       // If there is a collision
       // exit condition
       if(free_block == curr) {
@@ -73,6 +78,7 @@ void StackBasedBlockManager::mkfs() {
         superblock->data_block_start = curr;
         superblock->data_block_count = i;
         this->disk->set(0, block);
+        std::cout << "-------------\nEnd of StackBasedBlockManager::mkfs() by (free_block == curr)\n-------------\n";
         return;
       }
 
@@ -85,10 +91,8 @@ void StackBasedBlockManager::mkfs() {
     this->disk->set(curr, block);
     prev = curr;
     curr += 1;
-
-    // debugging statement
-    std::cout << "curr is: " << curr << std::endl;
   }
+  std::cout << "-------------\nEnd of StackBasedBlockManager::mkfs()\n-------------\n";
 }
 
 void StackBasedBlockManager::update_superblock() {

@@ -3,6 +3,7 @@
 
 #include <cstring>
 #include <stdexcept>
+#include <iostream>
 
 LinearINodeManager::LinearINodeManager(Storage& storage): disk(&storage) {
   Block block;
@@ -20,6 +21,9 @@ void LinearINodeManager::mkfs() {
   Block block;
   this->disk->get(0, block);
   Superblock* superblock = (Superblock*) &block;
+
+  // debugging statements
+  std::cout << "-------------\nWithin LinearINodeManager::mkfs()\n-------------\n";
 
   // Setting up start of inodes and the count from superblock
   // this should be setup initially before calling mkfs()
@@ -50,7 +54,7 @@ void LinearINodeManager::mkfs() {
     this->disk->set(1 + block_index, block);
   }
 
-
+  std::cout << "-------------\nEnd of LinearINodeManager::mkfs()\n-------------\n";
 
 }
 
