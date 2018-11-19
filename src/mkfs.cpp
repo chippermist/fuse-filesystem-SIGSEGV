@@ -5,9 +5,6 @@
 #include "lib/storage/MemoryStorage.h"
 
 int main(int argc, char** argv) {
-  // Need to know how to initialize filesystem from mkfs
-  // since we don't have a BlockManager or an INodeManager object
-
   if(argc < 2) {
     std::cout << "Not Enough Arguments." << std::endl;
   }
@@ -24,7 +21,7 @@ int main(int argc, char** argv) {
   superblock->block_size = Block::BLOCK_SIZE;
   superblock->block_count = nblocks;
 
-  //part that is not working -- unsure of -- very brute force association
+  //unsure of -- very brute force association
   superblock->inode_block_start = 1;
   superblock->inode_block_count = 10; //need to be changed based on calculations
   superblock->data_block_start = superblock->inode_block_start + superblock->inode_block_count + 1;
