@@ -45,9 +45,10 @@ void StackBasedBlockManager::mkfs() {
   // If the superblock start was set then curr = start
   Block::ID curr = start;
   // The first available free block 
-  Block::ID free_block = curr + count - 1;
+  Block::ID free_block = start + count - 1;
   DatablockNode* data = (DatablockNode*) &block;
 
+  // needs to be changed since the superblock should have count of total blocks
   if(free_block == -1) {
     free_block = 0;
   }
