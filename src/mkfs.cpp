@@ -15,17 +15,27 @@ int main(int argc, char** argv) {
   }
 
   Storage *str = new MemoryStorage(atoi(argv[1]));
+
+  //Super block needs to be set before the mkfs() functions are called
   Block block;
   Superblock* superblock = (Superblock*) &block;
   str->get(0, block);
 
   superblock->block_size = BLOCK_SIZE;
   superblock->block_count = atoi(argv[1]);
+
+  //part that is not working -- unsure of -- very brute force association
   superblock->inode_block_start = 1;
-  superblock->inode_block_count = 10; //need to be changed
-  superblock->data_block_start = superblock->inode_block_start - superblock->inode_block_count + 1;
-  superblock->data_block_count = superblock->block_count - superblock->inode_block_count - 1;
-  str->set(0, block);
+  superblock->inode_block_count = 10; //need to be changed based on calculations
+  superblock->data_block_start = superblock->inode_block_start + superblock->inode_block_count + 1;
+  superblock->data_block_count = superblock->block_count - superblock->data_block_start;
+
+
+  // debugging statements to check value within superblock
+  std::cout << superblock->data_block_start << std::endl;
+
+  // setting the updated superblock to disk
+  str->set(0, (Block&)*superblock);
 
   LinearINodeManager inodes(*str);
   StackBasedBlockManager blocks(*str);
