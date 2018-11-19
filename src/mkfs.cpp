@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
   str->get(0, block);
 
   superblock->block_size = Block::BLOCK_SIZE;
-  superblock->block_count = atoi(argv[1]);
+  superblock->block_count = nblocks;
 
   //part that is not working -- unsure of -- very brute force association
   superblock->inode_block_start = 1;
