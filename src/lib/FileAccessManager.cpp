@@ -264,36 +264,32 @@ void FileAccessManager::allocateNextBlock(INode& file_inode) {
     this->disk->get(file_inode.block_pointers[INode::DIRECT_POINTERS + 2], double_indirect_ptrs_blk);
 
     // 3. Check if need block for single-indirect pointers
-    Block::ID block_num_in_level = logical_blk_num - INode::DIRECT_POINTERS - scale - scale * scale;
-    if (block_num_in_level % (scale * scale) == 1) {
-      double_indirect_ptrs[block_num_in_level / (scale * scale)] = this->block_manager->reserve();
+    Block::ID block_idx_in_level = logical_blk_num - INode::DIRECT_POINTERS - scale - scale * scale - 1;
+    if (block_idx_in_level % (scale * scale) == 0) {
+      double_indirect_ptrs[block_idx_in_level / (scale * scale)] = this->block_manager->reserve();
       this->disk->set(file_inode.block_pointers[INode::DIRECT_POINTERS + 2], double_indirect_ptrs_blk);
     }
 
     // 4. Load in second level block
     Block single_indirect_ptrs_blk;
     Block::ID *single_indirect_ptrs = (Block::ID *) &single_indirect_ptrs_blk;
-    this->disk->get(double_indirect_ptrs[block_num_in_level / (scale * scale)], single_indirect_ptrs_blk);
+    this->disk->get(double_indirect_ptrs[block_idx_in_level / (scale * scale)], single_indirect_ptrs_blk);
 
     // 5. Check if need block for direct pointers
-    size_t block_num_in_level_two = block_num_in_level % (scale * scale);
-    if (block_num_in_level_two == 0) {
-      block_num_in_level_two = scale * scale;
-    }
-
-    if (block_num_in_level_two % scale == 1) {
-      single_indirect_ptrs[block_num_in_level_two / scale] = this->block_manager->reserve();
-      this->disk->set(double_indirect_ptrs[block_num_in_level / (scale * scale)], single_indirect_ptrs_blk);
+    size_t block_idx_in_level_two = block_idx_in_level % (scale * scale);
+    if (block_idx_in_level_two % scale == 0) {
+      single_indirect_ptrs[block_idx_in_level_two / scale] = this->block_manager->reserve();
+      this->disk->set(double_indirect_ptrs[block_idx_in_level / (scale * scale)], single_indirect_ptrs_blk);
     }
 
     // 6. Load in third level block
     Block direct_ptrs_blk;
     Block::ID *direct_ptrs = (Block::ID *) &direct_ptrs_blk;
-    this->disk->get(single_indirect_ptrs[block_num_in_level_two / scale], direct_ptrs_blk);
+    this->disk->get(single_indirect_ptrs[block_idx_in_level_two / scale], direct_ptrs_blk);
 
     // 7. Allocate direct block
-    direct_ptrs[(block_num_in_level_two - 1) % scale] = this->block_manager->reserve();
-    this->disk->set(single_indirect_ptrs[block_num_in_level_two / scale], direct_ptrs_blk);
+    direct_ptrs[block_idx_in_level_two % scale] = this->block_manager->reserve();
+    this->disk->set(single_indirect_ptrs[block_idx_in_level_two / scale], direct_ptrs_blk);
 
   } else {
     // Can't allocate any more blocks for this file!
