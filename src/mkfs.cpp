@@ -14,6 +14,7 @@ int main(int argc, char** argv) {
     std::cout << "Not Enough Arguments." << std::endl;
   }
 
+  // segfault since the nblocks in MemoryStorage is 0 ??
   Storage *str = new MemoryStorage(atoi(argv[1]));
 
   //Super block needs to be set before the mkfs() functions are called
