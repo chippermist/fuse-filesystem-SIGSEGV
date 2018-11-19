@@ -1,4 +1,5 @@
 #include "StackBasedBlockManager.h"
+#include <iostream>
 
 // Anonymous namespace for file-local types:
 namespace {
@@ -44,8 +45,12 @@ void StackBasedBlockManager::mkfs() {
   // If the superblock start was set then curr = start
   Block::ID curr = start;
   // The first available free block 
-  Block::ID free_block = start + count - 1;
+  Block::ID free_block = curr + count - 1;
   DatablockNode* data = (DatablockNode*) &block;
+
+  if(free_block == -1) {
+    free_block = 0;
+  }
 
   // create the free_blocks[] list
   while(true) {
