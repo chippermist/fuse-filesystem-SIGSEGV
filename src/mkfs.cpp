@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include "lib/Filesystem.h"
 #include "lib/blocks/StackBasedBlockManager.h"
 #include "lib/inodes/LinearINodeManager.h"
@@ -31,7 +32,7 @@ int main(int argc, char** argv) {
   } else {
     superblock->inode_block_count = ((nblocks * Block::BLOCK_SIZE) / 2048 * INode::INODE_SIZE) / Block::BLOCK_SIZE + 1;
   }
-  superblock->data_block_start = superblock->inode_block_start + superblock->inode_block_count + 1;
+  superblock->data_block_start = superblock->inode_block_start + superblock->inode_block_count;
   superblock->data_block_count = superblock->block_count - superblock->data_block_start;
 
   // Write superblock to disk
@@ -44,34 +45,112 @@ int main(int argc, char** argv) {
   filesystem.mkfs();
 
   // Debug stuff
-  std::cout << "Inode block count: " << superblock->inode_block_count << std::endl;
-  std::cout << "Number of INodes per block: " << Block::BLOCK_SIZE / INode::INODE_SIZE << std::endl;
-  std::cout << "\n\n\n-------------\nTesting mkfs()->reserve()->release()\n-------------\n\n\n";
+  disk->get(0, block);
+  std::cout << "INode block count: " << superblock->inode_block_count << std::endl;
+  std::cout << "Real data block count: " << superblock->data_block_count << std::endl;
+  // std::cout << "Should be wasting 1-2 data blocks" << std::endl;
 
-  std::cout << "\nReserving a block 1\n";
-  Block::ID block_id = block_manager.reserve();
-  std::cout << "Block Allocated: " << block_id << std::endl;
+  /*
+  ******************************************************************
+  TESTING BLOCK MANAGER
+  ******************************************************************
+  */
+  // // Reserve, release, reserve
+  // std::vector<Block::ID> block_ids;
+  // for (size_t i = 0; i < 2048; i++) {
+  //   Block::ID id = block_manager.reserve();
+  //   std::cout << "Reserved: " << id << std::endl;
+  //   block_ids.push_back(id);
+  // }
 
-  std::cout << "\nReleasing a block 1\n";
-  block_manager.release(block_id);
+  // for (std::vector<Block::ID>::reverse_iterator i = block_ids.rbegin(); i != block_ids.rend(); ++i ) {
+  //   std::cout << "Releasing: " << *i << std::endl;
+  //   block_manager.release(*i);
+  // }
 
-  std::cout << "\nReserving a block 1\n";
-  block_id = block_manager.reserve();
-  std::cout << "Block Allocated: " << block_id << std::endl;
+  // for (size_t i = 0; i < 2048; i++) {
+  //   Block::ID id = block_manager.reserve();
+  //   std::cout << "Reserved: " << id << std::endl;
+  //   assert(id == block_ids[i]);
+  // }
 
-  //block_manager.release(block_id);
-  std::cout << "\nReserving a block 2\n";
-  Block::ID block_id_2 = block_manager.reserve();
-  std::cout << "Block Allocated: " << block_id_2 << std::endl;
+  // for (std::vector<Block::ID>::reverse_iterator i = block_ids.rbegin(); i != block_ids.rend(); ++i ) {
+  //   block_manager.release(*i);
+  // }
 
-  for(int i=0; i<170; ++i) {
-    block_id = block_manager.reserve();
-    std::cout << "Block Allocated: " << block_id << std::endl;
-  }
+  // // Exhaust reserves to see what last block number is
+  // for (size_t i = 0; i < nblocks; i++) {
+  //   try {
+  //     block_manager.reserve();
+  //   } catch (const std::exception& e) {
+  //     std::cout << "Can't allocate more than " << i+1 << " blocks." << std::endl;
+  //     break;
+  //    }
+  // }
 
-  std::cout << "\n\n\n-------------\n";
-  std::cout << "\033[1;32mSuccess. End of test.\033[0m\n";
-  std::cout << "-------------\n\n\n";
+  // std::cout << "\n\n\n-------------\n";
+  // std::cout << "\033[1;32mSuccess. End of Block Manager tests.\033[0m\n";
+  // std::cout << "-------------\n\n\n";
+
+  /*
+  ******************************************************************
+  TESTING INODE MANAGER
+  ******************************************************************
+  */
+
+  // // Reserve, release, reserve
+  // std::vector<INode::ID> inode_ids;
+  // for (size_t i = 0; i < superblock->inode_block_count * (Block::BLOCK_SIZE / INode::INODE_SIZE) - 1; i++) {
+  //   INode::ID id = inode_manager.reserve();
+  //   std::cout << "Reserved: " << id << std::endl;
+  //   inode_ids.push_back(id);
+
+  //   // Mark it as used
+  //   INode inode;
+  //   inode_manager.get(id, inode);
+  //   inode.type = FileType::REGULAR;
+  //   inode_manager.set(id, inode);
+  // }
+
+  // for (std::vector<INode::ID>::reverse_iterator i = inode_ids.rbegin(); i != inode_ids.rend(); ++i ) {
+  //   std::cout << "Releasing: " << *i << std::endl;
+  //   inode_manager.release(*i);
+  // }
+
+  // for (size_t i = 0; i < superblock->inode_block_count * (Block::BLOCK_SIZE / INode::INODE_SIZE) - 1; i++) {
+  //   INode::ID id = inode_manager.reserve();
+  //   std::cout << "Reserved: " << id << std::endl;
+  //   assert(id == inode_ids[i]);
+
+  //   // Mark it as used
+  //   INode inode;
+  //   inode_manager.get(id, inode);
+  //   inode.type = FileType::REGULAR;
+  //   inode_manager.set(id, inode);
+  // }
+
+  // for (std::vector<INode::ID>::reverse_iterator i = inode_ids.rbegin(); i != inode_ids.rend(); ++i ) {
+  //   inode_manager.release(*i);
+  // }
+
+  // // Exhaust reserves to see what last inode number is
+  // for (size_t i = 0; i < superblock->inode_block_count * (Block::BLOCK_SIZE / INode::INODE_SIZE) ; i++) {
+  //   try {
+  //     INode::ID id = inode_manager.reserve();
+  //     // Mark it as used
+  //     INode inode;
+  //     inode_manager.get(id, inode);
+  //     inode.type = FileType::REGULAR;
+  //     inode_manager.set(id, inode);
+  //   } catch (const std::exception& e) {
+  //     std::cout << "Can't allocate more than " << i+1 << " inodes." << std::endl;
+  //     break;
+  //    }
+  // }
+
+  // std::cout << "\n\n\n-------------\n";
+  // std::cout << "\033[1;32mSuccess. End of INode manager tests.\033[0m\n";
+  // std::cout << "-------------\n\n\n";
 
   return 0;
 }
