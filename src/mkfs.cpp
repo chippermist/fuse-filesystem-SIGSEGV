@@ -65,7 +65,8 @@ int main(int argc, char** argv) {
   Block::ID block_id_2 = blocks.reserve();
   std::cout << block_id_2 << std::endl;
 
-  for(int i=0; i<174*512; ++i) {
+  for(int i=0; i<170; ++i) {
+    std::cout << "i is " << i << std::endl;
     block_id = blocks.reserve();
     std::cout << block_id << std::endl;
   }

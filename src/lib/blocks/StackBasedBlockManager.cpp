@@ -89,6 +89,7 @@ void StackBasedBlockManager::mkfs() {
         std::cout << "first block is " << config->first_block << std::endl;
         std::cout << "last block is " << config->last_block << std::endl;
         std::cout << "index is " << config->index << std::endl;
+        std::cout << "last index is " << config->last_index_free_list << std::endl;
         std::cout << "-------------\nEnd of StackBasedBlockManager::mkfs()\n-------------\n";
         return;
       }
@@ -123,7 +124,7 @@ void StackBasedBlockManager::release(Block::ID free_block_num) {
   // If insertion causes index to overflow the block,
   // move to previous block in free list.
   if (this->index + 1 >= DatablockNode::NREFS) {
-    if (this->top_block_num == this->last_block) {
+    if (this->top_block_num == this->first_block) {
       throw std::out_of_range("Can't insert block at top of data block free list!");
     }
 
@@ -147,9 +148,10 @@ Block::ID StackBasedBlockManager::reserve() {
   DatablockNode *node = (DatablockNode *) &block;
 
   std::cout << "top_block_num: " << this->top_block_num << std::endl;
+  std::cout << "last_index_free_list " << this->last_index_free_list << std::endl; 
 
   // Check if free list is almost empty and refuse allocation of last block
-  if (this->top_block_num == this->first_block && this->index == this->last_index_free_list) {
+  if (this->top_block_num == this->last_block && this->index == this->last_index_free_list) {
     throw std::out_of_range("Can't get any more free blocks - free list is empty!");
   }
 
