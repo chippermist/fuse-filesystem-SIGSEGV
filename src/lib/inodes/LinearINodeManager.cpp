@@ -30,7 +30,7 @@ void LinearINodeManager::mkfs() {
 
     // Zero out each inode in the block except INode 0 of block 0
     for (uint64_t inode_index = 0; inode_index < num_inodes_per_block; inode_index++) {
-      if (block_index == 0 && inode_index == 0) {
+      if (block_index == start && inode_index == 0) {
         memset(&(block.data[inode_index * INode::INODE_SIZE]), FileType::REGULAR, INode::INODE_SIZE);
       } else {
         memset(&(block.data[inode_index * INode::INODE_SIZE]), FileType::FREE, INode::INODE_SIZE);
@@ -61,15 +61,16 @@ INode::ID LinearINodeManager::reserve() {
 }
 
 // Free an inode and return to the freelist
-void LinearINodeManager::release(INode::ID id) {
+void LinearINodeManager::release(INode::ID inode_num) {
 
   // Check if valid id
-  if (id >= this->num_inodes || id <= this->root) {
+  if (inode_num >= this->num_inodes || inode_num < this->root) {
     throw std::out_of_range("INode index is out of range!");
   }
 
-  uint64_t block_index = id / Block::BLOCK_SIZE;
-  uint64_t inode_index = id % Block::BLOCK_SIZE;
+  uint64_t num_inodes_per_block = (Block::BLOCK_SIZE / INode::INODE_SIZE);
+  uint64_t block_index = inode_num / num_inodes_per_block;
+  uint64_t inode_index = inode_num % num_inodes_per_block;
 
   // Load the inode and modify attribute
   Block block;
@@ -89,8 +90,9 @@ void LinearINodeManager::get(INode::ID inode_num, INode& user_inode) {
     throw std::out_of_range("INode index is out of range!");
   }
 
-  uint64_t block_index = inode_num / Block::BLOCK_SIZE;
-  uint64_t inode_index = inode_num % Block::BLOCK_SIZE;
+  uint64_t num_inodes_per_block = (Block::BLOCK_SIZE / INode::INODE_SIZE);
+  uint64_t block_index = inode_num / num_inodes_per_block;
+  uint64_t inode_index = inode_num % num_inodes_per_block;
 
   Block block;
   this->disk->get(1 + block_index, block);
@@ -106,8 +108,9 @@ void LinearINodeManager::set(INode::ID inode_num, const INode& user_inode) {
     throw std::out_of_range("INode index is out of range!");
   }
 
-  uint64_t block_index = inode_num / Block::BLOCK_SIZE;
-  uint64_t inode_index = inode_num % Block::BLOCK_SIZE;
+  uint64_t num_inodes_per_block = (Block::BLOCK_SIZE / INode::INODE_SIZE);
+  uint64_t block_index = inode_num / num_inodes_per_block;
+  uint64_t inode_index = inode_num % num_inodes_per_block;
 
   Block block;
   this->disk->get(1 + block_index, block);

@@ -72,7 +72,7 @@ void StackBasedBlockManager::mkfs() {
         config->top_block = start + count - 1;
         config->top_index = DatablockNode::NREFS - 1;
         config->first_block = start + count - 1;
-        superblock->data_block_count = free_block - count;
+        superblock->data_block_count = free_block - start - 1; // we don't allow allocation of last free block
         this->disk->set(0, superblock_blk);
 
         // Update class members with true values
