@@ -1,21 +1,27 @@
 #pragma once
 
+#include <cstring>
+#include <stdexcept>
+#include <cassert>
+#include "../Superblock.h"
 #include "../INodeManager.h"
 #include "../Storage.h"
 #include "../Block.h"
 
 class LinearINodeManager: public INodeManager {
 public:
-	LinearINodeManager(Storage& storage);
-	~LinearINodeManager();
+  LinearINodeManager(Storage& storage);
+  ~LinearINodeManager();
 
-	INode::ID reserve();
-	void release(INode::ID id);
-	void get(INode::ID id, INode& dst);
-	void set(INode::ID id, const INode& src);
-	INode::ID getRoot();
+  virtual void mkfs();
+  INode::ID reserve();
+  void release(INode::ID id);
+  void get(INode::ID id, INode& dst);
+  void set(INode::ID id, const INode& src);
+  INode::ID getRoot();
 
 private:
-	Storage *disk;
-	uint64_t num_inodes;
+  Storage *disk;
+  uint64_t num_inodes;
+  static const uint64_t root = 1;
 };

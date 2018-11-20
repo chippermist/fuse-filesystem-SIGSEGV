@@ -1,0 +1,14 @@
+sudo: required
+dist: trusty
+# Install fuse before installing our code.
+before_install:
+  - sudo apt-get install -qq fuse
+install: true
+notifications:
+  email:
+    on_failure: never
+    on_success: always
+
+language: cpp
+# since we don't have make test, specifying only to do 'make'
+script: make
