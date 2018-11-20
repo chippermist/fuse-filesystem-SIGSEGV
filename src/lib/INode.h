@@ -39,5 +39,5 @@ struct INode {
     (10 + 1024 + 1024 ** 2 + 1024 ** 3) * 4096 = 4402345713664 ~= pow(2, 42) bytes = 4 TB
    */
   Block::ID block_pointers[REF_BLOCKS_COUNT];
-  uint64_t __padding[23]; // padding to 256 bytes
+  uint64_t __padding[13]; // padding to 256 bytes
 };
