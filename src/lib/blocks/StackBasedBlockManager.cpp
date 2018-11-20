@@ -51,14 +51,14 @@ void StackBasedBlockManager::mkfs() {
 
   //debugging statements
   std::cout << "-------------\nWithin StackBasedBlockManager::mkfs()\n-------------\n";
-  std::cout << "\nCurrent free_block is: " << free_block << std::endl;
+  // std::cout << "\nCurrent free_block is: " << free_block << std::endl;
 
   // create the free_blocks[] list
   Block::ID curr = start;
   while(true) {
 
     for(int i = DatablockNode::NREFS - 1; i >= 0; --i) {
-      std::cout << "Current free_block is: " << free_block << std::endl;
+      std::cout << "Current curr is: " << curr << std::endl;
 
       // If there is a collision
       // exit condition
@@ -71,6 +71,7 @@ void StackBasedBlockManager::mkfs() {
         this->disk->get(0, block);
         superblock->data_block_count = superblock->data_block_count - free_block + 1;
         this->disk->set(0, block);
+        std::cout << "-------------\nEnd of StackBasedBlockManager::mkfs()\n-------------\n";
         return;
       }
 
