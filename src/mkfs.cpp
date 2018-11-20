@@ -17,13 +17,14 @@ int main(int argc, char** argv) {
   Block block;
   Superblock* superblock = (Superblock*) &block;
   str->get(0, block);
+  memset(&block, 0, Block::BLOCK_SIZE);
 
   superblock->block_size = Block::BLOCK_SIZE;
   superblock->block_count = nblocks;
 
   //unsure of -- very brute force association
   superblock->inode_block_start = 1;
-  superblock->inode_block_count = 10; //need to be changed based on calculations
+  superblock->inode_block_count = (nblocks * 2 * INode::INODE_SIZE) / (Block::BLOCK_SIZE); //need to be changed based on calculations
   superblock->data_block_start = superblock->inode_block_start + superblock->inode_block_count + 1;
   superblock->data_block_count = superblock->block_count - superblock->data_block_start;
 

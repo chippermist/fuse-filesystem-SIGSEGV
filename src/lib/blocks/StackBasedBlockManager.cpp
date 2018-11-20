@@ -44,24 +44,20 @@ void StackBasedBlockManager::mkfs() {
   // The intial block will start from 0
   Block::ID prev = 0;
   // If the superblock start was set then curr = start
-  Block::ID curr = start;
+  Block::ID curr;
   // The first available free block 
   Block::ID free_block = start + count - 1;
   DatablockNode* data = (DatablockNode*) &block;
+  memset(&block, 0, Block::BLOCK_SIZE);
 
   //debugging statements
   std::cout << "-------------\nWithin StackBasedBlockManager::mkfs()\n-------------\n";
   std::cout << "\nCurrent free_block is: " << free_block << std::endl;
 
-  // needs to be changed since the superblock should have count of total blocks
-  if(free_block == -1) {
-    free_block = 0;
-  }
-
   // create the free_blocks[] list
   while(true) {
     data->prev_block = prev;
-    data->next_block = curr + 1;
+    data->next_block = free_block - 1;
 
     // debugging statement
     // std::cout << "Current start is: " << curr << std::endl;
@@ -70,13 +66,14 @@ void StackBasedBlockManager::mkfs() {
       std::cout << "Current free_block is: " << free_block << std::endl;
       // If there is a collision
       // exit condition
-      if(free_block == curr) {
+      if(free_block == start) {
         data->next_block = 0;
         this->disk->set(curr, block);
 
         this->disk->get(0, block);
         superblock->data_block_start = curr;
         superblock->data_block_count = i;
+        //
         this->disk->set(0, block);
         std::cout << "-------------\nEnd of StackBasedBlockManager::mkfs() by (free_block == curr)\n-------------\n";
         return;
