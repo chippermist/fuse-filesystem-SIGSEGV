@@ -83,8 +83,8 @@ void StackBasedBlockManager::mkfs() {
         superblock->data_block_count = free_block - count + 1;
         this->disk->set(0, block);
 
-        memset(&block, 0, Block::BLOCK_SIZE);
-        this->disk->get(0, block);
+        // memset(&block, 0, Block::BLOCK_SIZE);
+        // this->disk->get(0, block);
         // std::cout << superblock->data_block_count << std:: endl;
         // std::cout << "first block is " << config->first_block << std::endl;
         // std::cout << "last block is " << config->last_block << std::endl;
