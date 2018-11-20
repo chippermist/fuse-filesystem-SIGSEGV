@@ -57,7 +57,7 @@ void StackBasedBlockManager::mkfs() {
   Block::ID curr = start;
   while(true) {
 
-    for(size_t i = DatablockNode::NREFS - 1; i >= 0; --i) {
+    for(int i = DatablockNode::NREFS - 1; i >= 0; --i) {
       std::cout << "Current free_block is: " << free_block << std::endl;
 
       // If there is a collision
