@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <cstdint>
+#include <cstring>
 #include "../BlockManager.h"
 #include "../Storage.h"
 #include "../Superblock.h"
