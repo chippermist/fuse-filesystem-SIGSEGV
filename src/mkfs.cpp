@@ -31,12 +31,12 @@ int main(int argc, char** argv) {
 
 
   // debugging statements to check value within superblock
-  std::cout << "Current block_size is: " << superblock->block_size << std::endl;
-  std::cout << "Current block_count is: " << superblock->block_count << std::endl;
-  std::cout << "Current inode_block_start is: " << superblock->inode_block_start << std::endl;
-  std::cout << "Current inode_block_count is: " << superblock->inode_block_count << std::endl;
-  std::cout << "Current data_block_start is: " << superblock->data_block_start << std::endl;
-  std::cout << "Current data_block_count is: " << superblock->data_block_count << std::endl;
+  // std::cout << "Current block_size is: " << superblock->block_size << std::endl;
+  // std::cout << "Current block_count is: " << superblock->block_count << std::endl;
+  // std::cout << "Current inode_block_start is: " << superblock->inode_block_start << std::endl;
+  // std::cout << "Current inode_block_count is: " << superblock->inode_block_count << std::endl;
+  // std::cout << "Current data_block_start is: " << superblock->data_block_start << std::endl;
+  // std::cout << "Current data_block_count is: " << superblock->data_block_count << std::endl;
 
   // setting the updated superblock to disk
   str->set(0, (Block&)*superblock);
@@ -51,24 +51,23 @@ int main(int argc, char** argv) {
 
   std::cout << "\nReserving a block 1\n";
   Block::ID block_id = blocks.reserve();
-  std::cout << block_id << std::endl;
+  std::cout << "Block Allocated: " << block_id << std::endl;
 
   std::cout << "\nReleasing a block 1\n";
   blocks.release(block_id);
 
   std::cout << "\nReserving a block 1\n";
   block_id = blocks.reserve();
-  std::cout << block_id << std::endl;
+  std::cout << "Block Allocated: " << block_id << std::endl;
 
   //blocks.release(block_id);
   std::cout << "\nReserving a block 2\n";
   Block::ID block_id_2 = blocks.reserve();
-  std::cout << block_id_2 << std::endl;
+  std::cout << "Block Allocated: " << block_id_2 << std::endl;
 
   for(int i=0; i<170; ++i) {
-    std::cout << "i is " << i << std::endl;
     block_id = blocks.reserve();
-    std::cout << block_id << std::endl;
+    std::cout << "Block Allocated: " << block_id << std::endl;
   }
 
   std::cout << "\n\n\n-------------\n";

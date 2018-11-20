@@ -60,7 +60,7 @@ void StackBasedBlockManager::mkfs() {
   while(true) {
 
     for(int i = DatablockNode::NREFS - 1; i >= 0; --i) {
-      std::cout << "Current curr is: " << curr << std::endl;
+      // std::cout << "Current curr is: " << curr << std::endl;
 
       // If there is a collision
       // exit condition
@@ -85,11 +85,11 @@ void StackBasedBlockManager::mkfs() {
 
         memset(&block, 0, Block::BLOCK_SIZE);
         this->disk->get(0, block);
-        std::cout << superblock->data_block_count << std:: endl;
-        std::cout << "first block is " << config->first_block << std::endl;
-        std::cout << "last block is " << config->last_block << std::endl;
-        std::cout << "index is " << config->index << std::endl;
-        std::cout << "last index is " << config->last_index_free_list << std::endl;
+        // std::cout << superblock->data_block_count << std:: endl;
+        // std::cout << "first block is " << config->first_block << std::endl;
+        // std::cout << "last block is " << config->last_block << std::endl;
+        // std::cout << "index is " << config->index << std::endl;
+        // std::cout << "last index is " << config->last_index_free_list << std::endl;
         std::cout << "-------------\nEnd of StackBasedBlockManager::mkfs()\n-------------\n";
         return;
       }
@@ -147,8 +147,8 @@ Block::ID StackBasedBlockManager::reserve() {
   Block block;
   DatablockNode *node = (DatablockNode *) &block;
 
-  std::cout << "top_block_num: " << this->top_block_num << std::endl;
-  std::cout << "last_index_free_list " << this->last_index_free_list << std::endl; 
+  // std::cout << "top_block_num: " << this->top_block_num << std::endl;
+  // std::cout << "last_index_free_list " << this->last_index_free_list << std::endl; 
 
   // Check if free list is almost empty and refuse allocation of last block
   if (this->top_block_num == this->last_block && this->index == this->last_index_free_list) {
