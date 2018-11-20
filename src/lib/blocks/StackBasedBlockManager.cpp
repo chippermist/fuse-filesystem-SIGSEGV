@@ -72,19 +72,21 @@ void StackBasedBlockManager::mkfs() {
         Config* config = (Config*) superblock->data_config;
         // std::cout << count << " " << curr << " " <<  std::endl;
         // std::cout << start << std::endl;
-        this->first_block = config->first_block = free_block - 1;
-        this->last_block  = config->last_block  = start;
+        this->first_block = config->first_block = start;
+        this->index = config->index = 511;
+        this->top_block_num = this->last_block  = config->last_block  = free_block;
 
-        memcpy(superblock->data_config, config, sizeof(superblock->data_config));
+        // memcpy(superblock->data_config, config, sizeof(superblock->data_config));
         // std::cout << superblock->data_block_count << std:: endl;
         superblock->data_block_count = free_block - count + 1;
         this->disk->set(0, block);
 
-        // memset(&block, 0, Block::BLOCK_SIZE);
-        // this->disk->get(0, block);
-        // std::cout << superblock->data_block_count << std:: endl;
-        // std::cout << "first block is " << config->first_block << std::endl;
-        // std::cout << "last block is " << config->last_block << std::endl;
+        memset(&block, 0, Block::BLOCK_SIZE);
+        this->disk->get(0, block);
+        std::cout << superblock->data_block_count << std:: endl;
+        std::cout << "first block is " << config->first_block << std::endl;
+        std::cout << "last block is " << config->last_block << std::endl;
+        std::cout << "index is " << config->index << std::endl;
         std::cout << "-------------\nEnd of StackBasedBlockManager::mkfs()\n-------------\n";
         return;
       }
@@ -142,7 +144,7 @@ Block::ID StackBasedBlockManager::reserve() {
   Block block;
   DatablockNode *node = (DatablockNode *) &block;
 
-  std::cout << this->last_block << std::endl;
+  std::cout << "top_block_num: " << this->top_block_num << std::endl;
 
   // Check if free list is almost empty and refuse allocation of last block
   if (this->index == 0 && this->top_block_num == this->first_block) {

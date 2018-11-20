@@ -47,13 +47,31 @@ int main(int argc, char** argv) {
   Filesystem filesystem(blocks, inodes);
   filesystem.mkfs();
 
+  std::cout << "\n\n\n-------------\nTesting mkfs()->reserve()->release()\n-------------\n\n\n";
+
+  std::cout << "\nReserving a block 1\n";
   Block::ID block_id = blocks.reserve();
   std::cout << block_id << std::endl;
 
+  std::cout << "\nReleasing a block 1\n";
   blocks.release(block_id);
 
+  std::cout << "\nReserving a block 1\n";
   block_id = blocks.reserve();
   std::cout << block_id << std::endl;
+
+  //blocks.release(block_id);
+  std::cout << "\nReserving a block 2\n";
+  Block::ID block_id_2 = blocks.reserve();
+  std::cout << block_id_2 << std::endl;
+
+  for(int i=0; i<174*512; ++i) {
+    block_id = blocks.reserve();
+    std::cout << block_id << std::endl;
+  }
+
+  std::cout << "\n\n\n-------------\nSuccess. End of test.\n-------------\n\n\n";
+
 
   return 0;
 }
