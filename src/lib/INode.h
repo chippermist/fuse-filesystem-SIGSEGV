@@ -36,8 +36,8 @@ struct INode {
   /*
     Max File Size Computation
     10 direct blocks, 1 single indirect block, 1 double indirect block, 1 triple indirect block
-    (10 + 1024 + 1024 ** 2 + 1024 ** 3) * 4096 = 4402345713664 ~= pow(2, 42) bytes = 4 TB
+    (10 + 512 + 512 ** 2 + 512 ** 3) * 4096 = 550831693824 ~= pow(2, 39) bytes = 512 GB
    */
   Block::ID block_pointers[REF_BLOCKS_COUNT];
-  uint64_t __padding[23]; // padding to 256 bytes
+  uint64_t __padding[13]; // padding to 256 bytes
 };

@@ -48,6 +48,7 @@ int main(int argc, char** argv) {
   disk->get(0, block);
   std::cout << "INode block count: " << superblock->inode_block_count << std::endl;
   std::cout << "Real data block count: " << superblock->data_block_count << std::endl;
+  std::cout << "Size of Inode: " << sizeof(INode) << std::endl;
   // std::cout << "Should be wasting 1-2 data blocks" << std::endl;
 
   /*
