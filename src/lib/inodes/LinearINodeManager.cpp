@@ -31,9 +31,9 @@ void LinearINodeManager::mkfs() {
     // Zero out each inode in the block except INode 0 of block 0
     for (uint64_t inode_index = 0; inode_index < num_inodes_per_block; inode_index++) {
       if (block_index == 0 && inode_index == 0) {
-        memset(&(block.data[inode_index * INode::INODE_SIZE]), FileType::REGULAR, sizeof(INode));
+        memset(&(block.data[inode_index * INode::INODE_SIZE]), FileType::REGULAR, INode::INODE_SIZE);
       } else {
-        memset(&(block.data[inode_index * INode::INODE_SIZE]), FileType::FREE, sizeof(INode));
+        memset(&(block.data[inode_index * INode::INODE_SIZE]), FileType::FREE, INode::INODE_SIZE);
       }
     }
     this->disk->set(block_index, block);

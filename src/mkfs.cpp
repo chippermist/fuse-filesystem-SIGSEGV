@@ -26,7 +26,11 @@ int main(int argc, char** argv) {
 
   // Have approximately 1 inode per 2048 bytes of disk space
   superblock->inode_block_start = 1;
-  superblock->inode_block_count = ((nblocks * Block::BLOCK_SIZE) / 2048 * INode::INODE_SIZE) / (Block::BLOCK_SIZE);
+  if (((nblocks * Block::BLOCK_SIZE) / 2048 * INode::INODE_SIZE) % Block::BLOCK_SIZE == 0) {
+    superblock->inode_block_count = ((nblocks * Block::BLOCK_SIZE) / 2048 * INode::INODE_SIZE) / Block::BLOCK_SIZE;
+  } else {
+    superblock->inode_block_count = ((nblocks * Block::BLOCK_SIZE) / 2048 * INode::INODE_SIZE) / Block::BLOCK_SIZE + 1;
+  }
   superblock->data_block_start = superblock->inode_block_start + superblock->inode_block_count + 1;
   superblock->data_block_count = superblock->block_count - superblock->data_block_start;
 
@@ -40,6 +44,8 @@ int main(int argc, char** argv) {
   filesystem.mkfs();
 
   // Debug stuff
+  std::cout << "Inode block count: " << superblock->inode_block_count << std::endl;
+  std::cout << "Number of INodes per block: " << Block::BLOCK_SIZE / INode::INODE_SIZE << std::endl;
   std::cout << "\n\n\n-------------\nTesting mkfs()->reserve()->release()\n-------------\n\n\n";
 
   std::cout << "\nReserving a block 1\n";
