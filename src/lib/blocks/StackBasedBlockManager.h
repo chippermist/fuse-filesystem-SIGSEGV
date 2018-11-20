@@ -10,7 +10,7 @@ class StackBasedBlockManager: public BlockManager {
 public:
   StackBasedBlockManager(Storage& disk);
   ~StackBasedBlockManager();
-  
+
   virtual void mkfs();
   virtual void release(Block::ID block_num);
   virtual Block::ID reserve();
@@ -21,4 +21,6 @@ private:
   Block::ID top_block_num;
   uint64_t index;
   Storage* disk;
+  uint64_t first_block;
+  uint64_t last_block;
 };

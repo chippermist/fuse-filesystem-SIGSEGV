@@ -4,10 +4,7 @@
 // Anonymous namespace for file-local types:
 namespace {
   struct DatablockNode {
-    static const int NREFS = (Block::BLOCK_SIZE / sizeof(Block::ID) - 2);
-
-    Block::ID prev_block = 0;
-    Block::ID next_block = 0;
+    static const int NREFS = (Block::BLOCK_SIZE / sizeof(Block::ID));
     Block::ID free_blocks[NREFS];
   };
 
@@ -15,6 +12,8 @@ namespace {
     uint64_t  magic; // Magic number to identify this block manager (ignored for now)
     Block::ID block; // Block ID of the top block on the stack
     uint64_t  index; // Index of the first free ref in that block
+    uint64_t  last_block;
+    uint64_t  first_block;
   };
 }
 
@@ -26,6 +25,8 @@ StackBasedBlockManager::StackBasedBlockManager(Storage& storage): disk(&storage)
 
   this->top_block_num = config->block;
   this->index         = config->index;
+  this->last_block    = config->last_block;
+  this->first_block    = config->first_block;
 }
 
 StackBasedBlockManager::~StackBasedBlockManager() {}
@@ -45,7 +46,7 @@ void StackBasedBlockManager::mkfs() {
   Block::ID prev = 0;
   // If the superblock start was set then curr = start
   Block::ID curr = start;
-  // The first available free block 
+  // The first available free block
   Block::ID free_block = start + count - 1;
   DatablockNode* data = (DatablockNode*) &block;
 
@@ -110,23 +111,22 @@ void StackBasedBlockManager::release(Block::ID free_block_num) {
   // Read top block in freelist from disk
   Block block;
   DatablockNode *node = (DatablockNode *) &block;
-  this->disk->get(this->top_block_num, block);
 
   // If insertion causes index to overflow the block,
   // move to previous block in free list.
   if (this->index + 1 >= DatablockNode::NREFS) {
-    if (!node->prev_block) {
+    if (this->top_block_num == this->last_block) {
       throw std::out_of_range("Can't insert block at top of data block free list!");
     }
 
-    this->top_block_num = node->prev_block;
-    this->disk->get(this->top_block_num, block);
-    index = 0;
+    this->top_block_num = this->top_block_num + 1;
+    this->index = 0;
   } else {
-    index++;
+    this->index++;
   }
 
   // Update the free list
+  this->disk->get(this->top_block_num, block);
   node->free_blocks[this->index] = free_block_num;
   this->disk->set(this->top_block_num, block);
   this->update_superblock();
@@ -137,18 +137,18 @@ Block::ID StackBasedBlockManager::reserve() {
   // Read top block
   Block block;
   DatablockNode *node = (DatablockNode *) &block;
-  this->disk->get(this->top_block_num, block);
 
   // Check if free list is almost empty and refuse allocation of last block
-  if (!node->next_block && !this->index) {
+  if (this->index == 0 && this->top_block_num == this->first_block) {
     throw std::out_of_range("Can't get any more free blocks - free list is empty!");
   }
 
   // Get next free block
+  this->disk->get(this->top_block_num, block);
   Block::ID free_block_num = node->free_blocks[this->index];
-  if (!this->index) {
+  if (this->index == 0) {
     this->index = DatablockNode::NREFS - 1;
-    this->top_block_num = node->next_block;
+    this->top_block_num--;
   } else {
     this->index--;
   }
