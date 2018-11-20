@@ -10,6 +10,7 @@ int main(int argc, char** argv) {
   }
 
   uint64_t nblocks = atoi(argv[1]);
+  nblocks = 2884106;
   // std::cout << nblocks << std::endl;
   Storage *str = new MemoryStorage(nblocks);
 
@@ -45,5 +46,14 @@ int main(int argc, char** argv) {
 
   Filesystem filesystem(blocks, inodes);
   filesystem.mkfs();
+
+  Block::ID block_id = blocks.reserve();
+  std::cout << block_id << std::endl;
+
+  blocks.release(block_id);
+
+  block_id = blocks.reserve();
+  std::cout << block_id << std::endl;
+
   return 0;
 }
