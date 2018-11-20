@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstring>
+#include <stdexcept>
+#include <cassert>
+#include "../Superblock.h"
 #include "../INodeManager.h"
 #include "../Storage.h"
 #include "../Block.h"

@@ -1,10 +1,4 @@
 #include "LinearINodeManager.h"
-#include "../Superblock.h"
-
-#include <cstring>
-#include <stdexcept>
-#include <iostream>
-#include <cassert>
 
 LinearINodeManager::LinearINodeManager(Storage& storage): disk(&storage) {
   Block block;

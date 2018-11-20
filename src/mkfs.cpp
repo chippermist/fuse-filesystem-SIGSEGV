@@ -1,4 +1,4 @@
-#include <iodiskeam>
+#include <iostream>
 #include "lib/Filesystem.h"
 #include "lib/blocks/StackBasedBlockManager.h"
 #include "lib/inodes/LinearINodeManager.h"
@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 
   // Have approximately 1 inode per 2048 bytes of disk space
   superblock->inode_block_start = 1;
-  superblock->inode_block_count = ((nblocks * Block::SIZE) / 2048 * INode::INODE_SIZE) / (Block::BLOCK_SIZE);
+  superblock->inode_block_count = ((nblocks * Block::BLOCK_SIZE) / 2048 * INode::INODE_SIZE) / (Block::BLOCK_SIZE);
   superblock->data_block_start = superblock->inode_block_start + superblock->inode_block_count + 1;
   superblock->data_block_count = superblock->block_count - superblock->data_block_start;
 
@@ -66,7 +66,6 @@ int main(int argc, char** argv) {
   std::cout << "\n\n\n-------------\n";
   std::cout << "\033[1;32mSuccess. End of test.\033[0m\n";
   std::cout << "-------------\n\n\n";
-
 
   return 0;
 }

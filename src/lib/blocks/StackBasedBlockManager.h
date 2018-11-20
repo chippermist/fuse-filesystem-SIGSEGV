@@ -19,10 +19,10 @@ public:
   void update_superblock();
 
 private:
-  Block::ID top_block_num;
-  uint64_t index;
+  Block::ID top_block;
+  uint64_t top_index;
+  uint64_t last_index;
+  Block::ID first_block;
+  Block::ID last_block;
   Storage* disk;
-  uint64_t first_block;
-  uint64_t last_block;
-  uint64_t last_index_free_list;
 };
