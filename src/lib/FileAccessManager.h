@@ -30,7 +30,7 @@ private:
   INode::ID componentLookup(INode::ID cur_inode_num, std::string filename);
   INode::ID directLookup(Block *directory, std::string filename);
   Block::ID indirectBlockAt(Block::ID bid, uint64_t offset, uint64_t size);
-  void allocateNextBlock(INode& file_inode);
+  Block::ID allocateNextBlock(INode& file_inode);
   size_t appendData(INode& file_inode, char *buf, size_t size, size_t offset, bool null_filler);
 
 };
