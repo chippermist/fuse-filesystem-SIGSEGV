@@ -1,72 +1,65 @@
-#include <iostream>
+#include <iodiskeam>
 #include "lib/Filesystem.h"
 #include "lib/blocks/StackBasedBlockManager.h"
 #include "lib/inodes/LinearINodeManager.h"
 #include "lib/storage/MemoryStorage.h"
 
 int main(int argc, char** argv) {
-  if(argc < 2) {
+
+  // Read number of blocks on disk
+  if (argc < 2) {
     std::cout << "Not Enough Arguments." << std::endl;
   }
 
   uint64_t nblocks = atoi(argv[1]);
-  //nblocks = 2884106;
-  // std::cout << nblocks << std::endl;
-  Storage *str = new MemoryStorage(nblocks);
+  Storage *disk = new MemoryStorage(nblocks);
 
-  //Super block needs to be set before the mkfs() functions are called
+  // Get superblock and clear it out
   Block block;
   Superblock* superblock = (Superblock*) &block;
-  str->get(0, block);
+  disk->get(0, block);
   memset(&block, 0, Block::BLOCK_SIZE);
 
+  // Set basic superblock parameters
   superblock->block_size = Block::BLOCK_SIZE;
   superblock->block_count = nblocks;
 
-  //unsure of -- very brute force association
+  // Have approximately 1 inode per 2048 bytes of disk space
   superblock->inode_block_start = 1;
-  superblock->inode_block_count = (nblocks * 2 * INode::INODE_SIZE) / (Block::BLOCK_SIZE); //need to be changed based on calculations
+  superblock->inode_block_count = ((nblocks * Block::SIZE) / 2048 * INode::INODE_SIZE) / (Block::BLOCK_SIZE);
   superblock->data_block_start = superblock->inode_block_start + superblock->inode_block_count + 1;
   superblock->data_block_count = superblock->block_count - superblock->data_block_start;
 
+  // Write superblock to disk
+  disk->set(0, block);
 
-  // debugging statements to check value within superblock
-  // std::cout << "Current block_size is: " << superblock->block_size << std::endl;
-  // std::cout << "Current block_count is: " << superblock->block_count << std::endl;
-  // std::cout << "Current inode_block_start is: " << superblock->inode_block_start << std::endl;
-  // std::cout << "Current inode_block_count is: " << superblock->inode_block_count << std::endl;
-  // std::cout << "Current data_block_start is: " << superblock->data_block_start << std::endl;
-  // std::cout << "Current data_block_count is: " << superblock->data_block_count << std::endl;
-
-  // setting the updated superblock to disk
-  str->set(0, (Block&)*superblock);
-
-  LinearINodeManager inodes(*str);
-  StackBasedBlockManager blocks(*str);
-
-  Filesystem filesystem(blocks, inodes);
+  // Initialize managers and call mkfs
+  LinearINodeManager inode_manager(*disk);
+  StackBasedBlockManager block_manager(*disk);
+  Filesystem filesystem(block_manager, inode_manager);
   filesystem.mkfs();
 
+  // Debug stuff
   std::cout << "\n\n\n-------------\nTesting mkfs()->reserve()->release()\n-------------\n\n\n";
 
   std::cout << "\nReserving a block 1\n";
-  Block::ID block_id = blocks.reserve();
+  Block::ID block_id = block_manager.reserve();
   std::cout << "Block Allocated: " << block_id << std::endl;
 
   std::cout << "\nReleasing a block 1\n";
-  blocks.release(block_id);
+  block_manager.release(block_id);
 
   std::cout << "\nReserving a block 1\n";
-  block_id = blocks.reserve();
+  block_id = block_manager.reserve();
   std::cout << "Block Allocated: " << block_id << std::endl;
 
-  //blocks.release(block_id);
+  //block_manager.release(block_id);
   std::cout << "\nReserving a block 2\n";
-  Block::ID block_id_2 = blocks.reserve();
+  Block::ID block_id_2 = block_manager.reserve();
   std::cout << "Block Allocated: " << block_id_2 << std::endl;
 
   for(int i=0; i<170; ++i) {
-    block_id = blocks.reserve();
+    block_id = block_manager.reserve();
     std::cout << "Block Allocated: " << block_id << std::endl;
   }
 

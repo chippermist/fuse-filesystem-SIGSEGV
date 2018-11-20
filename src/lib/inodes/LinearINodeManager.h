@@ -20,4 +20,5 @@ public:
 private:
   Storage *disk;
   uint64_t num_inodes;
+  static const uint64_t root = 2;
 };
