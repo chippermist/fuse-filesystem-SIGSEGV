@@ -26,7 +26,7 @@ StackBasedBlockManager::StackBasedBlockManager(Storage& storage): disk(&storage)
   this->top_block_num = config->block;
   this->index         = config->index;
   this->last_block    = config->last_block;
-  this->first_block    = config->first_block;
+  this->first_block   = config->first_block;
 }
 
 StackBasedBlockManager::~StackBasedBlockManager() {}
@@ -69,8 +69,22 @@ void StackBasedBlockManager::mkfs() {
 
         // Update superblock with true number of datablocks
         this->disk->get(0, block);
-        superblock->data_block_count = superblock->data_block_count - free_block + 1;
+        Config* config = (Config*) superblock->data_config;
+        // std::cout << count << " " << curr << " " <<  std::endl;
+        // std::cout << start << std::endl;
+        this->first_block = config->first_block = free_block - 1;
+        this->last_block  = config->last_block  = start;
+
+        memcpy(superblock->data_config, config, sizeof(superblock->data_config));
+        // std::cout << superblock->data_block_count << std:: endl;
+        superblock->data_block_count = free_block - count + 1;
         this->disk->set(0, block);
+
+        // memset(&block, 0, Block::BLOCK_SIZE);
+        // this->disk->get(0, block);
+        // std::cout << superblock->data_block_count << std:: endl;
+        // std::cout << "first block is " << config->first_block << std::endl;
+        // std::cout << "last block is " << config->last_block << std::endl;
         std::cout << "-------------\nEnd of StackBasedBlockManager::mkfs()\n-------------\n";
         return;
       }
@@ -127,6 +141,8 @@ Block::ID StackBasedBlockManager::reserve() {
   // Read top block
   Block block;
   DatablockNode *node = (DatablockNode *) &block;
+
+  std::cout << this->last_block << std::endl;
 
   // Check if free list is almost empty and refuse allocation of last block
   if (this->index == 0 && this->top_block_num == this->first_block) {

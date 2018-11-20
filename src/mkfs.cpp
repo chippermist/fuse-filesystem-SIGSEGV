@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
   }
 
   uint64_t nblocks = atoi(argv[1]);
-  nblocks = 2884106;
+  //nblocks = 2884106;
   // std::cout << nblocks << std::endl;
   Storage *str = new MemoryStorage(nblocks);
 
