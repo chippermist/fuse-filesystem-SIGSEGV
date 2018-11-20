@@ -14,6 +14,7 @@ namespace {
     uint64_t  index; // Index of the first free ref in that block
     uint64_t  last_block;
     uint64_t  first_block;
+    uint64_t  last_index_free_list;
   };
 }
 
@@ -23,10 +24,11 @@ StackBasedBlockManager::StackBasedBlockManager(Storage& storage): disk(&storage)
   Config* config = (Config*) superblock->data_config;
   this->disk->get(0, block);
 
-  this->top_block_num = config->block;
-  this->index         = config->index;
-  this->last_block    = config->last_block;
-  this->first_block   = config->first_block;
+  this->top_block_num        = config->block;
+  this->index                = config->index;
+  this->last_block           = config->last_block;
+  this->first_block          = config->first_block;
+  this->last_index_free_list = config->last_index_free_list;
 }
 
 StackBasedBlockManager::~StackBasedBlockManager() {}
@@ -75,7 +77,7 @@ void StackBasedBlockManager::mkfs() {
         this->first_block = config->first_block = start;
         this->index = config->index = 511;
         this->top_block_num = this->last_block  = config->last_block  = free_block;
-
+        this->last_index_free_list = config->last_index_free_list =  i;
         // memcpy(superblock->data_config, config, sizeof(superblock->data_config));
         // std::cout << superblock->data_block_count << std:: endl;
         superblock->data_block_count = free_block - count + 1;
@@ -147,7 +149,7 @@ Block::ID StackBasedBlockManager::reserve() {
   std::cout << "top_block_num: " << this->top_block_num << std::endl;
 
   // Check if free list is almost empty and refuse allocation of last block
-  if (this->index == 0 && this->top_block_num == this->first_block) {
+  if (this->top_block_num == this->first_block && this->index == this->last_index_free_list) {
     throw std::out_of_range("Can't get any more free blocks - free list is empty!");
   }
 

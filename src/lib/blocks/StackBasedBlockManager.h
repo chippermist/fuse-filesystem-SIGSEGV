@@ -24,4 +24,5 @@ private:
   Storage* disk;
   uint64_t first_block;
   uint64_t last_block;
+  uint64_t last_index_free_list;
 };

@@ -70,7 +70,9 @@ int main(int argc, char** argv) {
     std::cout << block_id << std::endl;
   }
 
-  std::cout << "\n\n\n-------------\nSuccess. End of test.\n-------------\n\n\n";
+  std::cout << "\n\n\n-------------\n";
+  std::cout << "\033[1;32mSuccess. End of test.\033[0m\n";
+  std::cout << "-------------\n\n\n";
 
 
   return 0;
