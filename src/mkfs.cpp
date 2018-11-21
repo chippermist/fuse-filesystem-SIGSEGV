@@ -19,18 +19,18 @@ int main(int argc, char** argv) {
   Block block;
   Superblock* superblock = (Superblock*) &block;
   disk->get(0, block);
-  memset(&block, 0, Block::BLOCK_SIZE);
+  memset(&block, 0, Block::SIZE);
 
   // Set basic superblock parameters
-  superblock->block_size = Block::BLOCK_SIZE;
+  superblock->block_size = Block::SIZE;
   superblock->block_count = nblocks;
 
   // Have approximately 1 inode per 2048 bytes of disk space
   superblock->inode_block_start = 1;
-  if (((nblocks * Block::BLOCK_SIZE) / 2048 * INode::INODE_SIZE) % Block::BLOCK_SIZE == 0) {
-    superblock->inode_block_count = ((nblocks * Block::BLOCK_SIZE) / 2048 * INode::INODE_SIZE) / Block::BLOCK_SIZE;
+  if (((nblocks * Block::SIZE) / 2048 * INode::SIZE) % Block::SIZE == 0) {
+    superblock->inode_block_count = ((nblocks * Block::SIZE) / 2048 * INode::SIZE) / Block::SIZE;
   } else {
-    superblock->inode_block_count = ((nblocks * Block::BLOCK_SIZE) / 2048 * INode::INODE_SIZE) / Block::BLOCK_SIZE + 1;
+    superblock->inode_block_count = ((nblocks * Block::SIZE) / 2048 * INode::SIZE) / Block::SIZE + 1;
   }
   superblock->data_block_start = superblock->inode_block_start + superblock->inode_block_count;
   superblock->data_block_count = superblock->block_count - superblock->data_block_start;
@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
 
   // // Reserve, release, reserve
   // std::vector<INode::ID> inode_ids;
-  // for (size_t i = 0; i < superblock->inode_block_count * (Block::BLOCK_SIZE / INode::INODE_SIZE) - 1; i++) {
+  // for (size_t i = 0; i < superblock->inode_block_count * (Block::SIZE / INode::SIZE) - 1; i++) {
   //   INode::ID id = inode_manager.reserve();
   //   std::cout << "Reserved: " << id << std::endl;
   //   inode_ids.push_back(id);
@@ -118,7 +118,7 @@ int main(int argc, char** argv) {
   //   inode_manager.release(*i);
   // }
 
-  // for (size_t i = 0; i < superblock->inode_block_count * (Block::BLOCK_SIZE / INode::INODE_SIZE) - 1; i++) {
+  // for (size_t i = 0; i < superblock->inode_block_count * (Block::SIZE / INode::SIZE) - 1; i++) {
   //   INode::ID id = inode_manager.reserve();
   //   std::cout << "Reserved: " << id << std::endl;
   //   assert(id == inode_ids[i]);
@@ -135,7 +135,7 @@ int main(int argc, char** argv) {
   // }
 
   // // Exhaust reserves to see what last inode number is
-  // for (size_t i = 0; i < superblock->inode_block_count * (Block::BLOCK_SIZE / INode::INODE_SIZE) ; i++) {
+  // for (size_t i = 0; i < superblock->inode_block_count * (Block::SIZE / INode::SIZE) ; i++) {
   //   try {
   //     INode::ID id = inode_manager.reserve();
   //     // Mark it as used
