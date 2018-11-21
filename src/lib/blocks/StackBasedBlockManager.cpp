@@ -3,7 +3,7 @@
 // Anonymous namespace for file-local types:
 namespace {
   struct DatablockNode {
-    static const int NREFS = (Block::BLOCK_SIZE / sizeof(Block::ID));
+    static const int NREFS = (Block::SIZE / sizeof(Block::ID));
     Block::ID free_blocks[NREFS];
   };
 
