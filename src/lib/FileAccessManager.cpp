@@ -21,18 +21,18 @@ FileAccessManager::~FileAccessManager() {
  * - Gave name of directory
  * - TODO: Incorrect ownership/permissions
  */
-size_t FileAccessManager::write(std::string path, char *buf, size_t size, size_t offset) {
+int FileAccessManager::write(std::string path, char *buf, size_t size, size_t offset) {
 
   // Read the file's inode and do some sanity checks
   INode::ID file_inode_num = getINodeFromPath(path);
   if (file_inode_num == 0) {
-    return 0; // File not found
+    return -1; // File not found
   }
   INode file_inode;
   this->inode_manager->get(file_inode_num, file_inode);
 
   if (file_inode.type != FileType::REGULAR) {
-    return 0; // File is not a regular file
+    return -1; // File is not a regular file
   }
 
   // TODO: Check ownership and permissions
@@ -278,7 +278,7 @@ Block::ID FileAccessManager::allocateNextBlock(INode& file_inode) {
     this->disk->get(double_indirect_ptrs[block_idx_in_level / (scale * scale)], single_indirect_ptrs_blk);
 
     // 5. Check if need block for direct pointers
-    size_t block_idx_in_level_two = block_idx_in_level % (scale * scale);
+    Block::ID block_idx_in_level_two = block_idx_in_level % (scale * scale);
     if (block_idx_in_level_two % scale == 0) {
       single_indirect_ptrs[block_idx_in_level_two / scale] = this->block_manager->reserve();
       this->disk->set(double_indirect_ptrs[block_idx_in_level / (scale * scale)], single_indirect_ptrs_blk);
@@ -304,22 +304,22 @@ Block::ID FileAccessManager::allocateNextBlock(INode& file_inode) {
   return data_block_num;
 }
 
-size_t FileAccessManager::read(std::string path, char *buf, size_t size, size_t offset) {
+int FileAccessManager::read(std::string path, char *buf, size_t size, size_t offset) {
 
   // Read the file's inode and do some sanity checks
   INode::ID file_inode_num = getINodeFromPath(path);
   if (file_inode_num == 0) {
-    return 0; // File not found
+    return -1; // File not found
   }
   INode file_inode;
   this->inode_manager->get(file_inode_num, file_inode);
 
   if (file_inode.type != FileType::REGULAR) {
-    return 0; // File is not a regular file
+    return -1; // File is not a regular file
   }
 
   if (offset >= file_inode.size) {
-    return 0; // Can't begin reading from after file
+    return -1; // Can't begin reading from after file
   }
 
   // Only read until the end of the file
@@ -407,6 +407,169 @@ Block::ID FileAccessManager::indirectBlockAt(Block::ID bid, uint64_t offset, uin
 
   uint64_t scale = Block::SIZE / sizeof(Block::ID);
   return indirectBlockAt(refs[index], offset % size, size / scale);
+}
+
+int FileAccessManager::truncate(std::string path, size_t length) {
+
+  // Read the file's inode and do some sanity checks
+  INode::ID file_inode_num = getINodeFromPath(path);
+  if (file_inode_num == 0) {
+    return -1; // File not found
+  }
+  INode file_inode;
+  this->inode_manager->get(file_inode_num, file_inode);
+
+  if (file_inode.type != FileType::REGULAR) {
+    return -1; // File is not a regular file
+  }
+
+  if (file_inode.size == length) {
+    return 0;
+  }
+
+  // If increasing size, fill with NULL bytes
+  if (length > file_inode.size) {
+    appendData(file_inode, NULL, file_inode.size - length, file_inode.size, true);
+    return 0;
+  } else {
+
+    // Remove data from first block
+    if (file_inode.size % Block::SIZE != 0) {
+
+      // If removing remainder of first block is too much, just truncate to the desired length
+      if (file_inode.size % Block::SIZE > file_inode.size - length) {
+        file_inode.size = length;
+        return 0;
+      }
+
+      file_inode.size -= file_inode.size % Block::SIZE;
+      deallocateLastBlock(file_inode);
+
+      if (file_inode.size == length) {
+        return 0;
+      }
+    }
+
+    // Remove other blocks
+    assert(file_inode.size % Block::SIZE == 0);
+    while (file_inode.size - Block::SIZE >= length) {
+      deallocateLastBlock(file_inode);
+      file_inode.size -= Block::SIZE;
+    }
+
+    // Remove remainder of last block, if any
+    if (file_inode.size > length) {
+      file_inode.size = length;
+    }
+    return 0;
+  }
+}
+
+void FileAccessManager::deallocateLastBlock(INode& file_inode) {
+
+  size_t scale = Block::SIZE / sizeof(Block::ID);
+  size_t logical_blk_num = file_inode.blocks;
+
+  if (logical_blk_num <= INode::DIRECT_POINTERS) {
+
+    // Direct block
+
+    // 1. Just deallocate in inode
+    this->block_manager->release(file_inode.block_pointers[file_inode.blocks]);
+
+  } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale) {
+
+    // Single-indirect
+
+    // 1. Load in first level block
+    Block direct_ptrs_blk;
+    Block::ID *direct_ptrs = (Block::ID *) &direct_ptrs_blk;
+    this->disk->get(file_inode.block_pointers[INode::DIRECT_POINTERS], direct_ptrs_blk);
+
+    // 2. Dellocate the direct block
+    this->block_manager->release(direct_ptrs[logical_blk_num - INode::DIRECT_POINTERS - 1]);
+
+		// 3. If first block in first level, relesae the first level block as well
+		if (logical_blk_num == INode::DIRECT_POINTERS + 1) {
+			this->block_manager->release(file_inode.block_pointers[INode::DIRECT_POINTERS]);
+		}
+
+  } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale + (scale * scale)) {
+
+    // Double-indirect
+
+    // 1. Load in first level block
+    Block single_indirect_ptrs_blk;
+    Block::ID *single_indirect_ptrs = (Block::ID *) &single_indirect_ptrs_blk;
+    this->disk->get(file_inode.block_pointers[INode::DIRECT_POINTERS + 1], single_indirect_ptrs_blk);
+
+    Block::ID block_idx_in_level = logical_blk_num - INode::DIRECT_POINTERS - scale - 1;
+
+    // 2. Load in second level block
+    Block direct_ptrs_blk;
+    Block::ID *direct_ptrs = (Block::ID *) &direct_ptrs_blk;
+    this->disk->get(single_indirect_ptrs[block_idx_in_level / scale], direct_ptrs_blk);
+
+    // 3. Deallocate the direct block
+    this->block_manager->release(direct_ptrs[block_idx_in_level % scale]);
+
+		// 4. Check if first block in second level
+		if (block_idx_in_level % scale == 0) {
+			this->block_manager->release(single_indirect_ptrs[block_idx_in_level / scale]);
+		}
+
+		// 5. Check if first block in first level
+		if (logical_blk_num == INode::DIRECT_POINTERS + scale + 1) {
+			this->block_manager->release(file_inode.block_pointers[INode::DIRECT_POINTERS + 1]);
+		}
+
+  } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale + (scale * scale) + (scale * scale * scale)) {
+    // Triple-indirect
+
+    // 1. Load in first level block
+    Block double_indirect_ptrs_blk;
+    Block::ID *double_indirect_ptrs = (Block::ID *) &double_indirect_ptrs_blk;
+    this->disk->get(file_inode.block_pointers[INode::DIRECT_POINTERS + 2], double_indirect_ptrs_blk);
+
+    Block::ID block_idx_in_level = logical_blk_num - INode::DIRECT_POINTERS - scale - scale * scale - 1;
+
+    // 2. Load in second level block
+    Block single_indirect_ptrs_blk;
+    Block::ID *single_indirect_ptrs = (Block::ID *) &single_indirect_ptrs_blk;
+    this->disk->get(double_indirect_ptrs[block_idx_in_level / (scale * scale)], single_indirect_ptrs_blk);
+
+    Block::ID block_idx_in_level_two = block_idx_in_level % (scale * scale);
+
+    // 3. Load in third level block
+    Block direct_ptrs_blk;
+    Block::ID *direct_ptrs = (Block::ID *) &direct_ptrs_blk;
+    this->disk->get(single_indirect_ptrs[block_idx_in_level_two / scale], direct_ptrs_blk);
+
+    // 4. Deallocate direct block
+    this->block_manager->release(direct_ptrs[block_idx_in_level_two % scale]);
+
+		// 5. Check if first block in third level
+    if (block_idx_in_level_two % scale == 0) {
+			this->block_manager->release(single_indirect_ptrs[block_idx_in_level_two / scale]);
+		}
+
+		// 6. Check if first block in second level
+    if (block_idx_in_level % (scale * scale) == 0) {
+      this->block_manager->release(double_indirect_ptrs[block_idx_in_level / (scale * scale)]);
+		}
+
+		// 7. Check if first block in first level
+    if (logical_blk_num == INode::DIRECT_POINTERS + scale + (scale * scale) + 1) {
+      this->block_manager->release(file_inode.block_pointers[INode::DIRECT_POINTERS + 2]);
+    }
+
+  } else {
+    // Can't allocate any more blocks for this file!
+    throw std::out_of_range("Reached max number of blocks allocated for a single file!");
+  }
+
+  // Update the number of allocated data blocks in this inode
+  file_inode.blocks--;
 }
 
 /**
