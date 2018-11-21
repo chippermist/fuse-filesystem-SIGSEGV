@@ -370,7 +370,7 @@ size_t FileAccessManager::read(std::string path, char *buf, size_t size, size_t 
 Block::ID FileAccessManager::blockAt(const INode& inode, uint64_t offset) {
   // This function only gets existing blocks.
   // It might need reworking for writes.
-  if (offset >= inode.size) {
+  if (offset >= inode.blocks * Block::SIZE) {
     throw std::out_of_range("Offset greater than file size.");
   }
 
