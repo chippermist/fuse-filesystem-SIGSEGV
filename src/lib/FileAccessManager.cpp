@@ -26,13 +26,13 @@ size_t FileAccessManager::write(std::string path, char *buf, size_t size, size_t
   // Read the file's inode and do some sanity checks
   INode::ID file_inode_num = getINodeFromPath(path);
   if (file_inode_num == 0) {
-    return -1; // File not found
+    return 0; // File not found
   }
   INode file_inode;
   this->inode_manager->get(file_inode_num, file_inode);
 
   if (file_inode.type != FileType::REGULAR) {
-    return -1; // File is not a regular file
+    return 0; // File is not a regular file
   }
 
   // TODO: Check ownership and permissions
@@ -309,17 +309,17 @@ size_t FileAccessManager::read(std::string path, char *buf, size_t size, size_t 
   // Read the file's inode and do some sanity checks
   INode::ID file_inode_num = getINodeFromPath(path);
   if (file_inode_num == 0) {
-    return -1; // File not found
+    return 0; // File not found
   }
   INode file_inode;
   this->inode_manager->get(file_inode_num, file_inode);
 
   if (file_inode.type != FileType::REGULAR) {
-    return -1; // File is not a regular file
+    return 0; // File is not a regular file
   }
 
   if (offset >= file_inode.size) {
-    return -1; // Can't begin reading from after file
+    return 0; // Can't begin reading from after file
   }
 
   // Only read until the end of the file
