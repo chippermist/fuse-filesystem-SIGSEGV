@@ -9,7 +9,7 @@ Directory Directory::get(INode::ID id) {
   Directory directory;
   while(index < inode.size) {
     INode::ID eid;
-    std::memcpy(&eid, &data[index + 0], sizeof(INode::ID));
+    std::memcpy(&eid, &data[index], sizeof(INode::ID));
     std::string name(&data[index + sizeof(INode::ID)]);
     index += name.length() + sizeof(INode::ID) + 1;
     directory.insert(name, eid);
@@ -26,6 +26,17 @@ void Directory::insert(const std::string& name, INode::ID id) {
   entries[name] = id;
 }
 
+Directory Directory::mkdir(INode::ID parent) {
+  return Directory::mkdir(parent, INode::reserve());
+}
+
+Directory Directory::mkdir(INode::ID parent, INode::ID id) {
+  Directory directory;
+  directory.insert(".",  id);
+  directory.insert("..", parent);
+  return directory;
+}
+
 void Directory::remove(const std::string& name) {
   entries.erase(name);
 }
@@ -33,7 +44,7 @@ void Directory::remove(const std::string& name) {
 void Directory::save() {
   int bytes = 0;
   for(const auto itr: entries) {
-    bytes += itr.first.length() + 3;
+    bytes += itr.first.length() + sizeof(INode::ID) + 1;
   }
 
   int index = 0;
