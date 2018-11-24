@@ -235,11 +235,17 @@ extern "C" {
   }
 
   // int(* fuse_operations::utimens) (const char *, const struct timespec tv[2], struct fuse_file_info *fi)
+  // This supersedes the old utime() interface. New applications should use this.
   int fs_utime(const char* path, utimbuf* buffer) {
     debug("utime       %s\n", path);
 
+    // Get the inode using the path
     INode inode = INode::get(path);
-    // TODO...
+
+    // Update the times
+    inode.time  = buffer[0];  // update access time
+    inode.mtime = buffer[1];  // update modification time
+    
     return 0;
   }
 
@@ -251,6 +257,14 @@ extern "C" {
     inode.write(data, size, offset);
     // TODO: Should this return the number of bytes written?
     return 0;
+  }
+
+
+  // void*(* fuse_operations::init) (struct fuse_conn_info *conn, struct fuse_config *cfg)
+  int fs_init(struct fuse_conn_info *conn, struct fuse_config *cfg) {
+    (void) conn;
+    cfg->kernel_cache = 1;
+    return NULL;
   }
 }
 
@@ -287,7 +301,7 @@ int main(int argc, char** argv) {
   // ops.releasedir  = &fs_releasedir;
   // ops.fsyncdir    = &fs_fsyncdir;
 
-  // ops.init        = &fs_init;
+  ops.init        = &fs_init;
   // ops.destroy     = &fs_destroy;
 
   // ops.getdir      = &fs_getdir;
