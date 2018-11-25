@@ -137,7 +137,7 @@ extern "C" {
     debug("readlink    %s\n", path);
 
     INode inode = FileAccessManager::getINodeFromPath(path);
-    if(inode.type != SYMLINK) {
+    if(inode.type != FileType::SYMLINK) {
       return -1;
     }
     memcpy(buffer, path, size);
@@ -207,7 +207,7 @@ extern "C" {
     INode::ID inode_id = LinearINodeManager::reserve();
     INode inode;
     LinearINodeManager::get(inode_id, inode);
-    inode.type = SYMLINK;  // needs to be checked
+    inode.type = FileType::SYMLINK; 
     FileAccessManager::write(path, link, strlen(link), 0);
     LinearINodeManager::set(inode_id, inode);
     return 0;
