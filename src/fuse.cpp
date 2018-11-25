@@ -18,7 +18,7 @@ extern "C" {
   int fs_chmod(const char* path, mode_t mode) {
     debug("chmod       %s to %03o\n", path, mode);
 
-    INode inode = INode::get(path);
+    INode inode = FileAccessManager::getINodeFromPath(path);
     inode.data.mode = mode;
     inode.save();
     return 0;
@@ -28,7 +28,7 @@ extern "C" {
   int fs_chown(const char* path, uid_t uid, gid_t gid) {
     debug("chown       %s to %d:%d\n", path, uid, gid);
 
-    INode inode = INode::get(path);
+    INode inode = FileAccessManager::getINodeFromPath(path);
     inode.data.uid = uid;
     inode.data.gid = gid;
     inode.save();
@@ -55,7 +55,7 @@ extern "C" {
   int fs_getattr(const char* path, struct stat* info) {
     debug("getattr     %s\n", path);
 
-    INode inode = INode::get(path);
+    INode inode = FileAccessManager::getINodeFromPath(path);
     // TODO...
     return 0;
   }
@@ -127,7 +127,7 @@ extern "C" {
   int fs_read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
     debug("read        %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
 
-    INode inode = INode::get(path);
+    INode inode = FileAccessManager::getINodeFromPath(path);
     inode.read(buffer, size, offset);
     return 0;
   }
@@ -255,7 +255,7 @@ extern "C" {
     debug("utime       %s\n", path);
 
     // Get the inode using the path
-    INode inode = INode::get(path);
+    INode inode = FileAccessManager::getINodeFromPath(path);
 
     // Update the times
     inode.time  = buffer[0];  // update access time
@@ -270,7 +270,7 @@ extern "C" {
   int fs_write(const char* path, const char* data, size_t size, off_t offset, fuse_file_info* info) {
     debug("write       %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
 
-    INode inode = INode::get(path);
+    INode inode = FileAccessManager::getINodeFromPath(path);
     inode.write(data, size, offset);
     // TODO: Should this return the number of bytes written?
     return 0;
