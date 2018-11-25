@@ -136,9 +136,20 @@ extern "C" {
   int fs_readlink(const char* path, char* buffer, size_t size) {
     debug("readlink    %s\n", path);
 
+    // Could possible use readlink() from <unistd.h>
+
+    // int res = readlink(path, buffer, size-1);
+    // if(res == -1) {
+    //   return -1;
+    // }
+    // buffer[res] = '\0'  // Null terminator
+    // return 0;  //on success
+
     INode inode = INode::get(path);
     // TODO: What's the correct error code here?
-    if(inode.size > size) return -1000000;
+    if(inode.size > size) {
+      return -1;
+    }
     inode.read(buffer, size, 0);
     // TODO: Should this return the number of bytes read?
     return 0;
@@ -192,6 +203,10 @@ extern "C" {
   int fs_statfs(const char* path, struct statvfs* info) {
     debug("statfs      %s\n", path);
 
+    int status = statvfs(path, info);
+    if(status == -1) {
+      return -1;
+    }
     // TODO...
     return 0;
   }
@@ -246,6 +261,8 @@ extern "C" {
     inode.time  = buffer[0];  // update access time
     inode.mtime = buffer[1];  // update modification time
     
+    // Set the changes back to inode
+    inode.save();
     return 0;
   }
 
