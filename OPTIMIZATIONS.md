@@ -4,6 +4,16 @@ As we work through the project, we discover that there are many areas in the fil
 
 ## Possible Improvements
 
+### INode Management
+
+Currently, reserve() will read in the INode block and find a free one. We could have reserve take in a Block * or INode *, so that after reserve finds its free INode, it reads into the user's pointer instead of making the user re-read the INode from disk.
+
+### File Writing
+
+#### appendData()
+
+appendData() is pretty inefficient. It goes through the inode to figure out what the next block to allocate is in a greedy fashion - that is, it goes through the inode many times on a single run. An optimization could be to allocate all the blocks needed at once.
+
 ### Directories
 
 #### File Deletion

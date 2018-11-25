@@ -253,7 +253,7 @@ extern "C" {
     // Update the times
     inode.time  = buffer[0];  // update access time
     inode.mtime = buffer[1];  // update modification time
-    
+
     // Set the changes back to inode
     LinearINodeManager::set(inode_id, inode);
     return 0;
@@ -279,6 +279,10 @@ extern "C" {
 }
 
 int main(int argc, char** argv) {
+  // added initialization for fuse arguments
+  // can also be changed to 0, NULL for testing empty
+  struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
+
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
 

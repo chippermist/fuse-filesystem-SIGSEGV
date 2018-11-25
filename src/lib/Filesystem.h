@@ -3,8 +3,12 @@
 #include "BlockManager.h"
 #include "INodeManager.h"
 
-#include <sys/statfs.h>
-#include <sys/vfs.h>
+// Added conditional so it compiles on OSX without issues
+#if defined(__linux__)
+  #include <sys/statfs.h>
+  #include <sys/vfs.h>
+#endif
+
 #include <fuse.h>
 
 class Filesystem {
@@ -14,6 +18,13 @@ class Filesystem {
 public:
   Filesystem(BlockManager& b, INodeManager& i): blocks(b), inodes(i) {
     // All done.
+  }
+
+  ~Filesystem() {}
+
+  void mkfs() {
+    inodes.mkfs();
+    blocks.mkfs();
   }
 
   // FUSE Operations:

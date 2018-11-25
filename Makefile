@@ -2,7 +2,7 @@ BINARIES = mkfs fuse fsck
 SOURCES  = $(shell find src/lib -name '*.cpp')
 OBJECTS  = $(patsubst src/%.cpp, obj/%.o, $(SOURCES))
 
-CXXFLAGS  = -std=c++11 -Wall -Wextra
+CXXFLAGS  = -std=c++11 -g -Wall -Wextra
 CXXFLAGS += -DFUSE_USE_VERSION=26
 CXXFLAGS += -D_FILE_OFFSET_BITS=64
 
