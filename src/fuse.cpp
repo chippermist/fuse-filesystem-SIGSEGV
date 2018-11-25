@@ -64,7 +64,7 @@ extern "C" {
   int fs_getdir(const char* path, fuse_dirh_t dirh, fuse_dirfil_t dirfil) {
     debug("getdir      %s\n", path);
 
-    Directory dir = Directory::get(path);
+    Directory dir = FileAccessManager::dir(path);
     // TODO...
     return 0;
   }
@@ -86,7 +86,7 @@ extern "C" {
     INode::ID id = INode::id(link);
     if(id == 0) return -ENOENT;
 
-    Directory dir = Directory::get(dname);
+    Directory dir = FileAccessManager::dir(dname);
     dir[fname] = id;
     dir.save();
     return 0;
@@ -145,7 +145,7 @@ extern "C" {
     // buffer[res] = '\0'  // Null terminator
     // return 0;  //on success
 
-    INode inode = INode::get(path);
+    INode inode = FileAccessManager::getINodeFromPath(path);
     // TODO: What's the correct error code here?
     if(inode.size > size) {
       return -1;
@@ -186,7 +186,7 @@ extern "C" {
     std::string pname = dirname(path);
     std::string dname = basename(path);
 
-    Directory parent = Directory::get(pname);
+    Directory parent = FileAccessManager::dir(pname);
     parent.remove(dname);
     parent.save();
     return 0;
@@ -218,11 +218,11 @@ extern "C" {
     std::string dname = dirname(path);
     std::string fname = basename(path);
 
-    INode inode = INode::reserve();
-    inode.data.type = SYMLINK;
+    INode inode = LinearINodeManager::reserve();
+    inode.data.type = SYMLINK;  // needs to be checked
     inode.write(link, strlen(link), 0);
 
-    Directory dir = Directory::get(dname);
+    Directory dir = FileAccessManager::dir(dname);
     dir[fname] = inode;
     dir.save();
     return 0;
@@ -243,7 +243,7 @@ extern "C" {
     std::string dname = dirname(path);
     std::string fname = basename(path);
 
-    Directory dir = Directory::get(dname);
+    Directory dir = FileAccessManager::dir(dname);
     dir.remove(fname);
     dir.save();
     return 0;
@@ -255,14 +255,16 @@ extern "C" {
     debug("utime       %s\n", path);
 
     // Get the inode using the path
-    INode inode = FileAccessManager::getINodeFromPath(path);
+    INode::ID inode_id = FileAccessManager::getINodeFromPath(path);
+    INode inode;
+    LinearINodeManager::get(inode_id, inode);
 
     // Update the times
     inode.time  = buffer[0];  // update access time
     inode.mtime = buffer[1];  // update modification time
     
     // Set the changes back to inode
-    inode.save();
+    LinearINodeManager::set(inode_id, inode);
     return 0;
   }
 
