@@ -322,7 +322,7 @@ int main(int argc, char** argv) {
   // ops.destroy     = &fs_destroy;
 
   // ops.getdir      = &fs_getdir;
-  // ops.utime       = &fs_utime;
+  ops.utime       = &fs_utime;
 
   return fuse_main(argc, argv, &ops, NULL);
 }
