@@ -140,13 +140,7 @@ extern "C" {
     if(inode.type != SYMLINK) {
       return -1;
     }
-
-    // TODO: What's the correct error code here?
-    if(inode.size > size) {
-      return -1;
-    }
-    inode.read(buffer, size, 0);
-    // TODO: Should this return the number of bytes read?
+    memcpy(buffer, path, size);
     return 0;
   }
 
