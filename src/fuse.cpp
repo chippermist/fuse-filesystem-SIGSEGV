@@ -64,7 +64,7 @@ extern "C" {
   int fs_getdir(const char* path, fuse_dirh_t dirh, fuse_dirfil_t dirfil) {
     debug("getdir      %s\n", path);
 
-    Directory dir = FileAccessManager::dir(path);
+    Directory dir = Directory::get(path);
     // TODO...
     return 0;
   }
@@ -86,7 +86,7 @@ extern "C" {
     INode::ID id = INode::id(link);
     if(id == 0) return -ENOENT;
 
-    Directory dir = FileAccessManager::dir(dname);
+    Directory dir = Directory::get(dname);
     dir[fname] = id;
     dir.save();
     return 0;
@@ -136,16 +136,11 @@ extern "C" {
   int fs_readlink(const char* path, char* buffer, size_t size) {
     debug("readlink    %s\n", path);
 
-    // Could possible use readlink() from <unistd.h>
-
-    // int res = readlink(path, buffer, size-1);
-    // if(res == -1) {
-    //   return -1;
-    // }
-    // buffer[res] = '\0'  // Null terminator
-    // return 0;  //on success
-
     INode inode = FileAccessManager::getINodeFromPath(path);
+    if(inode.type != SYMLINK) {
+      return -1;
+    }
+
     // TODO: What's the correct error code here?
     if(inode.size > size) {
       return -1;
@@ -186,7 +181,7 @@ extern "C" {
     std::string pname = dirname(path);
     std::string dname = basename(path);
 
-    Directory parent = FileAccessManager::dir(pname);
+    Directory parent = Directory::get(pname);
     parent.remove(dname);
     parent.save();
     return 0;
@@ -215,16 +210,12 @@ extern "C" {
   int fs_symlink(const char* path, const char* link) {
     debug("symlink     %s -> %s\n", path, link);
 
-    std::string dname = dirname(path);
-    std::string fname = basename(path);
-
-    INode inode = LinearINodeManager::reserve();
-    inode.data.type = SYMLINK;  // needs to be checked
-    inode.write(link, strlen(link), 0);
-
-    Directory dir = FileAccessManager::dir(dname);
-    dir[fname] = inode;
-    dir.save();
+    INode::ID inode_id = LinearINodeManager::reserve();
+    INode inode;
+    LinearINodeManager::get(inode_id, inode);
+    inode.type = SYMLINK;  // needs to be checked
+    FileAccessManager::write(path, link, strlen(link), 0);
+    LinearINodeManager::set(inode_id, inode);
     return 0;
   }
 
@@ -243,7 +234,7 @@ extern "C" {
     std::string dname = dirname(path);
     std::string fname = basename(path);
 
-    Directory dir = FileAccessManager::dir(dname);
+    Directory dir = Directory::get(dname);
     dir.remove(fname);
     dir.save();
     return 0;
