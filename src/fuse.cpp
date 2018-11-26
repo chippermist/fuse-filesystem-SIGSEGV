@@ -24,9 +24,11 @@ extern "C" {
   int fs_chmod(const char* path, mode_t mode) {
     debug("chmod       %s to %03o\n", path, mode);
 
-    INode inode = file_access_manager->getINodeFromPath(path);
-    inode.data.mode = mode;
-    inode.save();
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    INode inode;
+    inode_manager->get(inode_id, inode);
+    inode.mode = mode;
+    inode_manager->set(inode_id, inode);
     return 0;
   }
 
@@ -34,10 +36,13 @@ extern "C" {
   int fs_chown(const char* path, uid_t uid, gid_t gid) {
     debug("chown       %s to %d:%d\n", path, uid, gid);
 
-    INode inode = file_access_manager->getINodeFromPath(path);
-    inode.data.uid = uid;
-    inode.data.gid = gid;
-    inode.save();
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    INode inode;
+    inode_manager->get(inode_id, inode);
+    
+    inode.uid = uid;
+    inode.gid = gid;
+    inode_manager->set(inode_id, inode);
     return 0;
   }
 
@@ -89,8 +94,8 @@ extern "C" {
     std::string dname = file_access_manager->dirname(path);
     std::string fname = file_access_manager->basename(path);
 
-    INode::ID id = INode::id(link);
-    if(id == 0) return -ENOENT;
+    INode::ID id = file_access_manager->getINodeFromPath(link);
+    if(id == 0) return -1;
 
     Directory dir = Directory::get(dname);
     dir[fname] = id;
@@ -134,8 +139,8 @@ extern "C" {
     debug("read        %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
 
     INode::ID inode = file_access_manager->getINodeFromPath(path);
-    inode.read(buffer, size, offset);
-    return 0;
+    int size_read = file_access_manager->read(buffer, size, offset);
+    return size_read;
   }
 
   // int(* fuse_operations::readlink) (const char *, char *, size_t)
@@ -204,13 +209,15 @@ extern "C" {
   int fs_statfs(const char* path, struct statvfs* info) {
     debug("statfs      %s\n", path);
 
+    //  Ignoring for now
+
     // this needs to be a struct that contains info about filesystem
     // such as number of free blocks, total blocks, type of file system etc.
     // doesn't seem useful here
-    int status = statvfs(path, info); 
-    if(status == -1) {
-      return -1;
-    }
+    // int status = statvfs(path, info); 
+    // if(status == -1) {
+    //   return -1;
+    // }
     // TODO...
     return 0;
   }
@@ -222,15 +229,16 @@ extern "C" {
     std::string dname = file_access_manager->dirname(path);
     std::string fname = file_access_manager->basename(path);
 
-    INode::ID inode_id = inode_manager->reserve();
-    INode inode;
-    inode_manager->get(inode_id, inode);
-    inode.type = FileType::SYMLINK;
-    file_access_manager->write(path, link, strlen(link), 0);
-    inode_manager->set(inode_id, inode);
+    // INode::ID inode_id = inode_manager->reserve();
+    // INode inode;
+    // inode_manager->get(inode_id, inode);
+    // inode.type = FileType::SYMLINK;
+    // inode_manager->set(inode_id, inode);
 
+    INode::ID inode_id = file_access_manager->getINodeFromPath(link);
     Directory dir = Directory::get(dname);
-    dir[fname] = inode;
+    // dir[fname].type = FileTypeDirectory::SYMLINK; //if we don't do this then we just won't know what type it is but will work
+    dir[fname] = inode_id;
     dir.save();
 
     return 0;
@@ -280,8 +288,10 @@ extern "C" {
   int fs_write(const char* path, const char* data, size_t size, off_t offset, fuse_file_info* info) {
     debug("write       %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
 
-    INode::ID inode = file_access_manager->getINodeFromPath(path);
-    inode.write(data, size, offset);
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    Inode inode;
+    inode_manager->get(inode_id, inode);
+    file_access_manager->write(data, size, offset);
     // TODO: Should this return the number of bytes written?
     return 0;
   }
@@ -301,10 +311,10 @@ int main(int argc, char** argv) {
 
   uint64_t nblocks = 4096; //only placeholder -- take from argv[]
 
-  // disk = new MemoryStorage(nblocks);
-  // block_manager = new StackBasedBlockManager(*disk);
-  // inode_manager = new LinearINodeManager(*disk);
-  // file_access_manager = new FileAccessManager(*block_manager, *inode_manager, *disk);
+  disk = new MemoryStorage(nblocks);
+  block_manager = new StackBasedBlockManager(*disk);
+  inode_manager = new LinearINodeManager(*disk);
+  file_access_manager = new FileAccessManager(*block_manager, *inode_manager, *disk);
 
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
