@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cassert>
 #include <stack>
+#include <algorithm>
 
 #include "Block.h"
 #include "INode.h"
