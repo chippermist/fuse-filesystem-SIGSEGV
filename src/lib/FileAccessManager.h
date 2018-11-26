@@ -25,6 +25,8 @@ public:
   int read(std::string path, char *buffer, size_t size, size_t offset);
   int write(std::string path, char *buf, size_t size, size_t offset);
   int truncate(std::string path, size_t length);
+  std::string dirname(std::string path);
+  char* basename(std::string path);
 
 private:
   Block::ID blockAt(const INode& inode, uint64_t offset);

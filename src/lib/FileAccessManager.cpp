@@ -465,6 +465,26 @@ int FileAccessManager::truncate(std::string path, size_t length) {
   }
 }
 
+std::string dirname(std::string &path) {
+  // Remove all repeated /'s
+  path.erase(unique(path.begin(), path.end(), [](char &a, char &b) {
+    return a == '/' && b == '/';
+  }));
+
+  
+
+  return "";
+}
+
+std::string basename(std::string &path) {
+  size_t loc = path.find_last_of('/');
+  if (loc != std::string::npos) {
+    return (path.substr(loc+1, path.length()));
+  }
+  return "";
+}
+
+
 void FileAccessManager::deallocateLastBlock(INode& file_inode) {
 
   size_t scale = Block::SIZE / sizeof(Block::ID);
