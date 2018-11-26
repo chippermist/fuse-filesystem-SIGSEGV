@@ -4,6 +4,7 @@
 #include "INodeManager.h"
 #include "FileAccessManager.h"
 #include "DirectoryRecord.h"
+#include "Directory.h"
 
 // Added conditional so it compiles on OSX without issues
 #if defined(__linux__)
