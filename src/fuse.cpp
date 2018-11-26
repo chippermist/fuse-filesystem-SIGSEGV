@@ -136,11 +136,17 @@ extern "C" {
   int fs_readlink(const char* path, char* buffer, size_t size) {
     debug("readlink    %s\n", path);
 
-    INode inode = FileAccessManager::getINodeFromPath(path);
+    INode::ID inode_id = FileAccessManager::getINodeFromPath(path);
+    INode inode;
+    LinearINodeManager::get(inode_id, inode);
+
+    // Checking if the inode type is a SYMLINK
     if(inode.type != FileType::SYMLINK) {
       return -1;
     }
-    memcpy(buffer, path, size);
+    
+    // Need to get the string that symlink points to
+
     return 0;
   }
 
@@ -216,7 +222,7 @@ extern "C" {
     Directory dir = Directory::get(dname);
     dir[fname] = inode;
     dir.save();
-    
+
     return 0;
   }
 
