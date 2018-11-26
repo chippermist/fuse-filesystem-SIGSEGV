@@ -499,7 +499,7 @@ std::string dirname(std::string &path) {
 
   std::string dir_path;
   while(!folder_names.empty()) {
-    dir_path = folder_names.top() + "/" + dir_path;
+    dir_path = "/" + folder_names.top() + dir_path;
     folder_names.pop();
   }
   return dir_path;
