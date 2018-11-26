@@ -467,9 +467,9 @@ int FileAccessManager::truncate(std::string path, size_t length) {
 
 std::string dirname(std::string &path) {
   // Remove all repeated /'s
-  path.erase(unique(path.begin(), path.end(), [](char &a, char &b) {
+  path.erase(std::unique(path.begin(), path.end(), [](char &a, char &b) {
     return a == '/' && b == '/';
-  }));
+  }), path.end());
 
   std::stack<std::string> folder_names;
 
