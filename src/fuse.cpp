@@ -288,13 +288,7 @@ extern "C" {
 
   // void*(* fuse_operations::init) (struct fuse_conn_info *conn, struct fuse_config *cfg)
   int fs_init(struct fuse_conn_info *conn, struct fuse_config *cfg) {
-    uint64_t nblocks = 4096; //only placeholder
-
-    // Also this is within "C" code...so there's no OO objects
-    // disk = new MemoryStorage(4096);
-    // block_manager = new StackBasedBlockManager(*disk);
-    // inode_manager = new LinearINodeManager(*disk);
-    // file_access_manager = new FileAccessManager(*block_manager, *inode_manager, *disk);
+    // Useless function for us
     return NULL;
   }
 
@@ -304,6 +298,13 @@ int main(int argc, char** argv) {
   // added initialization for fuse arguments
   // can also be changed to 0, NULL for testing empty
   struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
+
+  uint64_t nblocks = 4096; //only placeholder -- take from argv[]
+
+  // disk = new MemoryStorage(nblocks);
+  // block_manager = new StackBasedBlockManager(*disk);
+  // inode_manager = new LinearINodeManager(*disk);
+  // file_access_manager = new FileAccessManager(*block_manager, *inode_manager, *disk);
 
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
