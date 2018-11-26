@@ -144,7 +144,7 @@ extern "C" {
     if(inode.type != FileType::SYMLINK) {
       return -1;
     }
-    
+
     // Need to get the string that symlink points to
 
     return 0;
@@ -217,6 +217,7 @@ extern "C" {
     INode inode;
     LinearINodeManager::get(inode_id, inode);
     inode.type = FileType::SYMLINK;
+    FileAccessManager::write(path, link, strlen(link), 0);
     LinearINodeManager::set(inode_id, inode);
 
     Directory dir = Directory::get(dname);
