@@ -204,12 +204,19 @@ extern "C" {
   int fs_symlink(const char* path, const char* link) {
     debug("symlink     %s -> %s\n", path, link);
 
+    std::string dname = FileAccessManager::dirname(path);
+    std::string fname = FileAccessManager::basename(path);
+
     INode::ID inode_id = LinearINodeManager::reserve();
     INode inode;
     LinearINodeManager::get(inode_id, inode);
-    inode.type = FileType::SYMLINK; 
-    FileAccessManager::write(path, link, strlen(link), 0);
+    inode.type = FileType::SYMLINK;
     LinearINodeManager::set(inode_id, inode);
+
+    Directory dir = Directory::get(dname);
+    dir[fname] = inode;
+    dir.save();
+    
     return 0;
   }
 
