@@ -289,10 +289,12 @@ extern "C" {
   // void*(* fuse_operations::init) (struct fuse_conn_info *conn, struct fuse_config *cfg)
   int fs_init(struct fuse_conn_info *conn, struct fuse_config *cfg) {
     uint64_t nblocks = 4096; //only placeholder
-    disk = new MemoryStorage(4096);
-    block_manager = new StackBasedBlockManager(*disk);
-    inode_manager = new LinearINodeManager(*disk);
-    file_access_manager = new FileAccessManager(*block_manager, *inode_manager, *disk);
+
+    // Also this is within "C" code...so there's no OO objects
+    // disk = new MemoryStorage(4096);
+    // block_manager = new StackBasedBlockManager(*disk);
+    // inode_manager = new LinearINodeManager(*disk);
+    // file_access_manager = new FileAccessManager(*block_manager, *inode_manager, *disk);
     return NULL;
   }
 
