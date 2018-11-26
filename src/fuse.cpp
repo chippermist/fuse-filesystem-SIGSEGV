@@ -80,8 +80,8 @@ extern "C" {
   int fs_link(const char* path, const char* link) {
     debug("link        %s -> %s\n", path, link);
 
-    std::string dname = dirname(path);
-    std::string fname = basename(path);
+    std::string dname = FileAccessManager::dirname(path);
+    std::string fname = FileAccessManager::basename(path);
 
     INode::ID id = INode::id(link);
     if(id == 0) return -ENOENT;
@@ -172,8 +172,8 @@ extern "C" {
   int fs_rmdir(const char* path) {
     debug("rmdir       %s\n", path);
 
-    std::string pname = dirname(path);
-    std::string dname = basename(path);
+    std::string pname = FileAccessManager::dirname(path);
+    std::string dname = FileAccessManager::basename(path);
 
     Directory parent = Directory::get(pname);
     parent.remove(dname);
@@ -225,8 +225,8 @@ extern "C" {
   int fs_unlink(const char* path) {
     debug("unlink      %s\n", path);
 
-    std::string dname = dirname(path);
-    std::string fname = basename(path);
+    std::string dname = FileAccessManager::dirname(path);
+    std::string fname = FileAccessManager::basename(path);
 
     Directory dir = Directory::get(dname);
     dir.remove(fname);
