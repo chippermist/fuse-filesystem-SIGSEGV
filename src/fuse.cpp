@@ -12,13 +12,19 @@
   #define debug(...)
 #endif
 
+// Global Variables for objects
+Storage *disk;
+BlockManager *block_manager;
+INodeManager *inode_manager;
+FileAccessManager *file_access_manager;
+
 
 extern "C" {
   // int(* fuse_operations::chmod) (const char *, mode_t, struct fuse_file_info *fi)
   int fs_chmod(const char* path, mode_t mode) {
     debug("chmod       %s to %03o\n", path, mode);
 
-    INode inode = FileAccessManager::getINodeFromPath(path);
+    INode inode = file_access_manager->getINodeFromPath(path);
     inode.data.mode = mode;
     inode.save();
     return 0;
@@ -28,7 +34,7 @@ extern "C" {
   int fs_chown(const char* path, uid_t uid, gid_t gid) {
     debug("chown       %s to %d:%d\n", path, uid, gid);
 
-    INode inode = FileAccessManager::getINodeFromPath(path);
+    INode inode = file_access_manager->getINodeFromPath(path);
     inode.data.uid = uid;
     inode.data.gid = gid;
     inode.save();
@@ -55,7 +61,7 @@ extern "C" {
   int fs_getattr(const char* path, struct stat* info) {
     debug("getattr     %s\n", path);
 
-    INode inode = FileAccessManager::getINodeFromPath(path);
+    INode inode = file_access_manager->getINodeFromPath(path);
     // TODO...
     return 0;
   }
@@ -80,8 +86,8 @@ extern "C" {
   int fs_link(const char* path, const char* link) {
     debug("link        %s -> %s\n", path, link);
 
-    std::string dname = FileAccessManager::dirname(path);
-    std::string fname = FileAccessManager::basename(path);
+    std::string dname = file_access_manager->dirname(path);
+    std::string fname = file_access_manager->basename(path);
 
     INode::ID id = INode::id(link);
     if(id == 0) return -ENOENT;
@@ -127,7 +133,7 @@ extern "C" {
   int fs_read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
     debug("read        %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
 
-    INode inode = FileAccessManager::getINodeFromPath(path);
+    INode::ID inode = file_access_manager->getINodeFromPath(path);
     inode.read(buffer, size, offset);
     return 0;
   }
@@ -136,9 +142,9 @@ extern "C" {
   int fs_readlink(const char* path, char* buffer, size_t size) {
     debug("readlink    %s\n", path);
 
-    INode::ID inode_id = FileAccessManager::getINodeFromPath(path);
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
     INode inode;
-    LinearINodeManager::get(inode_id, inode);
+    inode_manager->get(inode_id, inode);
 
     // Checking if the inode type is a SYMLINK
     if(inode.type != FileType::SYMLINK) {
@@ -178,8 +184,8 @@ extern "C" {
   int fs_rmdir(const char* path) {
     debug("rmdir       %s\n", path);
 
-    std::string pname = FileAccessManager::dirname(path);
-    std::string dname = FileAccessManager::basename(path);
+    std::string pname = file_access_manager->dirname(path);
+    std::string dname = file_access_manager->basename(path);
 
     Directory parent = Directory::get(pname);
     parent.remove(dname);
@@ -198,7 +204,10 @@ extern "C" {
   int fs_statfs(const char* path, struct statvfs* info) {
     debug("statfs      %s\n", path);
 
-    int status = statvfs(path, info);
+    // this needs to be a struct that contains info about filesystem
+    // such as number of free blocks, total blocks, type of file system etc.
+    // doesn't seem useful here
+    int status = statvfs(path, info); 
     if(status == -1) {
       return -1;
     }
@@ -210,15 +219,15 @@ extern "C" {
   int fs_symlink(const char* path, const char* link) {
     debug("symlink     %s -> %s\n", path, link);
 
-    std::string dname = FileAccessManager::dirname(path);
-    std::string fname = FileAccessManager::basename(path);
+    std::string dname = file_access_manager->dirname(path);
+    std::string fname = file_access_manager->basename(path);
 
-    INode::ID inode_id = LinearINodeManager::reserve();
+    INode::ID inode_id = inode_manager->reserve();
     INode inode;
-    LinearINodeManager::get(inode_id, inode);
+    inode_manager->get(inode_id, inode);
     inode.type = FileType::SYMLINK;
-    FileAccessManager::write(path, link, strlen(link), 0);
-    LinearINodeManager::set(inode_id, inode);
+    file_access_manager->write(path, link, strlen(link), 0);
+    inode_manager->set(inode_id, inode);
 
     Directory dir = Directory::get(dname);
     dir[fname] = inode;
@@ -239,8 +248,8 @@ extern "C" {
   int fs_unlink(const char* path) {
     debug("unlink      %s\n", path);
 
-    std::string dname = FileAccessManager::dirname(path);
-    std::string fname = FileAccessManager::basename(path);
+    std::string dname = file_access_manager->dirname(path);
+    std::string fname = file_access_manager->basename(path);
 
     Directory dir = Directory::get(dname);
     dir.remove(fname);
@@ -254,16 +263,16 @@ extern "C" {
     debug("utime       %s\n", path);
 
     // Get the inode using the path
-    INode::ID inode_id = FileAccessManager::getINodeFromPath(path);
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
     INode inode;
-    LinearINodeManager::get(inode_id, inode);
+    inode_manager->get(inode_id, inode);
 
     // Update the times
-    inode.time  = buffer[0];  // update access time
-    inode.mtime = buffer[1];  // update modification time
+    inode.time  = (uint32_t)buffer[0];  // update access time
+    inode.mtime = (uint32_t)buffer[1];  // update modification time
 
     // Set the changes back to inode
-    LinearINodeManager::set(inode_id, inode);
+    inode_manager->set(inode_id, inode);
     return 0;
   }
 
@@ -271,19 +280,22 @@ extern "C" {
   int fs_write(const char* path, const char* data, size_t size, off_t offset, fuse_file_info* info) {
     debug("write       %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
 
-    INode inode = FileAccessManager::getINodeFromPath(path);
+    INode::ID inode = file_access_manager->getINodeFromPath(path);
     inode.write(data, size, offset);
     // TODO: Should this return the number of bytes written?
     return 0;
   }
 
-
   // void*(* fuse_operations::init) (struct fuse_conn_info *conn, struct fuse_config *cfg)
   int fs_init(struct fuse_conn_info *conn, struct fuse_config *cfg) {
-    (void) conn;
-    cfg->kernel_cache = 1;
+    uint64_t nblocks = 4096; //only placeholder
+    disk = new MemoryStorage(4096);
+    block_manager = new StackBasedBlockManager(*disk);
+    inode_manager = new LinearINodeManager(*disk);
+    file_access_manager = new FileAccessManager(*block_manager, *inode_manager, *disk);
     return NULL;
   }
+
 }
 
 int main(int argc, char** argv) {

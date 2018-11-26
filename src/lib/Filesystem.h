@@ -4,6 +4,9 @@
 #include "INodeManager.h"
 #include "FileAccessManager.h"
 #include "DirectoryRecord.h"
+#include "inodes/LinearINodeManager.h"
+#include "blocks/StackBasedBlockManager.h"
+#include "storage/MemoryStorage.h"
 #include "Directory.h"
 
 // Added conditional so it compiles on OSX without issues
