@@ -471,9 +471,38 @@ std::string dirname(std::string &path) {
     return a == '/' && b == '/';
   }));
 
-  
+  std::stack<std::string> folder_names;
 
-  return "";
+  for(size_t i=0; i<path.size(); ++i) {
+    if(i == 0 && path[i] == '/') {
+      continue;
+    }
+
+    std::string str;
+    while(path[i] != '/' && i < path.length()) {
+      str += path[i++];
+    }
+    //cout << str << endl;
+    if(str == ".") {
+      continue;
+    } 
+    else if (str == ".." && !folder_names.empty()) {
+      folder_names.pop();
+      continue;
+    } 
+    else if (str == "..") {
+      continue;
+    }
+    folder_names.push(str);
+  }
+  folder_names.pop(); // Removing the filename
+
+  std::string dir_path;
+  while(!folder_names.empty()) {
+    dir_path = folder_names.top() + "/" + dir_path;
+    folder_names.pop();
+  }
+  return dir_path;
 }
 
 std::string basename(std::string &path) {

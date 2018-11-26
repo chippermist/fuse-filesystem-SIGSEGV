@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <cstring>
 #include <cassert>
+#include <stack>
 
 #include "Block.h"
 #include "INode.h"
@@ -26,7 +27,7 @@ public:
   int write(std::string path, char *buf, size_t size, size_t offset);
   int truncate(std::string path, size_t length);
   std::string dirname(std::string path);
-  char* basename(std::string path);
+  std::string basename(std::string path);
 
 private:
   Block::ID blockAt(const INode& inode, uint64_t offset);
