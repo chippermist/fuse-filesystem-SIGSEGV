@@ -31,8 +31,9 @@ int FileAccessManager::write(INode::ID file_inode_num, const char *buf, size_t s
     return -1; // File is not a regular file
   }
 
-  file_inode.atime = time(NULL);
-  file_inode.ctime = time(NULL);
+  file_inode.mtime = time(NULL);
+  file_inode.ctime = file_inode.mtime;
+  file_inode.atime = file_inode.mtime;
 
   size_t total_written = 0;
   // 1. If we are overwriting any data in the file, do that first.
@@ -316,7 +317,6 @@ int FileAccessManager::read(INode::ID file_inode_num, char *buf, size_t size, si
   }
 
   file_inode.atime = time(NULL);
-  file_inode.ctime = time(NULL);
 
   // Only read until the end of the file
   if (offset + size > file_inode.size) {
@@ -419,8 +419,9 @@ int FileAccessManager::truncate(INode::ID file_inode_num, size_t length) {
     return 0;
   }
 
-  file_inode.atime = time(NULL);
-  file_inode.ctime = time(NULL);
+  file_inode.mtime = time(NULL);
+  file_inode.ctime = file_inode.mtime;
+  file_inode.atime = file_inode.mtime;
 
   // If increasing size, fill with NULL bytes
   if (length > file_inode.size) {
