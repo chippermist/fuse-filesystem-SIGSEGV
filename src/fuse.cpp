@@ -23,7 +23,11 @@ extern "C" {
   int fs_chmod(const char* path, mode_t mode) {
     debug("chmod       %s to %03o\n", path, mode);
 
+    // Check if path exists
     INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    if (inode_id == 0) return -1;
+
+    // Update INode
     INode inode;
     inode_manager->get(inode_id, inode);
     inode.mode = mode;
@@ -35,10 +39,13 @@ extern "C" {
   int fs_chown(const char* path, uid_t uid, gid_t gid) {
     debug("chown       %s to %d:%d\n", path, uid, gid);
 
+    // Check if path exists
     INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    if (inode_id == 0) return -1;
+
+    // Update INode
     INode inode;
     inode_manager->get(inode_id, inode);
-
     inode.uid = uid;
     inode.gid = gid;
     inode_manager->set(inode_id, inode);
@@ -65,7 +72,14 @@ extern "C" {
   int fs_getattr(const char* path, struct stat* info) {
     debug("getattr     %s\n", path);
 
-    INode inode = file_access_manager->getINodeFromPath(path);
+    // Check if path exists
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    if (inode_id == 0) return -1;
+
+    // Update INode
+    INode inode;
+    inode_manager->get(inode_id, inode);
+
     // TODO...
     return 0;
   }
@@ -87,18 +101,31 @@ extern "C" {
   }
 
   // int(* fuse_operations::link) (const char *, const char *)
-  int fs_link(const char* path, const char* link) {
-    debug("link        %s -> %s\n", path, link);
+  int fs_link(const char* oldpath, const char* newpath) {
+    debug("link        %s -> %s\n", newpath, oldpath);
 
-    std::string dname = file_access_manager->dirname(path);
-    std::string fname = file_access_manager->basename(path);
+    // Check if newpath exists - if so, don't overwrite it
+    INode::ID inode_id = file_access_manager->getINodeFromPath(newpath);
+    if (inode_id != 0) return -1;
 
-    INode::ID id = file_access_manager->getINodeFromPath(link);
-    if(id == 0) return -1;
+    // Check if oldpath exists
+    inode_id = file_access_manager->getINodeFromPath(oldpath);
+    if (inode_id == 0) return -1;
 
-    Directory dir = Directory::get(dname);
-    dir[fname] = id;
+    // Get the newpath's directory
+    std::string new_dname = file_access_manager->dirname(newpath);
+    std::string new_fname = file_access_manager->basename(newpath);
+    Directory dir = Directory::get(new_dname);
+
+    // Write link to oldpath's inode in newpath's directory
+    dir[new_fname] = inode_id;
     dir.save();
+
+    // Update the "links" count of the oldpath
+    INode inode;
+    inode_manager->get(inode_id, inode);
+    inode.links_count += 1;
+    inode_manager->set(inode_id, inode);
     return 0;
   }
 
@@ -113,7 +140,38 @@ extern "C" {
   int fs_mkdir(const char* path, mode_t mode) {
     debug("mkdir       %s %03o\n", path, mode);
 
-    // TODO...
+    // Check if path exists - if so, don't overwrite it
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    if (inode_id != 0) return -1;
+
+    // Check if path's parent directory exists
+    std::string parent_dname = file_access_manager->dirname(path);
+    std::string dname = file_access_manager->basename(path);
+    inode_id = file_access_manager->getINodeFromPath(parent_dname);
+    if (inode_id == 0) return -1;
+
+    // Allocate an inode for new directory and write in parent directory
+    INode::ID new_dir_inode_id = inode_manager->reserve();
+    Directory dir = Directory::get(inode_id);
+    dir[dname] = new_dir_inode_id;
+
+    // Set the new directory's attributes
+    INode new_dir_inode;
+    memset(&new_dir_inode, 0, sizeof(new_dir_inode));
+    new_dir_inode.mode = mode;
+    new_dir_inode.type = FileType::DIRECTORY;
+    new_dir_inode.blocks = 0;
+    new_dir_inode.size = 0;
+    inode_manager->set(new_dir_inode_id, new_dir_inode);
+
+    // TODO: How do we set these?
+    // new_dir_inode.uid = ???
+    // new_dir_inode.gid = ???
+    // new_dir_inode.time = ???
+    // new_dir_inode.ctime = ???
+    // new_dir_inode.mtime = ???
+    // new_dir_inode.flags = ???
+
     return 0;
   }
 
@@ -121,7 +179,37 @@ extern "C" {
   int fs_mknod(const char* path, mode_t mode, dev_t dev) {
     debug("mknod       %s %03o\n", path, mode);
 
-    // TODO...
+    // Check if path exists - if so, don't overwrite it
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    if (inode_id != 0) return -1;
+
+    // Check if path's parent directory exists
+    std::string parent_dname = file_access_manager->dirname(path);
+    std::string fname = file_access_manager->basename(path);
+    inode_id = file_access_manager->getINodeFromPath(parent_dname);
+    if (inode_id == 0) return -1;
+
+    // Allocate an inode for new file and write in parent directory
+    INode::ID new_file_inode_id = inode_manager->reserve();
+    Directory dir = Directory::get(inode_id);
+    dir[fname] = new_file_inode_id;
+
+    // Set the new file's attributes
+    INode new_file_inode;
+    memset(&new_file_inode, 0, sizeof(new_file_inode));
+    new_file_inode.mode = mode;
+    new_file_inode.type = FileType::REGULAR;
+    new_file_inode.blocks = 0;
+    new_file_inode.size = 0;
+    inode_manager->set(new_file_inode_id, new_file_inode);
+
+    // TODO: How do we set these?
+    // new_file_inode.uid = ???
+    // new_file_inode.gid = ???
+    // new_file_inode.time = ???
+    // new_file_inode.ctime = ???
+    // new_file_inode.mtime = ???
+    // new_file_inode.flags = ???
     return 0;
   }
 
@@ -136,10 +224,7 @@ extern "C" {
   // int(* fuse_operations::open) (const char *, struct fuse_file_info *)
   int fs_read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
     debug("read        %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
-
-    INode::ID inode = file_access_manager->getINodeFromPath(path);
-    int size_read = file_access_manager->read(buffer, size, offset);
-    return size_read;
+    return file_access_manager->read(path, buffer, size, offset);
   }
 
   // int(* fuse_operations::readlink) (const char *, char *, size_t)
@@ -300,7 +385,6 @@ extern "C" {
     // Useless function for us
     return NULL;
   }
-
 }
 
 int main(int argc, char** argv) {
@@ -308,13 +392,17 @@ int main(int argc, char** argv) {
   // can also be changed to 0, NULL for testing empty
   struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 
-  uint64_t nblocks = 4096; //only placeholder -- take from argv[]
+  // Default ~32GB disk
+  // TODO: Read value from argv
+  uint64_t nblocks = 1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2);
 
+  // Instantiate objects for filesystem
   disk = new MemoryStorage(nblocks);
   block_manager = new StackBasedBlockManager(*disk);
   inode_manager = new LinearINodeManager(*disk);
   file_access_manager = new FileAccessManager(*block_manager, *inode_manager, *disk);
 
+  // Set FUSE function pointers
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
 
@@ -353,5 +441,6 @@ int main(int argc, char** argv) {
   // ops.getdir      = &fs_getdir;
   ops.utime       = &fs_utime;
 
+  // Run the FUSE daemon!
   return fuse_main(argc, argv, &ops, NULL);
 }
