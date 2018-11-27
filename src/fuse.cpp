@@ -18,7 +18,6 @@ BlockManager *block_manager;
 INodeManager *inode_manager;
 FileAccessManager *file_access_manager;
 
-
 extern "C" {
   // int(* fuse_operations::chmod) (const char *, mode_t, struct fuse_file_info *fi)
   int fs_chmod(const char* path, mode_t mode) {
@@ -39,7 +38,7 @@ extern "C" {
     INode::ID inode_id = file_access_manager->getINodeFromPath(path);
     INode inode;
     inode_manager->get(inode_id, inode);
-    
+
     inode.uid = uid;
     inode.gid = gid;
     inode_manager->set(inode_id, inode);
@@ -214,7 +213,7 @@ extern "C" {
     // this needs to be a struct that contains info about filesystem
     // such as number of free blocks, total blocks, type of file system etc.
     // doesn't seem useful here
-    // int status = statvfs(path, info); 
+    // int status = statvfs(path, info);
     // if(status == -1) {
     //   return -1;
     // }

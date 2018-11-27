@@ -9,12 +9,12 @@ FileStorage::~FileStorage() {
 }
 
 void FileStorage::get(Block::ID id, Block& dst) {
-  file.seekg(id * 4096);
-  file.read(dst.data, 4096);
+  file.seekg(id * Block::SIZE);
+  file.read(dst.data, Block::SIZE);
 }
 
 void FileStorage::set(Block::ID id, const Block& src) {
-  file.seekp(id * 4096);
-  file.write(src.data, 4096);
+  file.seekp(id * Block::SIZE);
+  file.write(src.data, Block::SIZE);
   file.flush();
 }
