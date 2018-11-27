@@ -275,14 +275,20 @@ extern "C" {
   int fs_readlink(const char* path, char* buffer, size_t size) {
     debug("readlink    %s\n", path);
 
+    // Check if file exists
     INode::ID inode_id = file_access_manager->getINodeFromPath(path);
-    INode inode;
-    inode_manager->get(inode_id, inode);
+    if (inode_id == 0) return -1;
 
-    // Checking if the inode type is a SYMLINK
-    if(inode.type != FileType::SYMLINK) return -1;
+    // Read INode and update metadata
+    INode file_inode;
+    inode_manager->get(inode_id, file_inode);
+    if (file_inode.type != FileType::SYMLINK) return -1;
+    file_inode.atime = time(NULL);
+    file_inode.ctime = time(NULL);
+    inode_manager->set(inode_id, file_inode);
 
-    // Need to get the string that symlink points to
+    // TODO: Read symlink value
+
     return 0;
   }
 
@@ -306,7 +312,7 @@ extern "C" {
     debug("rename      %s -> %s\n", path, name);
 
     int result = fs_link(path, name);
-    if(result != 0) return result;
+    if (result < 0) return result;
     return fs_unlink(path);
   }
 
@@ -314,10 +320,23 @@ extern "C" {
   int fs_rmdir(const char* path) {
     debug("rmdir       %s\n", path);
 
+    // Check if path exists
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    if (inode_id == 0) return -1;
+
     std::string pname = file_access_manager->dirname(path);
     std::string dname = file_access_manager->basename(path);
 
-    Directory parent = Directory::get(pname);
+    // Update parent's directory INode metadata
+    INode::ID parent_inode_id = file_access_manager->getINodeFromPath(pname);
+    INode parent_dir_inode;
+    inode_manager->get(parent_inode_id, parent_dir_inode);
+    parent_dir_inode.mtime = time(NULL);
+    parent_dir_inode.ctime = time(NULL);
+    inode_manager->set(parent_inode_id, parent_dir_inode);
+
+    // Remove entry from parent directory
+    Directory parent = Directory::get(parent_inode_id);
     parent.remove(dname);
     parent.save();
     return 0;
@@ -373,20 +392,37 @@ extern "C" {
   int fs_truncate(const char* path, off_t offset) {
     debug("truncate    %s to %zdb\n", path, (int64_t) offset);
 
-    // TODO...
-    return 0;
+    // Check if file exists
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    if (inode_id == 0) return -1;
+
+    // Cut data
+    return file_access_manager->truncate(inode_id, offset);
   }
 
   // int(* fuse_operations::unlink) (const char *)
   int fs_unlink(const char* path) {
     debug("unlink      %s\n", path);
 
-    std::string dname = file_access_manager->dirname(path);
-    std::string fname = file_access_manager->basename(path);
+    // Check if path exists
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    if (inode_id == 0) return -1;
 
-    Directory dir = Directory::get(dname);
-    dir.remove(fname);
-    dir.save();
+    std::string pname = file_access_manager->dirname(path);
+    std::string dname = file_access_manager->basename(path);
+
+    // Update parent's directory INode metadata
+    INode::ID parent_inode_id = file_access_manager->getINodeFromPath(pname);
+    INode parent_dir_inode;
+    inode_manager->get(parent_inode_id, parent_dir_inode);
+    parent_dir_inode.mtime = time(NULL);
+    parent_dir_inode.ctime = time(NULL);
+    inode_manager->set(parent_inode_id, parent_dir_inode);
+
+    // Remove entry from parent directory
+    Directory parent = Directory::get(parent_inode_id);
+    parent.remove(dname);
+    parent.save();
     return 0;
   }
 
@@ -395,16 +431,15 @@ extern "C" {
   int fs_utime(const char* path, utimbuf* buffer) {
     debug("utime       %s\n", path);
 
-    // Get the inode using the path
+    // Check if path exists
     INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    if (inode_id == 0) return -1;
     INode inode;
     inode_manager->get(inode_id, inode);
 
-    // Update the times
-    inode.time  = (uint32_t)buffer[0];  // update access time
-    inode.mtime = (uint32_t)buffer[1];  // update modification time
-
-    // Set the changes back to inode
+    // Update INode
+    inode.atime = buffer->actime;
+    inode.mtime = buffer->modtime;
     inode_manager->set(inode_id, inode);
     return 0;
   }
@@ -412,7 +447,13 @@ extern "C" {
   // int(* fuse_operations::write) (const char *, const char *, size_t, off_t, struct fuse_file_info *)
   int fs_write(const char* path, const char* data, size_t size, off_t offset, fuse_file_info* info) {
     debug("write       %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
-    return file_access_manager->write(path, data, size, offset);
+
+    // Check if file exists
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    if (inode_id == 0) return -1;
+
+    // Write data
+    return file_access_manager->write(inode_id, data, size, offset);
   }
 
   // void*(* fuse_operations::init) (struct fuse_conn_info *conn, struct fuse_config *cfg)

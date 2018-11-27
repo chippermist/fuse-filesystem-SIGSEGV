@@ -25,8 +25,8 @@ public:
 
   INode::ID getINodeFromPath(std::string path);
   int read(INode::ID file_inode_num, char *buffer, size_t size, size_t offset);
-  int write(std::string path, const char *buf, size_t size, size_t offset);
-  int truncate(std::string path, size_t length);
+  int write(INode::ID file_inode_num, const char *buf, size_t size, size_t offset);
+  int truncate(INode::ID file_inode_num, size_t length);
   std::string dirname(std::string path);
   std::string basename(std::string path);
 

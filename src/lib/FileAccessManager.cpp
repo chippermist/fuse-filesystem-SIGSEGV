@@ -21,13 +21,9 @@ FileAccessManager::~FileAccessManager() {
  * - Gave name of directory
  * - TODO: Incorrect ownership/permissions
  */
-int FileAccessManager::write(std::string path, const char *buf, size_t size, size_t offset) {
+int FileAccessManager::write(INode::ID file_inode_num, const char *buf, size_t size, size_t offset) {
 
   // Read the file's inode and do some sanity checks
-  INode::ID file_inode_num = getINodeFromPath(path);
-  if (file_inode_num == 0) {
-    return -1; // File not found
-  }
   INode file_inode;
   this->inode_manager->get(file_inode_num, file_inode);
 
@@ -35,7 +31,8 @@ int FileAccessManager::write(std::string path, const char *buf, size_t size, siz
     return -1; // File is not a regular file
   }
 
-  // TODO: Check ownership and permissions
+  file_inode.atime = time(NULL);
+  file_inode.ctime = time(NULL);
 
   size_t total_written = 0;
   // 1. If we are overwriting any data in the file, do that first.
@@ -408,13 +405,9 @@ Block::ID FileAccessManager::indirectBlockAt(Block::ID bid, uint64_t offset, uin
   return indirectBlockAt(refs[index], offset % size, size / scale);
 }
 
-int FileAccessManager::truncate(std::string path, size_t length) {
+int FileAccessManager::truncate(INode::ID file_inode_num, size_t length) {
 
   // Read the file's inode and do some sanity checks
-  INode::ID file_inode_num = getINodeFromPath(path);
-  if (file_inode_num == 0) {
-    return -1; // File not found
-  }
   INode file_inode;
   this->inode_manager->get(file_inode_num, file_inode);
 
@@ -425,6 +418,9 @@ int FileAccessManager::truncate(std::string path, size_t length) {
   if (file_inode.size == length) {
     return 0;
   }
+
+  file_inode.atime = time(NULL);
+  file_inode.ctime = time(NULL);
 
   // If increasing size, fill with NULL bytes
   if (length > file_inode.size) {
