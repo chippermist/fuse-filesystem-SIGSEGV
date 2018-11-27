@@ -94,7 +94,7 @@ extern "C" {
     info->st_mode = inode.mode;
     info->st_ino = inode_id;
     info->st_blksize = Block::SIZE;
-    // info->st_dev = inode.dev;
+    info->st_dev = inode.dev;
     // info->st_rdev = inode.rdev;
 
     // mount relatime - don't update atime
@@ -226,6 +226,7 @@ extern "C" {
     new_file_inode.blocks = 0;
     new_file_inode.size = 0;
     new_file_inode.links_count = 1;
+    new_file_inode.dev = dev;
     inode_manager->set(new_file_inode_id, new_file_inode);
 
     // TODO: How do we set these?

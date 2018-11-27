@@ -33,6 +33,7 @@ struct INode {
   uint64_t size; // how many bytes are in this file?
   uint32_t flags; // how should our FS use this inode?
   uint8_t type; // what kind of inode is this
+  uint64_t dev; // what kind of device this is
 
   /*
     Max File Size Computation
@@ -40,5 +41,5 @@ struct INode {
     (10 + 512 + 512 ** 2 + 512 ** 3) * 4096 = 550831693824 ~= pow(2, 39) bytes = 512 GB
    */
   Block::ID block_pointers[REF_BLOCKS_COUNT];
-  uint64_t __padding[13]; // padding to 256 bytes
+  uint64_t __padding[12]; // padding to 256 bytes
 };
