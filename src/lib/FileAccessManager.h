@@ -24,7 +24,7 @@ public:
   ~FileAccessManager();
 
   INode::ID getINodeFromPath(std::string path);
-  int read(std::string path, char *buffer, size_t size, size_t offset);
+  int read(INode::ID file_inode_num, char *buffer, size_t size, size_t offset);
   int write(std::string path, const char *buf, size_t size, size_t offset);
   int truncate(std::string path, size_t length);
   std::string dirname(std::string path);

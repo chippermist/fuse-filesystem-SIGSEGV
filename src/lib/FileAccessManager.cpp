@@ -304,13 +304,9 @@ Block::ID FileAccessManager::allocateNextBlock(INode& file_inode) {
   return data_block_num;
 }
 
-int FileAccessManager::read(std::string path, char *buf, size_t size, size_t offset) {
+int FileAccessManager::read(INode::ID file_inode_num, char *buf, size_t size, size_t offset) {
 
   // Read the file's inode and do some sanity checks
-  INode::ID file_inode_num = getINodeFromPath(path);
-  if (file_inode_num == 0) {
-    return -1; // File not found
-  }
   INode file_inode;
   this->inode_manager->get(file_inode_num, file_inode);
 
@@ -321,6 +317,9 @@ int FileAccessManager::read(std::string path, char *buf, size_t size, size_t off
   if (offset >= file_inode.size) {
     return -1; // Can't begin reading from after file
   }
+
+  file_inode.atime = time(NULL);
+  file_inode.ctime = time(NULL);
 
   // Only read until the end of the file
   if (offset + size > file_inode.size) {

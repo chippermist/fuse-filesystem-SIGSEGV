@@ -31,6 +31,7 @@ extern "C" {
     INode inode;
     inode_manager->get(inode_id, inode);
     inode.mode = mode;
+    inode.ctime = time(NULL);
     inode_manager->set(inode_id, inode);
     return 0;
   }
@@ -48,6 +49,7 @@ extern "C" {
     inode_manager->get(inode_id, inode);
     inode.uid = uid;
     inode.gid = gid;
+    inode.ctime = time(NULL);
     inode_manager->set(inode_id, inode);
     return 0;
   }
@@ -76,20 +78,27 @@ extern "C" {
     INode::ID inode_id = file_access_manager->getINodeFromPath(path);
     if (inode_id == 0) return -1;
 
-    // Read INode
+    // Read INode properties
     INode inode;
     inode_manager->get(inode_id, inode);
-    info->st_uid = inode.uid;
+    info->st_atim.tv_sec = inode.atime;
+    info->st_ctim.tv_sec = inode.ctime;
+    info->st_mtim.tv_sec = inode.mtime;
     info->st_size = inode.size;
+    info->st_blocks = inode.blocks;
     info->st_nlink = inode.links_count;
-    info->st_mtime = inode.mtime;
+    info->st_gid = inode.gid;
+    info->st_uid = inode.uid;
     info->st_mode = inode.mode;
     info->st_ino = inode_id;
-    info->st_gid = inode.gid;
-    info->st_atime = time(NULL);
     info->st_blksize = Block::SIZE;
-    info->st_blocks = inode.blocks;
-    info->st_ctime = inode.ctime;
+    // info->st_dev = inode.dev;
+    // info->st_rdev = inode.rdev;
+
+    // Update INode properties
+    inode.atime = time(NULL);
+    inode.ctime = time(NULL);
+    inode_manager->set(inode_id, inode);
     return 0;
   }
 
@@ -130,10 +139,12 @@ extern "C" {
     dir[new_fname] = inode_id;
     dir.save();
 
-    // Update the "links" count of the oldpath
+    // Update oldpath INode
     INode inode;
     inode_manager->get(inode_id, inode);
     inode.links_count += 1;
+    inode.atime = time(NULL);
+    inode.ctime = time(NULL);
     inode_manager->set(inode_id, inode);
     return 0;
   }
@@ -159,26 +170,35 @@ extern "C" {
     inode_id = file_access_manager->getINodeFromPath(parent_dname);
     if (inode_id == 0) return -1;
 
+    // Update parent's directory
+    INode parent_dir_inode;
+    inode_manager->get(inode_id, parent_dir_inode);
+    parent_dir_inode.mtime = time(NULL);
+    parent_dir_inode.ctime = time(NULL);
+    inode_manager->set(inode_id, parent_dir_inode);
+
     // Allocate an inode for new directory and write in parent directory
     INode::ID new_dir_inode_id = inode_manager->reserve();
     Directory dir = Directory::get(inode_id);
     dir[dname] = new_dir_inode_id;
+    dir.save();
 
     // Set the new directory's attributes
     INode new_dir_inode;
     memset(&new_dir_inode, 0, sizeof(new_dir_inode));
     new_dir_inode.mode = mode;
+    new_dir_inode.atime = time(NULL);
+    new_dir_inode.mtime = time(NULL);
+    new_dir_inode.ctime = time(NULL);
     new_dir_inode.type = FileType::DIRECTORY;
     new_dir_inode.blocks = 0;
     new_dir_inode.size = 0;
+    new_dir_inode.links_count = 1;
     inode_manager->set(new_dir_inode_id, new_dir_inode);
 
     // TODO: How do we set these?
     // new_dir_inode.uid = ???
     // new_dir_inode.gid = ???
-    // new_dir_inode.time = ???
-    // new_dir_inode.ctime = ???
-    // new_dir_inode.mtime = ???
     // new_dir_inode.flags = ???
 
     return 0;
@@ -198,26 +218,35 @@ extern "C" {
     inode_id = file_access_manager->getINodeFromPath(parent_dname);
     if (inode_id == 0) return -1;
 
+    // Update parent's directory
+    INode parent_dir_inode;
+    inode_manager->get(inode_id, parent_dir_inode);
+    parent_dir_inode.mtime = time(NULL);
+    parent_dir_inode.ctime = time(NULL);
+    inode_manager->set(inode_id, parent_dir_inode);
+
     // Allocate an inode for new file and write in parent directory
     INode::ID new_file_inode_id = inode_manager->reserve();
     Directory dir = Directory::get(inode_id);
     dir[fname] = new_file_inode_id;
+    dir.save();
 
     // Set the new file's attributes
     INode new_file_inode;
     memset(&new_file_inode, 0, sizeof(new_file_inode));
     new_file_inode.mode = mode;
+    new_file_inode.atime = time(NULL);
+    new_file_inode.mtime = time(NULL);
+    new_file_inode.ctime = time(NULL);
     new_file_inode.type = FileType::REGULAR;
     new_file_inode.blocks = 0;
     new_file_inode.size = 0;
+    new_file_inode.links_count = 1;
     inode_manager->set(new_file_inode_id, new_file_inode);
 
     // TODO: How do we set these?
     // new_file_inode.uid = ???
     // new_file_inode.gid = ???
-    // new_file_inode.time = ???
-    // new_file_inode.ctime = ???
-    // new_file_inode.mtime = ???
     // new_file_inode.flags = ???
     return 0;
   }
@@ -233,7 +262,13 @@ extern "C" {
   // int(* fuse_operations::open) (const char *, struct fuse_file_info *)
   int fs_read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
     debug("read        %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
-    return file_access_manager->read(path, buffer, size, offset);
+
+    // Check if file exists
+    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
+    if (inode_id == 0) return -1;
+
+    // Read data
+    return file_access_manager->read(inode_id, buffer, size, offset);
   }
 
   // int(* fuse_operations::readlink) (const char *, char *, size_t)

@@ -25,7 +25,7 @@ struct INode {
   uint16_t mode; // can it be read/written/executed?
   uint16_t uid; // who owns this file?
   uint16_t gid; // which group does this file belong to?
-  uint32_t time; // what time was the file last accessed?
+  uint32_t atime; // what time was the file last accessed?
   uint32_t ctime; // what time was the file created?
   uint32_t mtime; // what time was this file last modified?
   uint16_t links_count; // how many hard links are there to this file?
