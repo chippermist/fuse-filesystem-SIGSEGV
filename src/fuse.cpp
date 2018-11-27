@@ -76,11 +76,20 @@ extern "C" {
     INode::ID inode_id = file_access_manager->getINodeFromPath(path);
     if (inode_id == 0) return -1;
 
-    // Update INode
+    // Read INode
     INode inode;
     inode_manager->get(inode_id, inode);
-
-    // TODO...
+    info->st_uid = inode.uid;
+    info->st_size = inode.size;
+    info->st_nlink = inode.links_count;
+    info->st_mtime = inode.mtime;
+    info->st_mode = inode.mode;
+    info->st_ino = inode_id;
+    info->st_gid = inode.gid;
+    info->st_atime = time(NULL);
+    info->st_blksize = Block::SIZE;
+    info->st_blocks = inode.blocks;
+    info->st_ctime = inode.ctime;
     return 0;
   }
 
