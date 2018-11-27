@@ -425,7 +425,7 @@ int FileAccessManager::truncate(INode::ID file_inode_num, size_t length) {
 
   // If increasing size, fill with NULL bytes
   if (length > file_inode.size) {
-    appendData(file_inode, NULL, file_inode.size - length, file_inode.size, true);
+    appendData(file_inode, NULL, length - file_inode.size, file_inode.size, true);
     return 0;
   } else {
 

@@ -495,3 +495,10 @@ int main(int argc, char** argv) {
   // Run the FUSE daemon!
   return fuse_main(argc, argv, &ops, NULL);
 }
+
+/*
+  References:
+  1. relatime
+    - http://wisercoder.com/knowing-difference-mtime-ctime-atime/
+    - https://superuser.com/questions/464290/why-is-cat-not-changing-the-access-time
+*/
