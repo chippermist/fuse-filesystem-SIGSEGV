@@ -41,3 +41,6 @@ struct INode {
   Block::ID block_pointers[REF_BLOCKS_COUNT];
   uint64_t __padding[13]; // padding to 256 bytes
 };
+
+static_assert(sizeof(INode) == 256, "INode must be exactly 256 bytes!");
+static_assert(INode::SIZE   == 256, "INode::SIZE is not set correctly!");
