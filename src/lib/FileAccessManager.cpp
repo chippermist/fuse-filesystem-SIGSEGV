@@ -21,7 +21,7 @@ FileAccessManager::~FileAccessManager() {
  * - Gave name of directory
  * - TODO: Incorrect ownership/permissions
  */
-int FileAccessManager::write(std::string path, char *buf, size_t size, size_t offset) {
+int FileAccessManager::write(std::string path, const char *buf, size_t size, size_t offset) {
 
   // Read the file's inode and do some sanity checks
   INode::ID file_inode_num = getINodeFromPath(path);
@@ -102,7 +102,7 @@ int FileAccessManager::write(std::string path, char *buf, size_t size, size_t of
  * Invariant upon entering the function:
  * - Offset == file size, since we are adding to the end of the file.
  */
-size_t FileAccessManager::appendData(INode& file_inode, char *buf, size_t size, size_t offset, bool null_filler) {
+size_t FileAccessManager::appendData(INode& file_inode, const char *buf, size_t size, size_t offset, bool null_filler) {
 
   assert(offset == file_inode.size);
   size_t total_written = 0;
@@ -485,11 +485,11 @@ std::string dirname(std::string &path) {
     //cout << str << endl;
     if(str == ".") {
       continue;
-    } 
+    }
     else if (str == ".." && !folder_names.empty()) {
       folder_names.pop();
       continue;
-    } 
+    }
     else if (str == "..") {
       continue;
     }

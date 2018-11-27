@@ -245,12 +245,9 @@ extern "C" {
     inode_manager->get(inode_id, inode);
 
     // Checking if the inode type is a SYMLINK
-    if(inode.type != FileType::SYMLINK) {
-      return -1;
-    }
+    if(inode.type != FileType::SYMLINK) return -1;
 
     // Need to get the string that symlink points to
-
     return 0;
   }
 
@@ -380,13 +377,7 @@ extern "C" {
   // int(* fuse_operations::write) (const char *, const char *, size_t, off_t, struct fuse_file_info *)
   int fs_write(const char* path, const char* data, size_t size, off_t offset, fuse_file_info* info) {
     debug("write       %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
-
-    INode::ID inode_id = file_access_manager->getINodeFromPath(path);
-    Inode inode;
-    inode_manager->get(inode_id, inode);
-    file_access_manager->write(data, size, offset);
-    // TODO: Should this return the number of bytes written?
-    return 0;
+    return file_access_manager->write(path, data, size, offset);
   }
 
   // void*(* fuse_operations::init) (struct fuse_conn_info *conn, struct fuse_config *cfg)
