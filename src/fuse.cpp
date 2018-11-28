@@ -1,4 +1,7 @@
 #include "lib/Filesystem.h"
+#include "lib/storage/MemoryStorage.h"
+#include "lib/inodes/LinearINodeManager.h"
+#include "lib/blocks/StackBasedBlockManager.h"
 
 #if defined(__linux__)
   #include <sys/statfs.h>
