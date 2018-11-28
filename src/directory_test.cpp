@@ -8,6 +8,21 @@ StackBasedBlockManager *block_manager;
 Filesystem *filesystem;
 int count = 0;
 
+std::string random_string(size_t length) {
+  srand(time(NULL));
+    auto randchar = []() -> char {
+        const char charset[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+        const size_t max_index = (sizeof(charset) - 1);
+        return charset[ rand() % max_index ];
+    };
+    std::string str(length,0);
+    std::generate_n( str.begin(), length, randchar );
+    return str;
+}
+
 void createNestedDirectories(Directory parent) {
   srand(time(NULL));
   int times = rand() % 10 + 1;
@@ -38,7 +53,34 @@ void createNestedDirectories(Directory parent) {
 
 
 void createNamedNestedDirectories(Directory parent) {
-  
+  srand(time(NULL));
+  int times = rand() % 10 + 1;
+  if(count >= 1000) return;
+
+  for(int k=0; k<times; ++k) {
+    int name_length = rand() % 350 + 1;
+    std::string dir_name = random_string(name_length);
+    INode::ID inode_id = inode_manager->reserve();
+    INode inode;
+    inode_manager->get(inode_id, inode);
+    inode.type = FileType::DIRECTORY;
+    filesystem->save(inode_id, inode);
+    Directory new_dir = Directory(inode_id, parent.id());
+    parent.insert(dir_name, inode_id);
+    filesystem->save(new_dir);
+    filesystem->save(parent);
+    std::cout << "Directory created: " << new_dir.id() << " with name: " << dir_name <<  std::endl;
+
+    // checking if . and .. are correct
+    INode::ID self_id = new_dir.search(".");
+    INode::ID parent_id = new_dir.search("..");
+
+    assert(self_id == inode_id);
+    assert(parent_id == parent.id());
+
+    ++count;
+    createNamedNestedDirectories(new_dir);
+  }
 }
 
 
@@ -88,8 +130,9 @@ int main(int argv, char** argc) {
   filesystem->save(parent_dir);
   ++count;
 
-  createNestedDirectories(parent_dir);
-
+  //createNestedDirectories(parent_dir);
+  count = 0;
+  createNamedNestedDirectories(parent_dir);
 
 
 
