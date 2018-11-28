@@ -6,10 +6,6 @@
 #include "INodeManager.h"
 #include "Storage.h"
 #include "Directory.h"
-#include "blocks/StackBasedBlockManager.h"
-#include "inodes/LinearINodeManager.h"
-#include "storage/MemoryStorage.h"
-#include "storage/FileStorage.h"
 
 class Filesystem {
   BlockManager *block_manager;

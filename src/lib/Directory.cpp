@@ -1,5 +1,7 @@
 #include "Directory.h"
 
+#include <cstring>
+
 // To be used when creating (mkdiring) a new directory:
 Directory::Directory(INode::ID id, INode::ID parent): inode_id(id), entries() {
   insert(".",  id);
