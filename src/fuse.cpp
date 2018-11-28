@@ -65,12 +65,9 @@ extern "C" {
     if (inode_id == 0) return -1;
 
     // Update INode
-    INode inode;
-    inode_manager->get(inode_id, inode);
+    INode inode = fs->getINode(inode_id);
     inode.mode = mode;
-    inode.ctime = time(NULL);
-    inode.atime = inode.ctime;
-    inode_manager->set(inode_id, inode);
+    fs->save(inode_id, inode);
     return 0;
   }
 
@@ -83,13 +80,10 @@ extern "C" {
     if (inode_id == 0) return -1;
 
     // Update INode
-    INode inode;
-    inode_manager->get(inode_id, inode);
+    INode inode = fs->getINode(inode_id);
     inode.uid = uid;
     inode.gid = gid;
-    inode.ctime = time(NULL);
-    inode.atime = inode.ctime;
-    inode_manager->set(inode_id, inode);
+    fs->save(inode_id, inode);
     return 0;
   }
 
@@ -118,8 +112,7 @@ extern "C" {
     if (inode_id == 0) return -1;
 
     // Read INode properties
-    INode inode;
-    inode_manager->get(inode_id, inode);
+    INode inode = fs->getINode(inode_id);
     info->st_atime = inode.atime;
     info->st_ctime = inode.ctime;
     info->st_mtime = inode.mtime;
@@ -134,9 +127,6 @@ extern "C" {
     info->st_dev = inode.dev;
     // info->st_rdev = inode.rdev;
 
-    // mount relatime - don't update atime
-    // inode.atime = time(NULL);
-    // inode_manager->set(inode_id, inode);
     return 0;
   }
 
@@ -177,12 +167,9 @@ extern "C" {
     fs->save(dir);
 
     // Update oldpath INode's links count
-    INode inode;
-    inode_manager->get(inode_id, inode);
+    INode inode = fs->getINode(inode_id);
     inode.links_count += 1;
-    inode.ctime = time(NULL);
-    inode.atime = inode.ctime;
-    inode_manager->set(inode_id, inode);
+    fs->save(inode_id, inode);
     return 0;
   }
 
@@ -223,7 +210,7 @@ extern "C" {
     new_dir_inode.blocks = 0;
     new_dir_inode.size = 0;
     new_dir_inode.links_count = 1;
-    inode_manager->set(new_dir_inode_id, new_dir_inode);
+    fs->save(new_dir_inode_id, new_dir_inode);
 
     // Initialize the new directory's contents
     Directory new_dir(new_dir_inode_id, parent_dir_id);
@@ -268,7 +255,7 @@ extern "C" {
     new_file_inode.size = 0;
     new_file_inode.links_count = 1;
     new_file_inode.dev = dev;
-    inode_manager->set(new_file_inode_id, new_file_inode);
+    fs->save(new_file_inode_id, new_file_inode);
 
     // TODO: How do we set these?
     // new_file_inode.uid = ???
@@ -306,8 +293,7 @@ extern "C" {
     if (inode_id == 0) return -1;
 
     // TODO: Read symlink value
-    INode file_inode;
-    inode_manager->get(inode_id, file_inode);
+    INode file_inode = fs->getINode(inode_id);
     if (file_inode.type != FileType::SYMLINK) return -1;
 
 
@@ -352,8 +338,7 @@ extern "C" {
     std::string pname = fs->dirname(path);
     std::string dname = fs->basename(path);
     INode::ID parent_inode_id = fs->getINodeID(pname);
-    INode parent_dir_inode;
-    inode_manager->get(parent_inode_id, parent_dir_inode);
+    INode parent_dir_inode = fs->getINode(parent_inode_id);
 
     // Remove entry from parent directory
     Directory parent = fs->getDirectory(parent_inode_id);
@@ -399,6 +384,7 @@ extern "C" {
     // inode.type = FileType::SYMLINK;
     // inode_manager->set(inode_id, inode);
 
+    // TODO: This is not a symlink!
     INode::ID inode_id = fs->getINodeID(link);
     Directory dir = fs->getDirectory(dname);
     // dir[fname].type = FileTypeDirectory::SYMLINK; //if we don't do this then we just won't know what type it is but will work
@@ -447,16 +433,15 @@ extern "C" {
     // Check if path exists
     INode::ID inode_id = fs->getINodeID(path);
     if (inode_id == 0) return -1;
-    INode inode;
-    inode_manager->get(inode_id, inode);
 
     // Update INode
+    INode inode = fs->getINode(inode_id);
     if (buffer->actime == NULL) buffer->actime = time(NULL);
     if (buffer->modtime == NULL) buffer->modtime = time(NULL);
     inode.atime = buffer->actime;
     inode.mtime = buffer->modtime;
     inode.ctime = time(NULL);
-    inode_manager->set(inode_id, inode);
+    fs->save(inode_id, inode);
     return 0;
   }
 

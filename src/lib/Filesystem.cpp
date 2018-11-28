@@ -107,7 +107,6 @@ int Filesystem::write(INode::ID file_inode_num, const char *buf, size_t size, si
   }
 
   file_inode.mtime = time(NULL);
-  file_inode.ctime = file_inode.mtime;
   file_inode.atime = file_inode.mtime;
 
   size_t total_written = 0;
@@ -495,7 +494,6 @@ int Filesystem::truncate(INode::ID file_inode_num, size_t length) {
   }
 
   file_inode.mtime = time(NULL);
-  file_inode.ctime = file_inode.mtime;
   file_inode.atime = file_inode.mtime;
 
   // If increasing size, fill with NULL bytes
