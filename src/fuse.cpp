@@ -222,6 +222,10 @@ extern "C" {
     new_dir_inode.links_count = 1;
     inode_manager->set(new_dir_inode_id, new_dir_inode);
 
+    // Initialize the new directory's contents
+    Directory new_dir(new_dir_inode_id, parent_dir_id);
+    file_access_manager->save(new_dir);
+
     // TODO: How do we set these?
     // new_dir_inode.uid = ???
     // new_dir_inode.gid = ???
