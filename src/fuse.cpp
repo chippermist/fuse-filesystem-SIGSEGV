@@ -22,6 +22,34 @@ INodeManager *inode_manager;
 FileAccessManager *file_access_manager;
 
 extern "C" {
+  // Adding declarations to resolve linker errors
+  int fs_chmod(const char*, mode_t);
+  int fs_chown(const char* , uid_t , gid_t );
+  int fs_flush(const char* , fuse_file_info* );
+  int fs_fsync(const char* , int , fuse_file_info* );
+  int fs_getattr(const char* , struct stat* );
+  int fs_getdir(const char* , fuse_dirh_t , fuse_dirfil_t );
+  int fs_getxattr(const char* , const char* , char* , size_t );
+  int fs_link(const char* , const char* );
+  int fs_listxattr(const char* , char* , size_t );
+  int fs_mkdir(const char* , mode_t );
+  int fs_mknod(const char* , mode_t , dev_t );
+  int fs_open(const char* , fuse_file_info* );
+  int fs_read(const char* , char* , size_t , off_t , fuse_file_info* );
+  int fs_readlink(const char* , char* , size_t );
+  int fs_release(const char* , fuse_file_info* );
+  int fs_removexattr(const char* , const char* );
+  int fs_rename(const char* , const char* );
+  int fs_rmdir(const char* );
+  int fs_setxattr(const char* , const char* , const char* , size_t , int );
+  int fs_statfs(const char* , struct statvfs* );
+  int fs_symlink(const char* , const char* );
+  int fs_truncate(const char* , off_t );
+  int fs_unlink(const char* );
+  int fs_utime(const char* , utimbuf* );
+  int fs_write(const char* , const char* , size_t , off_t , fuse_file_info* );
+  void* fs_init(struct fuse_conn_info *, struct fuse_config *);
+
   // int(* fuse_operations::chmod) (const char *, mode_t, struct fuse_file_info *fi)
   int fs_chmod(const char* path, mode_t mode) {
     debug("chmod       %s to %03o\n", path, mode);
@@ -86,9 +114,9 @@ extern "C" {
     // Read INode properties
     INode inode;
     inode_manager->get(inode_id, inode);
-    info->st_atim.tv_sec = inode.atime;
-    info->st_ctim.tv_sec = inode.ctime;
-    info->st_mtim.tv_sec = inode.mtime;
+    info->st_atime = inode.atime;
+    info->st_ctime = inode.ctime;
+    info->st_mtime = inode.mtime;
     info->st_size = inode.size;
     info->st_blocks = inode.blocks;
     info->st_nlink = inode.links_count;
@@ -435,9 +463,9 @@ extern "C" {
   }
 
   // void*(* fuse_operations::init) (struct fuse_conn_info *conn, struct fuse_config *cfg)
-  int fs_init(struct fuse_conn_info *conn, struct fuse_config *cfg) {
+  void* fs_init(struct fuse_conn_info *conn, struct fuse_config *cfg) {
     // Useless function for us
-    return 0;
+    return NULL;
   }
 }
 
