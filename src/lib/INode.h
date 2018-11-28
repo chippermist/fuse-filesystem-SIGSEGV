@@ -29,7 +29,7 @@ struct INode {
   uint32_t ctime; // what time was the file created?
   uint32_t mtime; // what time was this file last modified?
   uint16_t links_count; // how many hard links are there to this file?
-  uint32_t blocks; // how many blocks have been allocated to this file?
+  uint64_t blocks; // how many blocks have been allocated to this file?
   uint64_t size; // how many bytes are in this file?
   uint32_t flags; // how should our FS use this inode?
   uint8_t type; // what kind of inode is this
