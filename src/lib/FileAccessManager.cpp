@@ -566,6 +566,9 @@ std::string dirname(std::string &path) {
 }
 
 std::string basename(std::string &path) {
+  if(path.length() > 256) {
+    throw std::length_error("Filename is too long. Maximum allowed length is 256 characters.");
+  }
   size_t loc = path.find_last_of('/');
   if (loc != std::string::npos) {
     return (path.substr(loc+1, path.length()));

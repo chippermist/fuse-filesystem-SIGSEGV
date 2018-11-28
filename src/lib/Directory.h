@@ -2,14 +2,14 @@
 
 #include "INode.h"
 
-#include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 
 class Directory {
 private:
   INode::ID inode_id;
-  std::map<std::string, INode::ID> entries;
+  std::unordered_map<std::string, INode::ID> entries;
 
 public:
   Directory(INode::ID id, INode::ID parent);
