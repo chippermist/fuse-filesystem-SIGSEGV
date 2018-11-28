@@ -13,7 +13,7 @@
 #include "BlockManager.h"
 #include "INodeManager.h"
 #include "Storage.h"
-#include "DirectoryRecord.h"
+#include "Directory.h"
 
 class FileAccessManager {
   BlockManager *block_manager;
@@ -23,12 +23,20 @@ public:
   FileAccessManager(BlockManager &block_manager, INodeManager& inode_manager, Storage &storage);
   ~FileAccessManager();
 
-  INode::ID getINodeFromPath(std::string path);
   int read(INode::ID file_inode_num, char *buffer, size_t size, size_t offset);
   int write(INode::ID file_inode_num, const char *buf, size_t size, size_t offset);
   int truncate(INode::ID file_inode_num, size_t length);
   std::string dirname(std::string path);
   std::string basename(std::string path);
+
+  Directory getDirectory(INode::ID id);
+  Directory getDirectory(const std::string& path);
+  INode     getINode(INode::ID id);
+  INode     getINode(const std::string& path);
+  INode::ID getINodeID(const std::string& path);
+
+  void save(const Directory& directory);
+  void save(INode::ID id, const INode& inode);
 
 private:
   Block::ID blockAt(const INode& inode, uint64_t offset);
