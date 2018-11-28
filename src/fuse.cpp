@@ -15,11 +15,6 @@
   #define debug(...)
 #endif
 
-// typedef struct Storage Storage;
-// typedef struct BlockManager BlockManager;
-// typedef struct INodeManager INodeManager;
-// typedef struct FileAccessManager FileAccessManager;
-
 // Global Variables for objects
 Storage *disk;
 BlockManager *block_manager;
