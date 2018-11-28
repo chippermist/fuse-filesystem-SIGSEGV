@@ -525,7 +525,8 @@ int FileAccessManager::truncate(INode::ID file_inode_num, size_t length) {
   }
 }
 
-std::string dirname(std::string &path) {
+std::string FileAccessManager::dirname(const char* path_cstring) {
+  std::string path(path_cstring);
   // Remove all repeated /'s
   path.erase(std::unique(path.begin(), path.end(), [](char &a, char &b) {
     return a == '/' && b == '/';
@@ -565,7 +566,8 @@ std::string dirname(std::string &path) {
   return dir_path;
 }
 
-std::string basename(std::string &path) {
+std::string FileAccessManager::basename(const char* path_cstring) {
+  std::string path(path_cstring);
   if(path.length() > 256) {
     throw std::length_error("Filename is too long. Maximum allowed length is 256 characters.");
   }

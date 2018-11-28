@@ -15,6 +15,11 @@
   #define debug(...)
 #endif
 
+// typedef struct Storage Storage;
+// typedef struct BlockManager BlockManager;
+// typedef struct INodeManager INodeManager;
+// typedef struct FileAccessManager FileAccessManager;
+
 // Global Variables for objects
 Storage *disk;
 BlockManager *block_manager;
@@ -22,6 +27,7 @@ INodeManager *inode_manager;
 FileAccessManager *file_access_manager;
 
 extern "C" {
+
   // Adding declarations to resolve linker errors
   int fs_chmod(const char*, mode_t);
   int fs_chown(const char* , uid_t , gid_t );
@@ -48,7 +54,9 @@ extern "C" {
   int fs_unlink(const char* );
   int fs_utime(const char* , utimbuf* );
   int fs_write(const char* , const char* , size_t , off_t , fuse_file_info* );
-  void* fs_init(struct fuse_conn_info *, struct fuse_config *);
+  //void* fs_init(struct fuse_conn_info *, struct fuse_config *);
+  void* fs_init(struct fuse_conn_info *);
+
 
   // int(* fuse_operations::chmod) (const char *, mode_t, struct fuse_file_info *fi)
   int fs_chmod(const char* path, mode_t mode) {
@@ -463,7 +471,7 @@ extern "C" {
   }
 
   // void*(* fuse_operations::init) (struct fuse_conn_info *conn, struct fuse_config *cfg)
-  void* fs_init(struct fuse_conn_info *conn, struct fuse_config *cfg) {
+  void* fs_init(struct fuse_conn_info *conn) {
     // Useless function for us
     return NULL;
   }
