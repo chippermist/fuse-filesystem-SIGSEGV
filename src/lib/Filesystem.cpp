@@ -1,6 +1,9 @@
 #include "Filesystem.h"
 
+#include <algorithm>
+#include <cassert>
 #include <stack>
+#include <stdexcept>
 
 Filesystem::Filesystem(BlockManager& block_manager, INodeManager& inode_manager, Storage& storage) {
   this->block_manager = &block_manager;
