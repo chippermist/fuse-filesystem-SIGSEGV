@@ -18,45 +18,41 @@
   #define debug(...)
 #endif
 
-// Global Variables for objects
-Storage *disk;
-BlockManager *block_manager;
+// Global Variables
 INodeManager *inode_manager;
 Filesystem *fs;
 
 extern "C" {
 
-  // Adding declarations to resolve linker errors
-  int fs_chmod(const char*, mode_t);
-  int fs_chown(const char* , uid_t , gid_t );
-  int fs_flush(const char* , fuse_file_info* );
-  int fs_fsync(const char* , int , fuse_file_info* );
-  int fs_getattr(const char* , struct stat* );
-  int fs_getdir(const char* , fuse_dirh_t , fuse_dirfil_t );
-  int fs_getxattr(const char* , const char* , char* , size_t );
-  int fs_link(const char* , const char* );
-  int fs_listxattr(const char* , char* , size_t );
-  int fs_mkdir(const char* , mode_t );
-  int fs_mknod(const char* , mode_t , dev_t );
-  int fs_open(const char* , fuse_file_info* );
-  int fs_read(const char* , char* , size_t , off_t , fuse_file_info* );
-  int fs_readlink(const char* , char* , size_t );
-  int fs_release(const char* , fuse_file_info* );
-  int fs_removexattr(const char* , const char* );
-  int fs_rename(const char* , const char* );
-  int fs_rmdir(const char* );
-  int fs_setxattr(const char* , const char* , const char* , size_t , int );
-  int fs_statfs(const char* , struct statvfs* );
-  int fs_symlink(const char* , const char* );
-  int fs_truncate(const char* , off_t );
-  int fs_unlink(const char* );
-  int fs_utime(const char* , utimbuf* );
-  int fs_write(const char* , const char* , size_t , off_t , fuse_file_info* );
-  // void* fs_init(struct fuse_conn_info *, struct fuse_config *);
+  // Declarations to resolve linker errors
+  int   fs_chmod(const char*, mode_t);
+  int   fs_chown(const char*, uid_t, gid_t);
+  int   fs_flush(const char*, fuse_file_info*);
+  int   fs_fsync(const char*, int, fuse_file_info*);
+  int   fs_getattr(const char*, struct stat*);
+  int   fs_getdir(const char*, fuse_dirh_t, fuse_dirfil_t);
+  int   fs_getxattr(const char*, const char*, char*, size_t);
   void* fs_init(struct fuse_conn_info *);
+  int   fs_link(const char*, const char*);
+  int   fs_listxattr(const char*, char*, size_t);
+  int   fs_mkdir(const char*, mode_t);
+  int   fs_mknod(const char*, mode_t, dev_t);
+  int   fs_open(const char*, fuse_file_info*);
+  int   fs_read(const char*, char*, size_t, off_t, fuse_file_info*);
+  int   fs_readlink(const char*, char*, size_t);
+  int   fs_release(const char*, fuse_file_info*);
+  int   fs_removexattr(const char*, const char*);
+  int   fs_rename(const char*, const char*);
+  int   fs_rmdir(const char*);
+  int   fs_setxattr(const char*, const char*, const char*, size_t, int);
+  int   fs_statfs(const char*, struct statvfs*);
+  int   fs_symlink(const char*, const char*);
+  int   fs_truncate(const char*, off_t);
+  int   fs_unlink(const char*);
+  int   fs_utime(const char*, utimbuf*);
+  int   fs_write(const char*, const char*, size_t, off_t, fuse_file_info*);
 
 
-  // int(* fuse_operations::chmod) (const char *, mode_t, struct fuse_file_info *fi)
   int fs_chmod(const char* path, mode_t mode) {
     debug("chmod       %s to %03o\n", path, mode);
 
@@ -65,16 +61,13 @@ extern "C" {
     if (inode_id == 0) return -1;
 
     // Update INode
-    INode inode;
-    inode_manager->get(inode_id, inode);
-    inode.mode = mode;
+    INode inode = fs->getINode(inode_id);
     inode.ctime = time(NULL);
-    inode.atime = inode.ctime;
-    inode_manager->set(inode_id, inode);
+    inode.mode = mode;
+    fs->save(inode_id, inode);
     return 0;
   }
 
-  // int(* fuse_operations::chown) (const char *, uid_t, gid_t, struct fuse_file_info *fi)
   int fs_chown(const char* path, uid_t uid, gid_t gid) {
     debug("chown       %s to %d:%d\n", path, uid, gid);
 
@@ -83,17 +76,14 @@ extern "C" {
     if (inode_id == 0) return -1;
 
     // Update INode
-    INode inode;
-    inode_manager->get(inode_id, inode);
+    INode inode = fs->getINode(inode_id);
+    inode.ctime = time(NULL);
     inode.uid = uid;
     inode.gid = gid;
-    inode.ctime = time(NULL);
-    inode.atime = inode.ctime;
-    inode_manager->set(inode_id, inode);
+    fs->save(inode_id, inode);
     return 0;
   }
 
-  // int(* fuse_operations::flush) (const char *, struct fuse_file_info *)
   int fs_flush(const char* path, fuse_file_info* info) {
     debug("flush       %s\n", path);
 
@@ -101,7 +91,6 @@ extern "C" {
     return 0;
   }
 
-  // int(* fuse_operations::fsync) (const char *, int, struct fuse_file_info *)
   int fs_fsync(const char* path, int unknown, fuse_file_info* info) {
     debug("fsync       %s\n", path);
 
@@ -109,7 +98,6 @@ extern "C" {
     return 0;
   }
 
-  // int(* fuse_operations::getattr) (const char *, struct stat *, struct fuse_file_info *fi)
   int fs_getattr(const char* path, struct stat* info) {
     debug("getattr     %s\n", path);
 
@@ -118,8 +106,7 @@ extern "C" {
     if (inode_id == 0) return -1;
 
     // Read INode properties
-    INode inode;
-    inode_manager->get(inode_id, inode);
+    INode inode = fs->getINode(inode_id);
     info->st_atime = inode.atime;
     info->st_ctime = inode.ctime;
     info->st_mtime = inode.mtime;
@@ -134,13 +121,9 @@ extern "C" {
     info->st_dev = inode.dev;
     // info->st_rdev = inode.rdev;
 
-    // mount relatime - don't update atime
-    // inode.atime = time(NULL);
-    // inode_manager->set(inode_id, inode);
     return 0;
   }
 
-  // did not find a definition in fuse::operations
   int fs_getdir(const char* path, fuse_dirh_t dirh, fuse_dirfil_t dirfil) {
     debug("getdir      %s\n", path);
 
@@ -149,14 +132,17 @@ extern "C" {
     return 0;
   }
 
-  // int(* fuse_operations::getxattr) (const char *, const char *, char *, size_t)
   int fs_getxattr(const char* path, const char* attr, char* buffer, size_t size) {
     debug("getxattr    %s %s\n", path, attr);
     // Not implemented!
     return -1;
   }
 
-  // int(* fuse_operations::link) (const char *, const char *)
+  void* fs_init(struct fuse_conn_info *conn) {
+    // Useless function for us
+    return NULL;
+  }
+
   int fs_link(const char* oldpath, const char* newpath) {
     debug("link        %s -> %s\n", newpath, oldpath);
 
@@ -177,23 +163,19 @@ extern "C" {
     fs->save(dir);
 
     // Update oldpath INode's links count
-    INode inode;
-    inode_manager->get(inode_id, inode);
-    inode.links_count += 1;
+    INode inode = fs->getINode(inode_id);
     inode.ctime = time(NULL);
-    inode.atime = inode.ctime;
-    inode_manager->set(inode_id, inode);
+    inode.links_count += 1;
+    fs->save(inode_id, inode);
     return 0;
   }
 
-  // int(* fuse_operations::listxattr) (const char *, char *, size_t)
   int fs_listxattr(const char* path, char* buffer, size_t size) {
     debug("listxattr   %s\n", path);
     // Not implemented!
     return -1;
   }
 
-  // int(* fuse_operations::mkdir) (const char *, mode_t)
   int fs_mkdir(const char* path, mode_t mode) {
     debug("mkdir       %s %03o\n", path, mode);
 
@@ -223,7 +205,7 @@ extern "C" {
     new_dir_inode.blocks = 0;
     new_dir_inode.size = 0;
     new_dir_inode.links_count = 1;
-    inode_manager->set(new_dir_inode_id, new_dir_inode);
+    fs->save(new_dir_inode_id, new_dir_inode);
 
     // Initialize the new directory's contents
     Directory new_dir(new_dir_inode_id, parent_dir_id);
@@ -237,7 +219,6 @@ extern "C" {
     return 0;
   }
 
-  // int(* fuse_operations::mknod) (const char *, mode_t, dev_t)
   int fs_mknod(const char* path, mode_t mode, dev_t dev) {
     debug("mknod       %s %03o\n", path, mode);
 
@@ -268,7 +249,7 @@ extern "C" {
     new_file_inode.size = 0;
     new_file_inode.links_count = 1;
     new_file_inode.dev = dev;
-    inode_manager->set(new_file_inode_id, new_file_inode);
+    fs->save(new_file_inode_id, new_file_inode);
 
     // TODO: How do we set these?
     // new_file_inode.uid = ???
@@ -277,7 +258,6 @@ extern "C" {
     return 0;
   }
 
-  // int(* fuse_operations::open) (const char *, struct fuse_file_info *)
   int fs_open(const char* path, fuse_file_info* info) {
     debug("open        %s\n", path);
 
@@ -285,7 +265,6 @@ extern "C" {
     return 0;
   }
 
-  // int(* fuse_operations::open) (const char *, struct fuse_file_info *)
   int fs_read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
     debug("read        %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
 
@@ -297,7 +276,6 @@ extern "C" {
     return fs->read(inode_id, buffer, size, offset);
   }
 
-  // int(* fuse_operations::readlink) (const char *, char *, size_t)
   int fs_readlink(const char* path, char* buffer, size_t size) {
     debug("readlink    %s\n", path);
 
@@ -306,8 +284,7 @@ extern "C" {
     if (inode_id == 0) return -1;
 
     // TODO: Read symlink value
-    INode file_inode;
-    inode_manager->get(inode_id, file_inode);
+    INode file_inode = fs->getINode(inode_id);
     if (file_inode.type != FileType::SYMLINK) return -1;
 
 
@@ -317,7 +294,6 @@ extern "C" {
     return 0;
   }
 
-  // int(* fuse_operations::release) (const char *, struct fuse_file_info *)
   int fs_release(const char* path, fuse_file_info* info) {
     debug("release     %s\n", path);
 
@@ -325,14 +301,12 @@ extern "C" {
     return 0;
   }
 
-  // int(* fuse_operations::removexattr) (const char *, const char *)
   int fs_removexattr(const char* path, const char* attr) {
     debug("removexattr %s %s\n", path, attr);
     // Not implemented!
     return -1;
   }
 
-  // int(* fuse_operations::rename) (const char *, const char *, unsigned int flags)
   int fs_rename(const char* path, const char* name) {
     debug("rename      %s -> %s\n", path, name);
 
@@ -341,7 +315,6 @@ extern "C" {
     return fs_unlink(path);
   }
 
-  // int(* fuse_operations::rmdir) (const char *)
   int fs_rmdir(const char* path) {
     debug("rmdir       %s\n", path);
 
@@ -352,8 +325,7 @@ extern "C" {
     std::string pname = fs->dirname(path);
     std::string dname = fs->basename(path);
     INode::ID parent_inode_id = fs->getINodeID(pname);
-    INode parent_dir_inode;
-    inode_manager->get(parent_inode_id, parent_dir_inode);
+    INode parent_dir_inode = fs->getINode(parent_inode_id);
 
     // Remove entry from parent directory
     Directory parent = fs->getDirectory(parent_inode_id);
@@ -362,14 +334,12 @@ extern "C" {
     return 0;
   }
 
-  // int(* fuse_operations::setxattr) (const char *, const char *, const char *, size_t, int)
   int fs_setxattr(const char* path, const char* attr, const char* val, size_t size, int unknown) {
     debug("setxattr    %s %s\n", path, attr);
     // Not implemented!
     return -1;
   }
 
-  // int(* fuse_operations::statfs) (const char *, struct statvfs *)
   int fs_statfs(const char* path, struct statvfs* info) {
     debug("statfs      %s\n", path);
 
@@ -386,7 +356,6 @@ extern "C" {
     return 0;
   }
 
-  // int(* fuse_operations::symlink) (const char *, const char *)
   int fs_symlink(const char* path, const char* link) {
     debug("symlink     %s -> %s\n", path, link);
 
@@ -399,6 +368,7 @@ extern "C" {
     // inode.type = FileType::SYMLINK;
     // inode_manager->set(inode_id, inode);
 
+    // TODO: This is not a symlink!
     INode::ID inode_id = fs->getINodeID(link);
     Directory dir = fs->getDirectory(dname);
     // dir[fname].type = FileTypeDirectory::SYMLINK; //if we don't do this then we just won't know what type it is but will work
@@ -408,7 +378,6 @@ extern "C" {
     return 0;
   }
 
-  // int(* fuse_operations::truncate) (const char *, off_t, struct fuse_file_info *fi)
   int fs_truncate(const char* path, off_t offset) {
     debug("truncate    %s to %zdb\n", path, (int64_t) offset);
 
@@ -420,7 +389,6 @@ extern "C" {
     return fs->truncate(inode_id, offset);
   }
 
-  // int(* fuse_operations::unlink) (const char *)
   int fs_unlink(const char* path) {
     debug("unlink      %s\n", path);
 
@@ -447,20 +415,18 @@ extern "C" {
     // Check if path exists
     INode::ID inode_id = fs->getINodeID(path);
     if (inode_id == 0) return -1;
-    INode inode;
-    inode_manager->get(inode_id, inode);
 
     // Update INode
+    INode inode = fs->getINode(inode_id);
     if (buffer->actime == NULL) buffer->actime = time(NULL);
     if (buffer->modtime == NULL) buffer->modtime = time(NULL);
     inode.atime = buffer->actime;
     inode.mtime = buffer->modtime;
     inode.ctime = time(NULL);
-    inode_manager->set(inode_id, inode);
+    fs->save(inode_id, inode);
     return 0;
   }
 
-  // int(* fuse_operations::write) (const char *, const char *, size_t, off_t, struct fuse_file_info *)
   int fs_write(const char* path, const char* data, size_t size, off_t offset, fuse_file_info* info) {
     debug("write       %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
 
@@ -470,12 +436,6 @@ extern "C" {
 
     // Write data
     return fs->write(inode_id, data, size, offset);
-  }
-
-  // void*(* fuse_operations::init) (struct fuse_conn_info *conn, struct fuse_config *cfg)
-  void* fs_init(struct fuse_conn_info *conn) {
-    // Useless function for us
-    return NULL;
   }
 }
 
