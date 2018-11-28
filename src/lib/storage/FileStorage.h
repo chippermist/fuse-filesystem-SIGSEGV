@@ -2,6 +2,7 @@
 
 #include "../Storage.h"
 #include <fstream>
+#include <stdexcept>
 
 class FileStorage: public Storage {
   std::fstream file;
