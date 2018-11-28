@@ -1,5 +1,7 @@
 #include "Filesystem.h"
 
+#include <stack>
+
 Filesystem::Filesystem(BlockManager& block_manager, INodeManager& inode_manager, Storage& storage) {
   this->block_manager = &block_manager;
   this->inode_manager = &inode_manager;

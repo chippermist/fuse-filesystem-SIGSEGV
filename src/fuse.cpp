@@ -1,4 +1,7 @@
 #include "lib/Filesystem.h"
+#include "lib/storage/MemoryStorage.h"
+#include "lib/inodes/LinearINodeManager.h"
+#include "lib/blocks/StackBasedBlockManager.h"
 
 #if defined(__linux__)
   #include <sys/statfs.h>
@@ -224,7 +227,7 @@ extern "C" {
 
     // Initialize the new directory's contents
     Directory new_dir(new_dir_inode_id, parent_dir_id);
-    file_access_manager->save(new_dir);
+    fs->save(new_dir);
 
     // TODO: How do we set these?
     // new_dir_inode.uid = ???
