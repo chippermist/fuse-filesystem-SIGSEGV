@@ -54,8 +54,8 @@ extern "C" {
   int fs_unlink(const char* );
   int fs_utime(const char* , utimbuf* );
   int fs_write(const char* , const char* , size_t , off_t , fuse_file_info* );
-  void* fs_init(struct fuse_conn_info *, struct fuse_config *);
-  //void* fs_init(struct fuse_conn_info *);
+  // void* fs_init(struct fuse_conn_info *, struct fuse_config *);
+  void* fs_init(struct fuse_conn_info *);
 
 
   // int(* fuse_operations::chmod) (const char *, mode_t, struct fuse_file_info *fi)
@@ -471,7 +471,7 @@ extern "C" {
   }
 
   // void*(* fuse_operations::init) (struct fuse_conn_info *conn, struct fuse_config *cfg)
-  void* fs_init(struct fuse_conn_info *conn, struct fuse_config *cfg) {
+  void* fs_init(struct fuse_conn_info *conn) {
     // Useless function for us
     return NULL;
   }
