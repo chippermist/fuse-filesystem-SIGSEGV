@@ -8,6 +8,7 @@
 #include "lib/INode.h"
 #include "lib/Block.h"
 #include "lib/Directory.h"
+#include <iostream>
 #include <cstdint>
 #include <stdexcept>
 #include <cstring>
@@ -15,4 +16,4 @@
 #include <stdlib.h>
 #include <time.h>
 
-void createNestedDirectories(INode::ID);
+void createNestedDirectories(Directory);

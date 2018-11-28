@@ -5,17 +5,40 @@
 
 LinearINodeManager *inode_manager;
 StackBasedBlockManager *block_manager;
+Filesystem *filesystem;
+int count = 0;
 
-void createNestedDirectories(INode::ID parent) {
+void createNestedDirectories(Directory parent) {
   srand(time(NULL));
-  int count = rand() % 1 + 400;
+  int times = rand() % 10 + 1;
+  if(count >= 1000) return;
 
-  for(int k=0; k<count; ++k) {
-    Directory new_dir = Directory::mkdir(parent);
+  for(int k=0; k<times; ++k) {
     INode::ID inode_id = inode_manager->reserve();
-    createNestedDirectories(inode_id);
+    INode inode;
+    inode_manager->get(inode_id, inode);
+    inode.type = FileType::DIRECTORY;
+    filesystem->save(inode_id, inode);
+    Directory new_dir = Directory(inode_id, parent.id());
+    std::cout << "Directory created: " << new_dir.id() << std::endl;
+    filesystem->save(new_dir);
+
+    // checking if . and .. are correct
+    INode::ID self_id = new_dir.search(".");
+    INode::ID parent_id = new_dir.search("..");
+
+    assert(self_id == inode_id);
+    assert(parent_id == parent.id());
+
+    ++count;
+    createNestedDirectories(new_dir);
   }
   return;
+}
+
+
+void createNamedNestedDirectories(Directory parent) {
+  
 }
 
 
@@ -48,21 +71,24 @@ int main(int argv, char** argc) {
   // Initialize managers and call mkfs
   inode_manager = new LinearINodeManager(*disk);
   block_manager = new StackBasedBlockManager(*disk);
-  Filesystem filesystem(*block_manager, *inode_manager);
-  filesystem.mkfs();
+  filesystem = new Filesystem(*block_manager, *inode_manager, *disk);
+  filesystem->mkfs();
 
   //------------------------------------------
   // Begining of test
   //------------------------------------------
 
   INode::ID inode_id_1 = inode_manager->reserve();
+  std::cout << inode_id_1 << std::endl;
+  INode inode;
+  inode_manager->get(inode_id_1, inode);
+  inode.type = FileType::DIRECTORY;
+  filesystem->save(inode_id_1, inode);
+  Directory parent_dir(inode_id_1, inode_id_1);
+  filesystem->save(parent_dir);
+  ++count;
 
-  Directory parent_dir = Directory::mkdir(inode_id_1);
-  parent_dir = Directory::get(inode_id_1);
-
-  for(int i=0; i<1000; ++i) {
-    createNestedDirectories(parent_dir);
-  }
+  createNestedDirectories(parent_dir);
 
 
 
