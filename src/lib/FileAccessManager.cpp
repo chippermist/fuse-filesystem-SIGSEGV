@@ -429,10 +429,10 @@ int FileAccessManager::truncate(INode::ID file_inode_num, size_t length) {
     return 0;
   } else {
 
-    // Remove data from first block
+    // Remove data from last block
     if (file_inode.size % Block::SIZE != 0) {
 
-      // If removing remainder of first block is too much, just truncate to the desired length
+      // If removing remainder of last block is too much, just truncate to the desired length
       if (file_inode.size % Block::SIZE > file_inode.size - length) {
         file_inode.size = length;
         return 0;
@@ -448,12 +448,12 @@ int FileAccessManager::truncate(INode::ID file_inode_num, size_t length) {
 
     // Remove other blocks
     assert(file_inode.size % Block::SIZE == 0);
-    while (file_inode.size - Block::SIZE >= length) {
+    while (file_inode.size - Block::SIZE >= length && file_inode.size > 0) {
       deallocateLastBlock(file_inode);
       file_inode.size -= Block::SIZE;
     }
 
-    // Remove remainder of last block, if any
+    // Remove remainder of first block, if any
     if (file_inode.size > length) {
       file_inode.size = length;
     }
@@ -520,7 +520,7 @@ void FileAccessManager::deallocateLastBlock(INode& file_inode) {
     // Direct block
 
     // 1. Just deallocate in inode
-    this->block_manager->release(file_inode.block_pointers[file_inode.blocks]);
+    this->block_manager->release(file_inode.block_pointers[file_inode.blocks - 1]);
 
   } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale) {
 
@@ -609,8 +609,8 @@ void FileAccessManager::deallocateLastBlock(INode& file_inode) {
     }
 
   } else {
-    // Can't allocate any more blocks for this file!
-    throw std::out_of_range("Reached max number of blocks allocated for a single file!");
+    // Can't deallocate such a large block! Must be some kind of error in setting inode's blocks
+    throw std::out_of_range("file_inode.blocks is too high; can't deallocate!");
   }
 
   // Update the number of allocated data blocks in this inode
