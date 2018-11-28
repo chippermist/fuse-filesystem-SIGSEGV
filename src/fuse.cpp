@@ -66,6 +66,7 @@ extern "C" {
 
     // Update INode
     INode inode = fs->getINode(inode_id);
+    inode.ctime = time(NULL);
     inode.mode = mode;
     fs->save(inode_id, inode);
     return 0;
@@ -81,6 +82,7 @@ extern "C" {
 
     // Update INode
     INode inode = fs->getINode(inode_id);
+    inode.ctime = time(NULL);
     inode.uid = uid;
     inode.gid = gid;
     fs->save(inode_id, inode);
@@ -168,6 +170,7 @@ extern "C" {
 
     // Update oldpath INode's links count
     INode inode = fs->getINode(inode_id);
+    inode.ctime = time(NULL);
     inode.links_count += 1;
     fs->save(inode_id, inode);
     return 0;
