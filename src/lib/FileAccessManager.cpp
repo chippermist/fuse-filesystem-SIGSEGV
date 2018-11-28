@@ -10,6 +10,70 @@ FileAccessManager::~FileAccessManager() {
   // Nothing to do.
 }
 
+Directory FileAccessManager::getDirectory(INode::ID id) {
+  INode inode;
+  inode_manager->get(id, inode);
+  if(inode.type != FileType::DIRECTORY) {
+    throw "Not a directory!";
+  }
+
+  char* buffer = new char[inode.size];
+  read(id, buffer, inode.size, 0);
+
+  Directory directory(id, buffer, inode.size);
+  delete [] buffer;
+  return directory;
+}
+
+Directory FileAccessManager::getDirectory(const std::string& path) {
+  return getDirectory(getINodeID(path));
+}
+
+INode FileAccessManager::getINode(INode::ID id) {
+  INode inode;
+  inode_manager->get(id, inode);
+  return inode;
+}
+
+INode FileAccessManager::getINode(const std::string& path) {
+  return getINode(getINodeID(path));
+}
+
+INode::ID FileAccessManager::getINodeID(const std::string& path) {
+  INode::ID id = inode_manager->getRoot();
+  if(path == "/") return id;
+
+  size_t start = 1;
+  size_t found = 0;
+
+  while(found != std::string::npos) {
+    found = path.find('/', start);
+    std::string component = path.substr(start, found - start);
+
+    Directory dir = getDirectory(id);
+    id = dir.search(component);
+    if(id == 0) return 0;
+
+    start = found + 1;
+  }
+
+  return id;
+}
+
+void FileAccessManager::save(const Directory& directory) {
+  std::vector<char> data = directory.serialize();
+  write(directory.id(), &data[0], data.size(), 0);
+
+  INode inode = getINode(directory.id());
+  if(inode.size > data.size()) {
+    truncate(directory.id(), data.size());
+  }
+}
+
+void FileAccessManager::save(INode::ID id, const INode& inode) {
+  inode_manager->set(id, inode);
+}
+
 /**
  * Writes size bytes from buf into a file, starting at the given offset.
  *
@@ -615,90 +679,4 @@ void FileAccessManager::deallocateLastBlock(INode& file_inode) {
 
   // Update the number of allocated data blocks in this inode
   file_inode.blocks--;
-}
-
-/**
- * Returns the INode ID associated with a string path.
- * If the path cannot be found, 0 is returned.
- *
- * @param path: A NULL terminated sequence of characters.
- * @return The INode ID associated with the path, or 0 if not found.
- */
-INode::ID FileAccessManager::getINodeFromPath(std::string path) {
-
-  // Handle just root directory
-  if (path == "/") {
-    return this->inode_manager->getRoot();
-  }
-
-  // Split the path into components
-  path = path.substr(1);
-  size_t pos = std::string::npos;
-  INode::ID cur_inode_num = this->inode_manager->getRoot();
-
-  while ((pos = path.find("/")) != std::string::npos) {
-    std::string component = path.substr(0, path.find("/"));
-    path = path.substr(pos + 1);
-    cur_inode_num = componentLookup(cur_inode_num, component);
-    if (cur_inode_num == 0) {
-      return 0;
-    }
-  }
-  return componentLookup(cur_inode_num, path);
-}
-
-/**
- * Searches for a filename using a directory inode.
- * Search looks through all direct and indirect pointers
- * in the block.
- *
- * @param did: The INode ID of the directory.
- * @param filename: A string filename that is being searched for.
- * @return The INode ID of the filename if it is found, 0 otherwise.
- */
-INode::ID FileAccessManager::componentLookup(INode::ID did, std::string filename) {
-  // Read the directory inode
-  INode inode;
-  this->inode_manager->get(did, inode);
-
-  uint64_t offset = 0;
-  uint64_t max = inode.size + Block::SIZE - 1;
-  while (offset < max) {
-    Block block;
-    this->disk->get(blockAt(inode, offset), block);
-    INode::ID iid = directLookup(&block, filename);
-    if (iid != 0) return iid;
-    offset += Block::SIZE;
-  }
-
-  return 0;
-}
-
-INode::ID FileAccessManager::directLookup(Block *block, std::string filename) {
-  // Check block for the desired filename
-  size_t offset = 0;
-  while (offset < Block::SIZE) {
-    DirectoryRecord *record = (DirectoryRecord *) (((char *) block) + offset);
-
-    // Check if record is unused and shouldn't be checked
-    if (record->inode_ID == 0) {
-      // Make sure that this isn't the last used entry in the block
-      if (offset + record->length == offset) {
-        return 0;
-      }
-      offset += record->length;
-      continue;
-    }
-
-    // Record is being used - should be checked
-    if (record->name == filename) {
-      return record->inode_ID;
-    }
-
-    // Not the correct filename, check next entry
-    offset += record->length;
-  }
-
-  // Didn't find filename in this directory
-  return 0;
 }
