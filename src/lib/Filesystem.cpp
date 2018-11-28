@@ -1,16 +1,21 @@
-#include "FileAccessManager.h"
+#include "Filesystem.h"
 
-FileAccessManager::FileAccessManager(BlockManager& block_manager, INodeManager& inode_manager, Storage& storage) {
+Filesystem::Filesystem(BlockManager& block_manager, INodeManager& inode_manager, Storage& storage) {
   this->block_manager = &block_manager;
   this->inode_manager = &inode_manager;
   this->disk = &storage;
 }
 
-FileAccessManager::~FileAccessManager() {
+Filesystem::~Filesystem() {
   // Nothing to do.
 }
 
-Directory FileAccessManager::getDirectory(INode::ID id) {
+void Filesystem::mkfs() {
+  inode_manager->mkfs();
+  block_manager->mkfs();
+}
+
+Directory Filesystem::getDirectory(INode::ID id) {
   INode inode;
   inode_manager->get(id, inode);
   if(inode.type != FileType::DIRECTORY) {
@@ -25,21 +30,21 @@ Directory FileAccessManager::getDirectory(INode::ID id) {
   return directory;
 }
 
-Directory FileAccessManager::getDirectory(const std::string& path) {
+Directory Filesystem::getDirectory(const std::string& path) {
   return getDirectory(getINodeID(path));
 }
 
-INode FileAccessManager::getINode(INode::ID id) {
+INode Filesystem::getINode(INode::ID id) {
   INode inode;
   inode_manager->get(id, inode);
   return inode;
 }
 
-INode FileAccessManager::getINode(const std::string& path) {
+INode Filesystem::getINode(const std::string& path) {
   return getINode(getINodeID(path));
 }
 
-INode::ID FileAccessManager::getINodeID(const std::string& path) {
+INode::ID Filesystem::getINodeID(const std::string& path) {
   INode::ID id = inode_manager->getRoot();
   if(path == "/") return id;
 
@@ -60,7 +65,7 @@ INode::ID FileAccessManager::getINodeID(const std::string& path) {
   return id;
 }
 
-void FileAccessManager::save(const Directory& directory) {
+void Filesystem::save(const Directory& directory) {
   std::vector<char> data = directory.serialize();
   write(directory.id(), &data[0], data.size(), 0);
 
@@ -70,7 +75,7 @@ void FileAccessManager::save(const Directory& directory) {
   }
 }
 
-void FileAccessManager::save(INode::ID id, const INode& inode) {
+void Filesystem::save(INode::ID id, const INode& inode) {
   inode_manager->set(id, inode);
 }
 
@@ -85,7 +90,7 @@ void FileAccessManager::save(INode::ID id, const INode& inode) {
  * - Gave name of directory
  * - TODO: Incorrect ownership/permissions
  */
-int FileAccessManager::write(INode::ID file_inode_num, const char *buf, size_t size, size_t offset) {
+int Filesystem::write(INode::ID file_inode_num, const char *buf, size_t size, size_t offset) {
 
   // Read the file's inode and do some sanity checks
   INode file_inode;
@@ -164,7 +169,7 @@ int FileAccessManager::write(INode::ID file_inode_num, const char *buf, size_t s
  * Invariant upon entering the function:
  * - Offset == file size, since we are adding to the end of the file.
  */
-size_t FileAccessManager::appendData(INode& file_inode, const char *buf, size_t size, size_t offset, bool null_filler) {
+size_t Filesystem::appendData(INode& file_inode, const char *buf, size_t size, size_t offset, bool null_filler) {
 
   assert(offset == file_inode.size);
   size_t total_written = 0;
@@ -249,7 +254,7 @@ size_t FileAccessManager::appendData(INode& file_inode, const char *buf, size_t 
  * Allocates a new data block for a file's inode.
  * Also allocates any needed new blocks for indirect pointers.
  */
-Block::ID FileAccessManager::allocateNextBlock(INode& file_inode) {
+Block::ID Filesystem::allocateNextBlock(INode& file_inode) {
 
   size_t scale = Block::SIZE / sizeof(Block::ID);
   size_t logical_blk_num = file_inode.blocks + 1;
@@ -366,7 +371,7 @@ Block::ID FileAccessManager::allocateNextBlock(INode& file_inode) {
   return data_block_num;
 }
 
-int FileAccessManager::read(INode::ID file_inode_num, char *buf, size_t size, size_t offset) {
+int Filesystem::read(INode::ID file_inode_num, char *buf, size_t size, size_t offset) {
 
   // Read the file's inode and do some sanity checks
   INode file_inode;
@@ -427,7 +432,7 @@ int FileAccessManager::read(INode::ID file_inode_num, char *buf, size_t size, si
   return total_read;
 }
 
-Block::ID FileAccessManager::blockAt(const INode& inode, uint64_t offset) {
+Block::ID Filesystem::blockAt(const INode& inode, uint64_t offset) {
   // This function only gets existing blocks.
   // It might need reworking for writes.
   if (offset >= inode.blocks * Block::SIZE) {
@@ -455,7 +460,7 @@ Block::ID FileAccessManager::blockAt(const INode& inode, uint64_t offset) {
   throw std::out_of_range("Offset greater than maximum file size!");
 }
 
-Block::ID FileAccessManager::indirectBlockAt(Block::ID bid, uint64_t offset, uint64_t size) {
+Block::ID Filesystem::indirectBlockAt(Block::ID bid, uint64_t offset, uint64_t size) {
   Block block;
   this->disk->get(bid, block);
   Block::ID* refs = (Block::ID*) &block;
@@ -469,7 +474,7 @@ Block::ID FileAccessManager::indirectBlockAt(Block::ID bid, uint64_t offset, uin
   return indirectBlockAt(refs[index], offset % size, size / scale);
 }
 
-int FileAccessManager::truncate(INode::ID file_inode_num, size_t length) {
+int Filesystem::truncate(INode::ID file_inode_num, size_t length) {
 
   // Read the file's inode and do some sanity checks
   INode file_inode;
@@ -525,7 +530,7 @@ int FileAccessManager::truncate(INode::ID file_inode_num, size_t length) {
   }
 }
 
-std::string FileAccessManager::dirname(const char* path_cstring) {
+std::string Filesystem::dirname(const char* path_cstring) {
   std::string path(path_cstring);
   // Remove all repeated /'s
   path.erase(std::unique(path.begin(), path.end(), [](char &a, char &b) {
@@ -566,7 +571,7 @@ std::string FileAccessManager::dirname(const char* path_cstring) {
   return dir_path;
 }
 
-std::string FileAccessManager::basename(const char* path_cstring) {
+std::string Filesystem::basename(const char* path_cstring) {
   std::string path(path_cstring);
   if(path.length() > 256) {
     throw std::length_error("Filename is too long. Maximum allowed length is 256 characters.");
@@ -579,7 +584,7 @@ std::string FileAccessManager::basename(const char* path_cstring) {
 }
 
 
-void FileAccessManager::deallocateLastBlock(INode& file_inode) {
+void Filesystem::deallocateLastBlock(INode& file_inode) {
 
   size_t scale = Block::SIZE / sizeof(Block::ID);
   size_t logical_blk_num = file_inode.blocks;

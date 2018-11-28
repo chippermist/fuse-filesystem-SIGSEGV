@@ -1,61 +1,51 @@
 #pragma once
 
+#include <cstdint>
+#include <string>
+#include <stdexcept>
+#include <cstring>
+#include <cassert>
+#include <stack>
+#include <algorithm>
+
+#include "Block.h"
+#include "INode.h"
 #include "BlockManager.h"
 #include "INodeManager.h"
-#include "FileAccessManager.h"
-#include "inodes/LinearINodeManager.h"
-#include "blocks/StackBasedBlockManager.h"
-#include "storage/MemoryStorage.h"
+#include "Storage.h"
 #include "Directory.h"
 
-// Added conditional so it compiles on OSX without issues
-#if defined(__linux__)
-  #include <sys/statfs.h>
-  #include <sys/vfs.h>
-#endif
-
-#include <fuse.h>
-
 class Filesystem {
-  BlockManager& blocks;
-  INodeManager& inodes;
-
+  BlockManager *block_manager;
+  INodeManager *inode_manager;
+  Storage *disk;
 public:
-  Filesystem(BlockManager& b, INodeManager& i): blocks(b), inodes(i) {
-    // All done.
-  }
+  Filesystem(BlockManager &block_manager, INodeManager& inode_manager, Storage &storage);
+  ~Filesystem();
 
-  ~Filesystem() {}
+  void mkfs();
 
-  void mkfs() {
-    inodes.mkfs();
-    blocks.mkfs();
-  }
+  int read(INode::ID file_inode_num, char *buffer, size_t size, size_t offset);
+  int write(INode::ID file_inode_num, const char *buf, size_t size, size_t offset);
+  int truncate(INode::ID file_inode_num, size_t length);
+  std::string dirname(const char* path_cstring);
+  std::string basename(const char* path_cstring);
 
-  // FUSE Operations:
-  int chmod(const char*, mode_t);
-  int chown(const char*, uid_t, gid_t);
-  int flush(const char*, fuse_file_info*);
-  int fsync(const char*, int, fuse_file_info*);
-  int getattr(const char*, struct stat*);
-  int getdir(const char*, fuse_dirh_t, fuse_dirfil_t);
-  int getxattr(const char*, const char*, char*, size_t);
-  int link(const char*, const char*);
-  int listxattr(const char*, char*, size_t);
-  int mkdir(const char*, mode_t);
-  int mknod(const char*, mode_t, dev_t);
-  int open(const char*, fuse_file_info*);
-  int read(const char*, char*, size_t, off_t, fuse_file_info*);
-  int readlink(const char*, char*, size_t);
-  int release(const char*, fuse_file_info*);
-  int removexattr(const char*, const char*);
-  int rename(const char*, const char*);
-  int rmdir(const char*);
-  int setxattr(const char*, const char*, const char*, size_t, int);
-  int statfs(const char*, struct statvfs*);
-  int symlink(const char*, const char*);
-  int truncate(const char*, off_t);
-  int unlink(const char*);
-  int utime(const char*, utimbuf*);
-  int write(const char*, const char*, size_t, off_t, fuse_file_info*);
+  Directory getDirectory(INode::ID id);
+  Directory getDirectory(const std::string& path);
+  INode     getINode(INode::ID id);
+  INode     getINode(const std::string& path);
+  INode::ID getINodeID(const std::string& path);
+
+  void save(const Directory& directory);
+  void save(INode::ID id, const INode& inode);
+
+private:
+  Block::ID blockAt(const INode& inode, uint64_t offset);
+  INode::ID componentLookup(INode::ID cur_inode_num, std::string filename);
+  INode::ID directLookup(Block *directory, std::string filename);
+  Block::ID indirectBlockAt(Block::ID bid, uint64_t offset, uint64_t size);
+  Block::ID allocateNextBlock(INode& file_inode);
+  size_t appendData(INode& file_inode, const char *buf, size_t size, size_t offset, bool null_filler);
+  void deallocateLastBlock(INode& file_inode);
 };

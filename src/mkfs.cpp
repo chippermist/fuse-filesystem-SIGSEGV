@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
   // Initialize managers and call mkfs
   LinearINodeManager inode_manager(*disk);
   StackBasedBlockManager block_manager(*disk);
-  Filesystem filesystem(block_manager, inode_manager);
+  Filesystem filesystem(block_manager, inode_manager, *disk);
   filesystem.mkfs();
 
   // Debug stuff

@@ -19,7 +19,7 @@
 Storage *disk;
 BlockManager *block_manager;
 INodeManager *inode_manager;
-FileAccessManager *file_access_manager;
+Filesystem *fs;
 
 extern "C" {
 
@@ -58,7 +58,7 @@ extern "C" {
     debug("chmod       %s to %03o\n", path, mode);
 
     // Check if path exists
-    INode::ID inode_id = file_access_manager->getINodeID(path);
+    INode::ID inode_id = fs->getINodeID(path);
     if (inode_id == 0) return -1;
 
     // Update INode
@@ -76,7 +76,7 @@ extern "C" {
     debug("chown       %s to %d:%d\n", path, uid, gid);
 
     // Check if path exists
-    INode::ID inode_id = file_access_manager->getINodeID(path);
+    INode::ID inode_id = fs->getINodeID(path);
     if (inode_id == 0) return -1;
 
     // Update INode
@@ -111,7 +111,7 @@ extern "C" {
     debug("getattr     %s\n", path);
 
     // Check if path exists
-    INode::ID inode_id = file_access_manager->getINodeID(path);
+    INode::ID inode_id = fs->getINodeID(path);
     if (inode_id == 0) return -1;
 
     // Read INode properties
@@ -141,7 +141,7 @@ extern "C" {
   int fs_getdir(const char* path, fuse_dirh_t dirh, fuse_dirfil_t dirfil) {
     debug("getdir      %s\n", path);
 
-    Directory dir = file_access_manager->getDirectory(path);
+    Directory dir = fs->getDirectory(path);
     // TODO...
     return 0;
   }
@@ -158,20 +158,20 @@ extern "C" {
     debug("link        %s -> %s\n", newpath, oldpath);
 
     // Check if newpath exists - if so, don't overwrite it
-    if (file_access_manager->getINodeID(newpath) != 0) return -1;
+    if (fs->getINodeID(newpath) != 0) return -1;
 
     // Check if oldpath exists
-    INode::ID inode_id = file_access_manager->getINodeID(oldpath);
+    INode::ID inode_id = fs->getINodeID(oldpath);
     if (inode_id == 0) return -1;
 
     // Get the newpath's directory
-    std::string new_dname = file_access_manager->dirname(newpath);
-    std::string new_fname = file_access_manager->basename(newpath);
-    Directory dir = file_access_manager->getDirectory(new_dname);
+    std::string new_dname = fs->dirname(newpath);
+    std::string new_fname = fs->basename(newpath);
+    Directory dir = fs->getDirectory(new_dname);
 
     // Write link to oldpath's inode in newpath's directory
     dir.insert(new_fname, inode_id);
-    file_access_manager->save(dir);
+    fs->save(dir);
 
     // Update oldpath INode's links count
     INode inode;
@@ -195,19 +195,19 @@ extern "C" {
     debug("mkdir       %s %03o\n", path, mode);
 
     // Check if path exists - if so, don't overwrite it
-    if (file_access_manager->getINodeID(path) != 0) return -1;
+    if (fs->getINodeID(path) != 0) return -1;
 
     // Check if path's parent directory exists
-    std::string parent_dname = file_access_manager->dirname(path);
-    std::string dname = file_access_manager->basename(path);
-    INode::ID parent_dir_id = file_access_manager->getINodeID(parent_dname);
+    std::string parent_dname = fs->dirname(path);
+    std::string dname = fs->basename(path);
+    INode::ID parent_dir_id = fs->getINodeID(parent_dname);
     if (parent_dir_id == 0) return -1;
 
     // Allocate an inode for new directory and write in parent directory
     INode::ID new_dir_inode_id = inode_manager->reserve();
-    Directory dir = file_access_manager->getDirectory(parent_dir_id);
+    Directory dir = fs->getDirectory(parent_dir_id);
     dir.insert(dname, new_dir_inode_id);
-    file_access_manager->save(dir);
+    fs->save(dir);
 
     // Set the new directory's attributes
     INode new_dir_inode;
@@ -235,19 +235,19 @@ extern "C" {
     debug("mknod       %s %03o\n", path, mode);
 
     // Check if path exists - if so, don't overwrite it
-    if (file_access_manager->getINodeID(path) != 0) return -1;
+    if (fs->getINodeID(path) != 0) return -1;
 
     // Check if path's parent directory exists
-    std::string parent_dname = file_access_manager->dirname(path);
-    std::string fname = file_access_manager->basename(path);
-    INode::ID parent_inode_id = file_access_manager->getINodeID(parent_dname);
+    std::string parent_dname = fs->dirname(path);
+    std::string fname = fs->basename(path);
+    INode::ID parent_inode_id = fs->getINodeID(parent_dname);
     if (parent_inode_id == 0) return -1;
 
     // Allocate an inode for new file and write in parent directory
     INode::ID new_file_inode_id = inode_manager->reserve();
-    Directory dir = file_access_manager->getDirectory(parent_inode_id);
+    Directory dir = fs->getDirectory(parent_inode_id);
     dir.insert(fname, new_file_inode_id);
-    file_access_manager->save(dir);
+    fs->save(dir);
 
     // Set the new file's attributes
     INode new_file_inode;
@@ -283,11 +283,11 @@ extern "C" {
     debug("read        %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
 
     // Check if file exists
-    INode::ID inode_id = file_access_manager->getINodeID(path);
+    INode::ID inode_id = fs->getINodeID(path);
     if (inode_id == 0) return -1;
 
     // Read data
-    return file_access_manager->read(inode_id, buffer, size, offset);
+    return fs->read(inode_id, buffer, size, offset);
   }
 
   // int(* fuse_operations::readlink) (const char *, char *, size_t)
@@ -295,7 +295,7 @@ extern "C" {
     debug("readlink    %s\n", path);
 
     // Check if file exists
-    INode::ID inode_id = file_access_manager->getINodeID(path);
+    INode::ID inode_id = fs->getINodeID(path);
     if (inode_id == 0) return -1;
 
     // TODO: Read symlink value
@@ -339,19 +339,19 @@ extern "C" {
     debug("rmdir       %s\n", path);
 
     // Check if path exists
-    if (file_access_manager->getINodeID(path) == 0) return -1;
+    if (fs->getINodeID(path) == 0) return -1;
 
     // Read parent directory's INode
-    std::string pname = file_access_manager->dirname(path);
-    std::string dname = file_access_manager->basename(path);
-    INode::ID parent_inode_id = file_access_manager->getINodeID(pname);
+    std::string pname = fs->dirname(path);
+    std::string dname = fs->basename(path);
+    INode::ID parent_inode_id = fs->getINodeID(pname);
     INode parent_dir_inode;
     inode_manager->get(parent_inode_id, parent_dir_inode);
 
     // Remove entry from parent directory
-    Directory parent = file_access_manager->getDirectory(parent_inode_id);
+    Directory parent = fs->getDirectory(parent_inode_id);
     parent.remove(dname);
-    file_access_manager->save(parent);
+    fs->save(parent);
     return 0;
   }
 
@@ -383,8 +383,8 @@ extern "C" {
   int fs_symlink(const char* path, const char* link) {
     debug("symlink     %s -> %s\n", path, link);
 
-    std::string dname = file_access_manager->dirname(path);
-    std::string fname = file_access_manager->basename(path);
+    std::string dname = fs->dirname(path);
+    std::string fname = fs->basename(path);
 
     // INode::ID inode_id = inode_manager->reserve();
     // INode inode;
@@ -392,11 +392,11 @@ extern "C" {
     // inode.type = FileType::SYMLINK;
     // inode_manager->set(inode_id, inode);
 
-    INode::ID inode_id = file_access_manager->getINodeID(link);
-    Directory dir = file_access_manager->getDirectory(dname);
+    INode::ID inode_id = fs->getINodeID(link);
+    Directory dir = fs->getDirectory(dname);
     // dir[fname].type = FileTypeDirectory::SYMLINK; //if we don't do this then we just won't know what type it is but will work
     dir.insert(fname, inode_id);
-    file_access_manager->save(dir);
+    fs->save(dir);
 
     return 0;
   }
@@ -406,11 +406,11 @@ extern "C" {
     debug("truncate    %s to %zdb\n", path, (int64_t) offset);
 
     // Check if file exists
-    INode::ID inode_id = file_access_manager->getINodeID(path);
+    INode::ID inode_id = fs->getINodeID(path);
     if (inode_id == 0) return -1;
 
     // Cut data
-    return file_access_manager->truncate(inode_id, offset);
+    return fs->truncate(inode_id, offset);
   }
 
   // int(* fuse_operations::unlink) (const char *)
@@ -418,17 +418,17 @@ extern "C" {
     debug("unlink      %s\n", path);
 
     // Check if path exists
-    if (file_access_manager->getINodeID(path) == 0) return -1;
+    if (fs->getINodeID(path) == 0) return -1;
 
     // Get parent directory's INode ID
-    std::string pname = file_access_manager->dirname(path);
-    std::string dname = file_access_manager->basename(path);
-    INode::ID parent_inode_id = file_access_manager->getINodeID(pname);
+    std::string pname = fs->dirname(path);
+    std::string dname = fs->basename(path);
+    INode::ID parent_inode_id = fs->getINodeID(pname);
 
     // Remove entry from parent directory
-    Directory parent = file_access_manager->getDirectory(parent_inode_id);
+    Directory parent = fs->getDirectory(parent_inode_id);
     parent.remove(dname);
-    file_access_manager->save(parent);
+    fs->save(parent);
     return 0;
   }
 
@@ -438,7 +438,7 @@ extern "C" {
     debug("utime       %s\n", path);
 
     // Check if path exists
-    INode::ID inode_id = file_access_manager->getINodeID(path);
+    INode::ID inode_id = fs->getINodeID(path);
     if (inode_id == 0) return -1;
     INode inode;
     inode_manager->get(inode_id, inode);
@@ -458,11 +458,11 @@ extern "C" {
     debug("write       %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
 
     // Check if file exists
-    INode::ID inode_id = file_access_manager->getINodeID(path);
+    INode::ID inode_id = fs->getINodeID(path);
     if (inode_id == 0) return -1;
 
     // Write data
-    return file_access_manager->write(inode_id, data, size, offset);
+    return fs->write(inode_id, data, size, offset);
   }
 
   // void*(* fuse_operations::init) (struct fuse_conn_info *conn, struct fuse_config *cfg)
@@ -485,7 +485,7 @@ int main(int argc, char** argv) {
   disk = new MemoryStorage(nblocks);
   block_manager = new StackBasedBlockManager(*disk);
   inode_manager = new LinearINodeManager(*disk);
-  file_access_manager = new FileAccessManager(*block_manager, *inode_manager, *disk);
+  fs = new Filesystem(*block_manager, *inode_manager, *disk);
 
   // Set FUSE function pointers
   fuse_operations ops;
