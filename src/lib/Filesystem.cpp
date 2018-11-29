@@ -1,10 +1,19 @@
 #include "Filesystem.h"
 
+#include "Superblock.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <stack>
 #include <stdexcept>
+
+#if defined(__linux__)
+  #include <sys/statfs.h>
+  #include <sys/vfs.h>
+#else
+  #include <fuse.h>
+#endif
 
 Filesystem::Filesystem(BlockManager& block_manager, INodeManager& inode_manager, Storage& storage) {
   this->block_manager = &block_manager;
@@ -19,6 +28,27 @@ Filesystem::~Filesystem() {
 void Filesystem::mkfs() {
   inode_manager->mkfs();
   block_manager->mkfs();
+
+  INode::ID id = inode_manager->getRoot();
+  INode inode(FileType::DIRECTORY, 0777);
+  save(id, inode);
+
+  Directory root(id, id);
+  save(root);
+}
+
+void Filesystem::statfs(struct statvfs* info) {
+  Block block;
+  Superblock* superblock = (Superblock*) block.data;
+  block_manager->get(0, block);
+
+  // Based on http://pubs.opengroup.org/onlinepubs/009604599/basedefs/sys/statvfs.h.html
+  // Also see http://man7.org/linux/man-pages/man3/statvfs.3.html
+  info->f_bsize   = superblock->block_size; // File system block size.
+  info->f_frsize  = superblock->block_size; // Fundamental file system block size.
+  info->f_fsid    = superblock->magic;      // File system ID.
+  info->f_flag    = 0;                      // Bit mask of f_flag values.
+  info->f_namemax = 256;                    // Maximum filename length.
 }
 
 Directory Filesystem::getDirectory(INode::ID id) {
@@ -683,4 +713,17 @@ void Filesystem::deallocateLastBlock(INode& file_inode) {
 
   // Update the number of allocated data blocks in this inode
   file_inode.blocks--;
+}
+
+void Filesystem::unlink(INode::ID id) {
+  INode inode = getINode(id);
+  if(inode.links < 2) {
+    truncate(id, 0);
+    inode_manager->release(id);
+  }
+  else {
+    inode.ctime = time(NULL);
+    inode.links -= 1;
+    save(id, inode);
+  }
 }
