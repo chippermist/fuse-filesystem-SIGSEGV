@@ -15,10 +15,9 @@ int main(int argc, char** argv) {
   uint64_t nblocks = atoi(argv[1]);
   Storage *disk = new MemoryStorage(nblocks);
 
-  // Get superblock and clear it out
+  // Create a block for superblock
   Block block;
   Superblock* superblock = (Superblock*) &block;
-  disk->get(0, block);
   memset(&block, 0, Block::SIZE);
 
   // Set basic superblock parameters
