@@ -18,6 +18,8 @@
   #define debug(...)
 #endif
 
+#define UNUSED(x) ((void) (x))
+
 // Global Variables
 INodeManager *inode_manager;
 Filesystem *fs;
@@ -39,6 +41,7 @@ extern "C" {
   int   fs_mknod(const char*, mode_t, dev_t);
   int   fs_open(const char*, fuse_file_info*);
   int   fs_read(const char*, char*, size_t, off_t, fuse_file_info*);
+  int   fs_readdir(const char*, void*, fuse_fill_dir_t, off_t, struct fuse_file_info*);
   int   fs_readlink(const char*, char*, size_t);
   int   fs_release(const char*, fuse_file_info*);
   int   fs_removexattr(const char*, const char*);
@@ -86,6 +89,7 @@ extern "C" {
 
   int fs_flush(const char* path, fuse_file_info* info) {
     debug("flush       %s\n", path);
+    UNUSED(info);
 
     // TODO...
     return 0;
@@ -93,6 +97,8 @@ extern "C" {
 
   int fs_fsync(const char* path, int unknown, fuse_file_info* info) {
     debug("fsync       %s\n", path);
+    UNUSED(unknown);
+    UNUSED(info);
 
     // TODO...
     return 0;
@@ -100,6 +106,7 @@ extern "C" {
 
   int fs_getattr(const char* path, struct stat* info) {
     debug("getattr     %s\n", path);
+    UNUSED(info);
 
     // Check if path exists
     INode::ID inode_id = fs->getINodeID(path);
@@ -124,21 +131,18 @@ extern "C" {
     return 0;
   }
 
-  int fs_getdir(const char* path, fuse_dirh_t dirh, fuse_dirfil_t dirfil) {
-    debug("getdir      %s\n", path);
-
-    Directory dir = fs->getDirectory(path);
-    // TODO...
-    return 0;
-  }
-
   int fs_getxattr(const char* path, const char* attr, char* buffer, size_t size) {
     debug("getxattr    %s %s\n", path, attr);
+    UNUSED(buffer);
+    UNUSED(size);
+
     // Not implemented!
     return -1;
   }
 
-  void* fs_init(struct fuse_conn_info *conn) {
+  void* fs_init(struct fuse_conn_info* conn) {
+    UNUSED(conn);
+
     // Useless function for us
     return NULL;
   }
@@ -171,6 +175,9 @@ extern "C" {
 
   int fs_listxattr(const char* path, char* buffer, size_t size) {
     debug("listxattr   %s\n", path);
+    UNUSED(buffer);
+    UNUSED(size);
+
     // Not implemented!
     return -1;
   }
@@ -236,6 +243,7 @@ extern "C" {
 
   int fs_open(const char* path, fuse_file_info* info) {
     debug("open        %s\n", path);
+    UNUSED(info);
 
     // TODO...
     return 0;
@@ -243,6 +251,7 @@ extern "C" {
 
   int fs_read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
     debug("read        %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
+    UNUSED(info);
 
     // Check if file exists
     INode::ID id = fs->getINodeID(path);
@@ -256,6 +265,19 @@ extern "C" {
 
     // Read data
     return fs->read(id, buffer, size, offset);
+  }
+
+  int fs_readdir(const char* path, void* buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* info) {
+    debug("readdir     %s\n", path);
+    UNUSED(info);
+
+    Directory dir = fs->getDirectory(path);
+    for(const auto itr: dir.entries()) {
+      int result = filler(buffer, itr.first.c_str(), NULL, 0);
+      if(result != 0) return result;
+    }
+
+    return 0;
   }
 
   int fs_readlink(const char* path, char* buffer, size_t size) {
@@ -276,6 +298,7 @@ extern "C" {
 
   int fs_release(const char* path, fuse_file_info* info) {
     debug("release     %s\n", path);
+    UNUSED(info);
 
     // TODO...
     return 0;
@@ -283,6 +306,7 @@ extern "C" {
 
   int fs_removexattr(const char* path, const char* attr) {
     debug("removexattr %s %s\n", path, attr);
+
     // Not implemented!
     return -1;
   }
@@ -312,6 +336,10 @@ extern "C" {
 
   int fs_setxattr(const char* path, const char* attr, const char* val, size_t size, int unknown) {
     debug("setxattr    %s %s\n", path, attr);
+    UNUSED(val);
+    UNUSED(size);
+    UNUSED(unknown);
+
     // Not implemented!
     return -1;
   }
@@ -398,6 +426,7 @@ extern "C" {
 
   int fs_write(const char* path, const char* data, size_t size, off_t offset, fuse_file_info* info) {
     debug("write       %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
+    UNUSED(info);
 
     // Check if file exists
     INode::ID id = fs->getINodeID(path);
@@ -417,7 +446,7 @@ extern "C" {
 int main(int argc, char** argv) {
   // added initialization for fuse arguments
   // can also be changed to 0, NULL for testing empty
-  struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
+  // struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
 
   // Default ~32GB disk
   // TODO: Read value from argv
@@ -435,38 +464,34 @@ int main(int argc, char** argv) {
 
   ops.chmod       = &fs_chmod;
   ops.chown       = &fs_chown;
+  // ops.destroy     = &fs_destroy;
   // ops.flush       = &fs_flush;
   // ops.fsync       = &fs_fsync;
+  // ops.fsyncdir    = &fs_fsyncdir;
   ops.getattr     = &fs_getattr;
   // ops.getxattr    = &fs_getxattr;
+  ops.init        = &fs_init;
   ops.link        = &fs_link;
   // ops.listxattr   = &fs_listxattr;
   ops.mkdir       = &fs_mkdir;
   ops.mknod       = &fs_mknod;
   ops.open        = &fs_open;
+  // ops.opendir     = &fs_opendir;
   ops.read        = &fs_read;
+  ops.readdir     = &fs_readdir;
   ops.readlink    = &fs_readlink;
   ops.release     = &fs_release;
+  // ops.releasedir  = &fs_releasedir;
   // ops.removexattr = &fs_removexattr;
   ops.rename      = &fs_rename;
   ops.rmdir       = &fs_rmdir;
   // ops.setxattr    = &fs_setxattr;
-  // ops.statfs      = &fs_statfs;
+  ops.statfs      = &fs_statfs;
   ops.symlink     = &fs_symlink;
   ops.truncate    = &fs_truncate;
   ops.unlink      = &fs_unlink;
-  ops.write       = &fs_write;
-
-  // ops.opendir     = &fs_opendir;
-  // ops.readdir     = &fs_readdir;
-  // ops.releasedir  = &fs_releasedir;
-  // ops.fsyncdir    = &fs_fsyncdir;
-
-  ops.init        = &fs_init;
-  // ops.destroy     = &fs_destroy;
-
-  // ops.getdir      = &fs_getdir;
   ops.utime       = &fs_utime;
+  ops.write       = &fs_write;
 
   // Run the FUSE daemon!
   return fuse_main(argc, argv, &ops, NULL);
