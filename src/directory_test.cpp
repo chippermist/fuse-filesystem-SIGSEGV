@@ -1,4 +1,5 @@
 #include "directory_test.h"
+#include <vector>
 
 // Compile as
 //  g++ -std=c++11 -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_DARWIN_USE_64_BIT_INODE -I/usr/local/include/osxfuse/fuse -losxfuse -L/usr/local/lib directory_test.cpp -o directory_test
@@ -25,7 +26,7 @@ std::string random_string(size_t length) {
 
 void createNestedDirectories(Directory parent) {
   srand(time(NULL));
-  int times = rand() % 10 + 1;
+  int times = rand() % 50 + 1;
   if(count >= 1000) return;
 
   for(int k=0; k<times; ++k) {
@@ -35,7 +36,7 @@ void createNestedDirectories(Directory parent) {
     inode.type = FileType::DIRECTORY;
     filesystem->save(inode_id, inode);
     Directory new_dir = Directory(inode_id, parent.id());
-    std::cout << "Directory created: " << new_dir.id() << std::endl << std::endl;
+    // std::cout << "Directory created: " << new_dir.id() << std::endl << std::endl;
     filesystem->save(new_dir);
 
     // checking if . and .. are correct
@@ -54,7 +55,7 @@ void createNestedDirectories(Directory parent) {
 
 void createNamedNestedDirectories(Directory parent) {
   srand(time(NULL));
-  int times = rand() % 100 + 1;
+  int times = rand() % 50 + 1;
   if(count >= 1000) return;
 
   for(int k=0; k<times; ++k) {
@@ -70,7 +71,7 @@ void createNamedNestedDirectories(Directory parent) {
     parent.insert(dir_name, inode_id);
     filesystem->save(new_dir);
     filesystem->save(parent);
-    std::cout << "Directory created: " << new_dir.id() << "\nname: " << dir_name <<  std::endl << std::endl;
+    // std::cout << "Directory created: " << new_dir.id() << "\nname: " << dir_name <<  std::endl << std::endl;
 
     // checking if . and .. are correct
     INode::ID self_id = new_dir.search(".");
@@ -130,7 +131,7 @@ int main() {
   //------------------------------------------
 
   INode::ID inode_id_1 = inode_manager->reserve();
-  std::cout << "Root directory created: " << inode_id_1 << std::endl << std::endl;
+  std::cout << "\nRoot directory (\"/\") created: " << inode_id_1 << std::endl << std::endl;
   INode inode;
   inode_manager->get(inode_id_1, inode);
   inode.type = FileType::DIRECTORY;
@@ -142,11 +143,15 @@ int main() {
   filesystem->save(parent_dir);
   ++count;
 
-  //createNestedDirectories(parent_dir);
+  createNestedDirectories(parent_dir);
+  std::cout << "\n\n-------------\n";
+  std::cout << "\033[1;32mSuccess. End of create nested directory test.\033[0m\n";
+  std::cout << "-------------\n\n";
   count = 0;
   createNamedNestedDirectories(parent_dir);
-
-
+  std::cout << "\n\n-------------\n";
+  std::cout << "\033[1;32mSuccess. End of create nested directory with name test.\033[0m\n";
+  std::cout << "-------------\n\n";
 
 
   return 0;
