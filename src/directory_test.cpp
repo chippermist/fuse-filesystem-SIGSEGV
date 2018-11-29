@@ -19,7 +19,7 @@ std::string random_string(size_t length) {
         return charset[ rand() % max_index ];
     };
     std::string str(length,0);
-    std::generate_n( str.begin(), length, randchar );
+    std::generate_n( str.begin(), length, randchar);
     return str;
 }
 
@@ -127,6 +127,9 @@ int main(int argv, char** argc) {
   inode.type = FileType::DIRECTORY;
   filesystem->save(inode_id_1, inode);
   Directory parent_dir(inode_id_1, inode_id_1);
+
+  //naming the root as "/"
+  parent_dir.insert("/", inode_id_1);
   filesystem->save(parent_dir);
   ++count;
 
