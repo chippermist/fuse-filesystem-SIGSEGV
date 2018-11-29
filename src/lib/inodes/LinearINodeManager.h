@@ -17,19 +17,13 @@ public:
   void statfs(struct statvfs* info);
   INode::ID getRoot();
 
+  INode::ID reserve();
+  void release(INode::ID id);
   void get(INode::ID id, INode& dst);
   void set(INode::ID id, const INode& src);
 
-  INode::ID reserve();
-  void release(INode::ID id);
-
-  void reconfigure();
-
 private:
+  Storage *disk;
+  uint64_t num_inodes;
   static const uint64_t root = 1;
-
-  Storage*  disk;
-  uint64_t  num_inodes;
-  Block::ID start_block;
-  uint64_t  block_count;
 };

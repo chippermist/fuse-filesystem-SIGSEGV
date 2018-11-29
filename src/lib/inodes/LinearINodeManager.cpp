@@ -8,45 +8,53 @@
 #endif
 
 LinearINodeManager::LinearINodeManager(Storage& storage): disk(&storage) {
-  this->reconfigure();
-}
-
-LinearINodeManager::~LinearINodeManager() {
-  // Nothing to do.
-}
-
-// Initialize inodes during mkfs()
-void LinearINodeManager::mkfs() {
-  this->reconfigure();
-
-  Block block;
-  std::memset(block.data, 0, Block::SIZE);
-  for(uint64_t i = 0; i < block_count; ++i) {
-    this->disk->set(start_block + i, block);
-  }
-}
-
-// Reload config information from the superblock
-void LinearINodeManager::reconfigure() {
   Block block;
   Superblock* superblock = (Superblock*) &block;
   this->disk->get(0, block);
 
   assert(Block::SIZE % INode::SIZE == 0);
   uint64_t num_inodes_per_block = Block::SIZE / INode::SIZE;
-  this->start_block = superblock->inode_block_start;
-  this->block_count = superblock->inode_block_count;
-  this->num_inodes  = num_inodes_per_block * this->block_count;
+  this->num_inodes = num_inodes_per_block * superblock->inode_block_count;
+}
+
+LinearINodeManager::~LinearINodeManager() {}
+
+// Initialize inodes during mkfs()
+void LinearINodeManager::mkfs() {
+
+  // TODO: Initialize root directory and set this->root
+
+  // Read superblock
+  Block block;
+  this->disk->get(0, block);
+  Superblock* superblock = (Superblock*) &block;
+  Block::ID start = superblock->inode_block_start;
+  uint64_t num_inodes_per_block = Block::SIZE / INode::SIZE;
+
+  for (uint64_t block_index = start; block_index < this->num_inodes / num_inodes_per_block; block_index++) {
+    // Read in the inode block
+    this->disk->get(block_index, block);
+
+    // Zero out each inode in the block except INode 0 of block 0
+    for (uint64_t inode_index = 0; inode_index < num_inodes_per_block; inode_index++) {
+      if (block_index == start && inode_index == 0) {
+        memset(&(block.data[inode_index * INode::SIZE]), FileType::REGULAR, INode::SIZE);
+      } else {
+        memset(&(block.data[inode_index * INode::SIZE]), FileType::FREE, INode::SIZE);
+      }
+    }
+    this->disk->set(block_index, block);
+  }
 }
 
 // Get an inode from the freelist and return it
 INode::ID LinearINodeManager::reserve() {
   Block block;
   uint64_t num_inodes_per_block = Block::SIZE / INode::SIZE;
-  for (uint64_t block_index = 0; block_index < block_count; block_index++) {
+  for (uint64_t block_index = 0; block_index < this->num_inodes / num_inodes_per_block; block_index++) {
 
     // Read in inode block from disk
-    this->disk->get(start_block + block_index, block);
+    this->disk->get(1 + block_index, block);
 
     // Check each inode in the block and see if it's free
     for (uint64_t inode_index = 0; inode_index < num_inodes_per_block; inode_index++) {
@@ -73,12 +81,12 @@ void LinearINodeManager::release(INode::ID inode_num) {
 
   // Load the inode and modify attribute
   Block block;
-  this->disk->get(start_block + block_index, block);
+  this->disk->get(1 + block_index, block);
   INode *inode = (INode *) &(block.data[inode_index * INode::SIZE]);
   inode->type = FileType::FREE;
 
   // Write the inode back to disk
-  this->disk->set(start_block + block_index, block);
+  this->disk->set(1 + block_index, block);
 }
 
 // Reads an inode from disk into the memory provided by the user
@@ -94,7 +102,7 @@ void LinearINodeManager::get(INode::ID inode_num, INode& user_inode) {
   uint64_t inode_index = inode_num % num_inodes_per_block;
 
   Block block;
-  this->disk->get(start_block + block_index, block);
+  this->disk->get(1 + block_index, block);
   INode *inode = (INode *) &(block.data[inode_index * INode::SIZE]);
 
   memcpy(&user_inode, inode, INode::SIZE);
@@ -112,11 +120,11 @@ void LinearINodeManager::set(INode::ID inode_num, const INode& user_inode) {
   uint64_t inode_index = inode_num % num_inodes_per_block;
 
   Block block;
-  this->disk->get(start_block + block_index, block);
+  this->disk->get(1 + block_index, block);
   INode *inode = (INode *) &(block.data[inode_index * INode::SIZE]);
 
   memcpy(inode, &user_inode, INode::SIZE);
-  this->disk->set(start_block + block_index, block);
+  this->disk->set(1 + block_index, block);
 }
 
 INode::ID LinearINodeManager::getRoot() {
