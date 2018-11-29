@@ -10,6 +10,7 @@
 
 #include <fuse.h>
 #include <cstring>
+#include <cinttypes>
 
 #ifndef NDEBUG
   #include <cstdio>
@@ -32,7 +33,6 @@ extern "C" {
   int   fs_flush(const char*, fuse_file_info*);
   int   fs_fsync(const char*, int, fuse_file_info*);
   int   fs_getattr(const char*, struct stat*);
-  int   fs_getdir(const char*, fuse_dirh_t, fuse_dirfil_t);
   int   fs_getxattr(const char*, const char*, char*, size_t);
   void* fs_init(struct fuse_conn_info *);
   int   fs_link(const char*, const char*);
@@ -250,7 +250,7 @@ extern "C" {
   }
 
   int fs_read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
-    debug("read        %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
+    debug("read        %s %" PRIu64 "b at %" PRId64 "\n", path, (uint64_t) size, offset);
     UNUSED(info);
 
     // Check if file exists
@@ -269,6 +269,7 @@ extern "C" {
 
   int fs_readdir(const char* path, void* buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* info) {
     debug("readdir     %s\n", path);
+    UNUSED(offset);
     UNUSED(info);
 
     Directory dir = fs->getDirectory(path);
@@ -371,7 +372,7 @@ extern "C" {
   }
 
   int fs_truncate(const char* path, off_t offset) {
-    debug("truncate    %s to %zdb\n", path, (int64_t) offset);
+    debug("truncate    %s to %" PRId64 "b\n", path, (int64_t) offset);
 
     // Check if file exists
     INode::ID id = fs->getINodeID(path);
@@ -425,7 +426,7 @@ extern "C" {
   }
 
   int fs_write(const char* path, const char* data, size_t size, off_t offset, fuse_file_info* info) {
-    debug("write       %s %zdb at %zd\n", path, (int64_t) size, (int64_t) offset);
+    debug("write       %s %" PRIu64 "b at %" PRId64 "\n", path, (uint64_t) size, offset);
     UNUSED(info);
 
     // Check if file exists
