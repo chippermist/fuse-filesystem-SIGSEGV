@@ -15,7 +15,13 @@
 #include <cassert>
 #include <stdlib.h>
 #include <time.h>
+#include <random>
+#include <vector>
+#include <unordered_map>
+#include <functional>
 
 void createNestedDirectories(Directory );
-std::string random_string(size_t );
 void createNamedNestedDirectories(Directory );
+void showAllContents(Directory );
+void deleteNestedDirectories(Directory );
+std::string random_string( size_t , std::function<char(void)>  );

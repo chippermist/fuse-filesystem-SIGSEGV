@@ -20,4 +20,5 @@ public:
   void remove(const std::string& name);
   INode::ID search(const std::string& name) const;
   std::vector<char> serialize() const;
+  std::unordered_map<std::string, INode::ID> contents();
 };
