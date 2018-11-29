@@ -16,7 +16,7 @@ std::string random_string(size_t length) {
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "abcdefghijklmnopqrstuvwxyz";
         const size_t max_index = (sizeof(charset) - 1);
-        return charset[ rand() % max_index ];
+        return charset[ rand() % max_index  + 1];
     };
     std::string str(length,0);
     std::generate_n( str.begin(), length, randchar);
@@ -35,7 +35,7 @@ void createNestedDirectories(Directory parent) {
     inode.type = FileType::DIRECTORY;
     filesystem->save(inode_id, inode);
     Directory new_dir = Directory(inode_id, parent.id());
-    std::cout << "Directory created: " << new_dir.id() << std::endl;
+    std::cout << "Directory created: " << new_dir.id() << std::endl << std::endl;
     filesystem->save(new_dir);
 
     // checking if . and .. are correct
@@ -54,10 +54,11 @@ void createNestedDirectories(Directory parent) {
 
 void createNamedNestedDirectories(Directory parent) {
   srand(time(NULL));
-  int times = rand() % 10 + 1;
+  int times = rand() % 100 + 1;
   if(count >= 1000) return;
 
   for(int k=0; k<times; ++k) {
+    srand(time(NULL));
     int name_length = rand() % 350 + 1;
     std::string dir_name = random_string(name_length);
     INode::ID inode_id = inode_manager->reserve();
@@ -69,7 +70,7 @@ void createNamedNestedDirectories(Directory parent) {
     parent.insert(dir_name, inode_id);
     filesystem->save(new_dir);
     filesystem->save(parent);
-    std::cout << "Directory created: " << new_dir.id() << " with name: " << dir_name <<  std::endl;
+    std::cout << "Directory created: " << new_dir.id() << "\nname: " << dir_name <<  std::endl << std::endl;
 
     // checking if . and .. are correct
     INode::ID self_id = new_dir.search(".");
@@ -78,13 +79,21 @@ void createNamedNestedDirectories(Directory parent) {
     assert(self_id == inode_id);
     assert(parent_id == parent.id());
 
+    // checking if the dir name was stored in the parent
+    assert(parent.search(dir_name) != 0);
+
     ++count;
     createNamedNestedDirectories(new_dir);
   }
 }
 
 
-int main(int argv, char** argc) {
+void deleteNestedDirectories(Directory parent) {
+  Directory dir = filesystem->getDirectory(parent.id());
+
+}
+
+int main() {
   uint64_t nblocks = (1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2));
   MemoryStorage *disk = new MemoryStorage(1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2));    //788496
   // Get superblock and clear it out
@@ -121,7 +130,7 @@ int main(int argv, char** argc) {
   //------------------------------------------
 
   INode::ID inode_id_1 = inode_manager->reserve();
-  std::cout << inode_id_1 << std::endl;
+  std::cout << "Root directory created: " << inode_id_1 << std::endl << std::endl;
   INode inode;
   inode_manager->get(inode_id_1, inode);
   inode.type = FileType::DIRECTORY;
