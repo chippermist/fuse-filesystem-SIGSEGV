@@ -19,6 +19,7 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
+#include <algorithm>
 
 void createNestedDirectories(Directory );
 void createNamedNestedDirectories(Directory );
