@@ -1,26 +1,40 @@
 #include "directory_test.h"
-#include <vector>
 
 // Compile as
-//  g++ -std=c++11 -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_DARWIN_USE_64_BIT_INODE -I/usr/local/include/osxfuse/fuse -losxfuse -L/usr/local/lib directory_test.cpp -o directory_test
+// g++ -std=c++11 -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_DARWIN_USE_64_BIT_INODE -I/usr/local/include/osxfuse/fuse -losxfuse -L/usr/local/lib directory_test.cpp -o directory_test
 
 LinearINodeManager *inode_manager;
 StackBasedBlockManager *block_manager;
 Filesystem *filesystem;
 int count = 0;
 
-std::string random_string(size_t length) {
-  srand(time(NULL));
-    auto randchar = []() -> char {
-        const char charset[] =
-        "0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
-        const size_t max_index = (sizeof(charset) - 1);
-        return charset[ rand() % max_index  + 1];
-    };
+typedef std::vector<char> char_array;
+
+char_array charset()
+{
+    //Change this to suit
+    return char_array( 
+    {'0','1','2','3','4',
+    '5','6','7','8','9',
+    'A','B','C','D','E','F',
+    'G','H','I','J','K',
+    'L','M','N','O','P',
+    'Q','R','S','T','U',
+    'V','W','X','Y','Z',
+    'a','b','c','d','e','f',
+    'g','h','i','j','k',
+    'l','m','n','o','p',
+    'q','r','s','t','u',
+    'v','w','x','y','z'
+    });
+};    
+
+// given a function that generates a random character,
+// return a string of the requested length
+std::string random_string( size_t length, std::function<char(void)> rand_char )
+{
     std::string str(length,0);
-    std::generate_n( str.begin(), length, randchar);
+    std::generate_n( str.begin(), length, rand_char );
     return str;
 }
 
@@ -55,13 +69,20 @@ void createNestedDirectories(Directory parent) {
 
 void createNamedNestedDirectories(Directory parent) {
   srand(time(NULL));
-  int times = rand() % 50 + 1;
-  if(count >= 1000) return;
+  int times = rand() % 10 + 1;
+  if(count >= 10) return;
 
   for(int k=0; k<times; ++k) {
     srand(time(NULL));
     int name_length = rand() % 350 + 1;
-    std::string dir_name = random_string(name_length);
+    // generating random string through characterset
+    const auto ch_set = charset();
+    std::default_random_engine rng(std::random_device{}()); //trying not to use rand() 
+    std::uniform_int_distribution<> dist(0, ch_set.size()-1);
+    auto randchar = [ch_set, &dist, &rng](){return ch_set[dist(rng)];};
+    std::string dir_name = random_string(name_length, randchar);
+
+    // now doing all the standard mkdir stuff 
     INode::ID inode_id = inode_manager->reserve();
     INode inode;
     inode_manager->get(inode_id, inode);
@@ -86,12 +107,32 @@ void createNamedNestedDirectories(Directory parent) {
     ++count;
     createNamedNestedDirectories(new_dir);
   }
+  showAllContents(parent);
+}
+
+void showAllContents(Directory parent) {
+  std::unordered_map<std::string, INode::ID> entries = parent.contents();
+  for(auto it: entries) {
+    std::cout << it.first << std::endl;
+  }
+  std::cout << std::endl << std::endl;
 }
 
 
 void deleteNestedDirectories(Directory parent) {
-  Directory dir = filesystem->getDirectory(parent.id());
-
+  //Directory dir = filesystem->getDirectory(parent.id());
+  std::unordered_map<std::string, INode::ID> entries = parent.contents();
+  if(entries.empty()) return;
+  for(auto it : entries) {
+    // std::cout << it.first << " ";
+    deleteNestedDirectories(filesystem->getDirectory(it.second));
+    parent.remove(it.first);
+    inode_manager->release(it.second);
+    filesystem->save(parent);
+    std::cout << it.first << " removed" << std::endl;
+  }
+  entries.clear();
+  return;
 }
 
 int main() {
@@ -143,16 +184,20 @@ int main() {
   filesystem->save(parent_dir);
   ++count;
 
-  createNestedDirectories(parent_dir);
-  std::cout << "\n\n-------------\n";
-  std::cout << "\033[1;32mSuccess. End of create nested directory test.\033[0m\n";
-  std::cout << "-------------\n\n";
-  count = 0;
+  // createNestedDirectories(parent_dir);
+  // std::cout << "\n\n-------------\n";
+  // std::cout << "\033[1;32mSuccess. End of create nested directory test.\033[0m\n";
+  // std::cout << "-------------\n\n";
+  // count = 0;
   createNamedNestedDirectories(parent_dir);
   std::cout << "\n\n-------------\n";
   std::cout << "\033[1;32mSuccess. End of create nested directory with name test.\033[0m\n";
   std::cout << "-------------\n\n";
 
+  deleteNestedDirectories(parent_dir);
+  std::cout << "\n\n-------------\n";
+  std::cout << "\033[1;32mSuccess. End of delete nested directory with name test.\033[0m\n";
+  std::cout << "-------------\n\n";
 
   return 0;
 }
