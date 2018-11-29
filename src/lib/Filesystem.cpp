@@ -102,10 +102,6 @@ int Filesystem::write(INode::ID file_inode_num, const char *buf, size_t size, si
   INode file_inode;
   this->inode_manager->get(file_inode_num, file_inode);
 
-  if (file_inode.type != FileType::REGULAR) {
-    return -1; // File is not a regular file
-  }
-
   file_inode.mtime = time(NULL);
   file_inode.ctime = file_inode.mtime;
   file_inode.atime = file_inode.mtime;
@@ -383,10 +379,6 @@ int Filesystem::read(INode::ID file_inode_num, char *buf, size_t size, size_t of
   INode file_inode;
   this->inode_manager->get(file_inode_num, file_inode);
 
-  if (file_inode.type != FileType::REGULAR) {
-    return -1; // File is not a regular file
-  }
-
   if (offset >= file_inode.size) {
     return -1; // Can't begin reading from after file
   }
@@ -485,10 +477,6 @@ int Filesystem::truncate(INode::ID file_inode_num, size_t length) {
   // Read the file's inode and do some sanity checks
   INode file_inode;
   this->inode_manager->get(file_inode_num, file_inode);
-
-  if (file_inode.type != FileType::REGULAR) {
-    return -1; // File is not a regular file
-  }
 
   if (file_inode.size == length) {
     return 0;
