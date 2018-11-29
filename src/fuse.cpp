@@ -147,27 +147,25 @@ extern "C" {
     return NULL;
   }
 
-  int fs_link(const char* oldpath, const char* newpath) {
-    debug("link        %s -> %s\n", newpath, oldpath);
+  int fs_link(const char* target, const char* link) {
+    debug("link        %s -> %s\n", link, target);
 
-    // Check if oldpath exists
-    INode::ID inode_id = fs->getINodeID(oldpath);
+    INode::ID inode_id = fs->getINodeID(target);
     if (inode_id == 0) return -1;
 
-    std::string dname = fs->dirname(newpath);
-    std::string fname = fs->basename(newpath);
+    std::string dname = fs->dirname(link);
+    std::string fname = fs->basename(link);
 
-    // Get the new path's directory
+    // Get the link's directory
     Directory dir = fs->getDirectory(dname);
     if(dir.contains(fname)) return -1;
 
-    // Update oldpath INode's links count
+    // Update the target INode's link count
     INode inode = fs->getINode(inode_id);
     inode.ctime = time(NULL);
     inode.links += 1;
     fs->save(inode_id, inode);
 
-    // Write link to oldpath's inode in newpath's directory
     dir.insert(fname, inode_id);
     fs->save(dir);
     return 0;
@@ -355,18 +353,18 @@ extern "C" {
     return 0;
   }
 
-  int fs_symlink(const char* path, const char* link) {
-    debug("symlink     %s -> %s\n", path, link);
+  int fs_symlink(const char* target, const char* link) {
+    debug("symlink     %s -> %s\n", link, target);
 
-    std::string dname = fs->dirname(path);
-    std::string fname = fs->basename(path);
+    std::string dname = fs->dirname(link);
+    std::string fname = fs->basename(link);
 
     Directory dir = fs->getDirectory(dname);
     if(dir.contains(fname)) return -1;
 
     INode::ID id = inode_manager->reserve();
     INode inode(FileType::SYMLINK, 0777);
-    fs->write(id, link, std::strlen(link), 0);
+    fs->write(id, target, std::strlen(target) + 1, 0);
     fs->save(id, inode);
 
     dir.insert(fname, id);
