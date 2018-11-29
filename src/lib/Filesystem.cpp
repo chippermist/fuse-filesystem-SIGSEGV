@@ -30,6 +30,9 @@ void Filesystem::mkfs() {
   block_manager->mkfs();
 
   INode::ID id = inode_manager->getRoot();
+  INode inode(FileType::DIRECTORY, 0777);
+  save(id, inode);
+
   Directory root(id, id);
   save(root);
 }
