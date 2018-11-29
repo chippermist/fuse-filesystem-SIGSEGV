@@ -6,35 +6,47 @@
   // Placeholder superclass for inheritence.
 class FSException: public std::system_error {
 protected:
-  FSException(int code, const char* message): std::system_error(code, message) {}
+  // Pass this std::errc enums listed at https://en.cppreference.com/w/cpp/error/errc
+  FSException(std::errc code, const char* message): std::system_error(std::make_error_code(code), message) {}
+  FSException(std::errc code, const std::string& message): std::system_error(std::make_error_code(code), message) {}
 };
 
 struct AccessDenied: public FSException {
   // TODO: Alternative constructor that takes a path.
-  AccessDenied(): FSException(EACCES, "Access denied!") {};
+  AccessDenied(): FSException(std::errc::permission_denied, "Access denied!") {}
 };
 
 struct AlreadyExists: public FSException {
   // TODO: Alternative constructor that takes a path.
-  AlreadyExists(): FSException(EEXIST, "File already exists!") {};
+  AlreadyExists(): FSException(std::errc::file_exists, "File already exists!") {}
+};
+
+struct DirectoryNotEmpty: public FSException {
+  // TODO: Alternative constructor that takes a path.
+  DirectoryNotEmpty(): FSException(std::errc::directory_not_empty, "Directory not empty!") {}
+};
+
+struct IOError: public FSException {
+  IOError(): FSException(std::errc::io_error, "IO error!") {}
+  IOError(const std::string& message): FSException(std::errc::io_error, message) {}
 };
 
 struct OutOfDataBlocks: public FSException {
-  OutOfDataBlocks(): FSException(ENOSPC, "Out of data blocks!") {};
+  OutOfDataBlocks(): FSException(std::errc::no_space_on_device, "Out of data blocks!") {}
 };
 
 struct OutOfINodes: public FSException {
-  OutOfINodes(): FSException(ENOSPC, "Out of INodes!") {};
+  OutOfINodes(): FSException(std::errc::no_space_on_device, "Out of INodes!") {}
 };
 
 struct NotADirectory: public FSException {
   // TODO: Alternative constructor that takes a path.
-  NotADirectory(): FSException(ENOTDIR, "Not a directory!") {};
+  NotADirectory(): FSException(std::errc::not_a_directory, "Not a directory!") {}
 };
 
 struct NoSuchFile: public FSException {
   // TODO: Alternative constructor that takes a path.
-  NoSuchFile(): FSException(ENOENT, "No such file!") {};
+  NoSuchFile(): FSException(std::errc::no_such_file_or_directory, "No such file!") {}
 };
 
 
