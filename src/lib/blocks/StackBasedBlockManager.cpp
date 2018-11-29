@@ -1,5 +1,12 @@
 #include "StackBasedBlockManager.h"
 
+#if defined(__linux__)
+  #include <sys/statfs.h>
+  #include <sys/vfs.h>
+#else
+  #include <fuse.h>
+#endif
+
 // Anonymous namespace for file-local types:
 namespace {
   struct DatablockNode {
@@ -8,12 +15,12 @@ namespace {
   };
 
   struct Config {
-    uint64_t  magic; // Magic number to identify this block manager (ignored for now)
-    Block::ID top_block; // Block ID of the head block in the free list
-    uint64_t  top_index; // Index of the first free ref in the head block
-    uint64_t  last_index; // Index of the last valid entry in the free list
-    Block::ID  last_block; // Block ID of the last block in the free list (leftmost)
-    Block::ID  first_block; // Block ID of the first block in the free list (rightmost)
+    uint64_t  magic;       // Magic number to identify this block manager (ignored for now)
+    Block::ID top_block;   // Block ID of the head block in the free list
+    uint64_t  top_index;   // Index of the first free ref in the head block
+    uint64_t  last_index;  // Index of the last valid entry in the free list
+    Block::ID last_block;  // Block ID of the last block in the free list (leftmost)
+    Block::ID first_block; // Block ID of the first block in the free list (rightmost)
   };
 }
 
@@ -30,7 +37,13 @@ StackBasedBlockManager::StackBasedBlockManager(Storage& storage): disk(&storage)
   this->first_block = config->first_block;
 }
 
-StackBasedBlockManager::~StackBasedBlockManager() {}
+StackBasedBlockManager::~StackBasedBlockManager() {
+  // Nothing to do!
+}
+
+void StackBasedBlockManager::get(Block::ID id, Block& dst) {
+  disk->get(id, dst);
+}
 
 void StackBasedBlockManager::mkfs() {
 
@@ -151,4 +164,20 @@ Block::ID StackBasedBlockManager::reserve() {
 
   this->update_superblock();
   return free_block_num;
+}
+
+void StackBasedBlockManager::statfs(struct statvfs* info) {
+  uint64_t nrefs = DatablockNode::NREFS;
+  uint64_t total = (last_block - first_block) * nrefs + last_index;
+  uint64_t used  = (top_block  - first_block) * nrefs + top_index;
+
+  // Based on http://pubs.opengroup.org/onlinepubs/009604599/basedefs/sys/statvfs.h.html
+  // Also see http://man7.org/linux/man-pages/man3/statvfs.3.html
+  info->f_blocks  = total;        // Total number of blocks on file system in units of f_frsize.
+  info->f_bfree   = total - used; // Total number of free blocks.
+  info->f_bavail  = total - used; // Number of free blocks available to non-privileged process.
+}
+
+void StackBasedBlockManager::set(Block::ID id, const Block& src) {
+  disk->set(id, src);
 }

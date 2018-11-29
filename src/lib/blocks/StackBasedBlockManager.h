@@ -13,6 +13,11 @@ public:
   ~StackBasedBlockManager();
 
   virtual void mkfs();
+  virtual void statfs(struct statvfs* info);
+
+  virtual void get(Block::ID id, Block& dst);
+  virtual void set(Block::ID id, const Block& src);
+
   virtual void release(Block::ID block_num);
   virtual Block::ID reserve();
 
@@ -20,9 +25,9 @@ public:
 
 private:
   Block::ID top_block;
-  uint64_t top_index;
-  uint64_t last_index;
+  uint64_t  top_index;
+  uint64_t  last_index;
   Block::ID first_block;
   Block::ID last_block;
-  Storage* disk;
+  Storage*  disk;
 };
