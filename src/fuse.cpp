@@ -327,11 +327,14 @@ extern "C" {
     std::string dname = fs->basename(path);
 
     Directory parent = fs->getDirectory(pname);
-    Directory dir    = fs->getDirectory(parent.search(dname));
+    INode::ID id     = parent.search(dname);
+    Directory dir    = fs->getDirectory(id);
     if(!dir.isEmpty()) return -1;
 
     parent.remove(dname);
     fs->save(parent);
+
+    fs->unlink(id);
     return 0;
   }
 
