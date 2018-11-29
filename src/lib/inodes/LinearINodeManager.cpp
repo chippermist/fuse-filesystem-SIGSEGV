@@ -21,29 +21,15 @@ LinearINodeManager::~LinearINodeManager() {}
 
 // Initialize inodes during mkfs()
 void LinearINodeManager::mkfs() {
-
-  // TODO: Initialize root directory and set this->root
-
-  // Read superblock
   Block block;
   this->disk->get(0, block);
   Superblock* superblock = (Superblock*) &block;
-  Block::ID start = superblock->inode_block_start;
-  uint64_t num_inodes_per_block = Block::SIZE / INode::SIZE;
 
-  for (uint64_t block_index = start; block_index < this->num_inodes / num_inodes_per_block; block_index++) {
-    // Read in the inode block
-    this->disk->get(block_index, block);
-
-    // Zero out each inode in the block except INode 0 of block 0
-    for (uint64_t inode_index = 0; inode_index < num_inodes_per_block; inode_index++) {
-      if (block_index == start && inode_index == 0) {
-        memset(&(block.data[inode_index * INode::SIZE]), FileType::REGULAR, INode::SIZE);
-      } else {
-        memset(&(block.data[inode_index * INode::SIZE]), FileType::FREE, INode::SIZE);
-      }
-    }
-    this->disk->set(block_index, block);
+  std::memset(block.data, 0, Block::SIZE);
+  Block::ID i = superblock->inode_block_start;
+  while(i < superblock->inode_block_count) {
+    this->disk->set(i, block);
+    i += 1;
   }
 }
 
