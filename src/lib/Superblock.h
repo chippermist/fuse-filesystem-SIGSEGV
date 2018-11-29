@@ -6,6 +6,7 @@ struct Superblock {
   union {
     uint64_t config[16];
     struct {
+      uint32_t  magic;
       uint64_t  block_size;
       uint64_t  block_count;
 

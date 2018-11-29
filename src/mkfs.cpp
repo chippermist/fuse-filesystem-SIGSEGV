@@ -21,6 +21,7 @@ int main(int argc, char** argv) {
   memset(&block, 0, Block::SIZE);
 
   // Set basic superblock parameters
+  superblock->magic = 3199905246;
   superblock->block_size = Block::SIZE;
   superblock->block_count = nblocks;
 
