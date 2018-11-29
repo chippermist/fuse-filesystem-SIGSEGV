@@ -449,8 +449,8 @@ int main(int argc, char** argv) {
   uint64_t nblocks = 1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2);
 
   // Instantiate objects for filesystem
-  disk = new MemoryStorage(nblocks);
-  block_manager = new StackBasedBlockManager(*disk);
+  Storage *disk = new MemoryStorage(nblocks);
+  BlockManager *block_manager = new StackBasedBlockManager(*disk);
   inode_manager = new LinearINodeManager(*disk);
   fs = new Filesystem(*block_manager, *inode_manager, *disk);
 

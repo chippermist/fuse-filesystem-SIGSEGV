@@ -16,6 +16,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-void createNestedDirectories(Directory);
-std::string random_string( size_t );
+void createNestedDirectories(Directory );
+std::string random_string(size_t );
 void createNamedNestedDirectories(Directory );
