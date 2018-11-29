@@ -56,3 +56,7 @@ std::vector<char> Directory::serialize() const {
 
   return data;
 }
+
+std::unordered_map<std::string, INode::ID> Directory::contents() {
+  return entries;
+}
