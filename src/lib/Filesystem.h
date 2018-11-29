@@ -7,6 +7,8 @@
 #include "Storage.h"
 #include "Directory.h"
 
+struct statvfs;
+
 class Filesystem {
   BlockManager *block_manager;
   INodeManager *inode_manager;
@@ -16,10 +18,13 @@ public:
   ~Filesystem();
 
   void mkfs();
+  void statfs(struct statvfs* info);
 
-  int read(INode::ID file_inode_num, char *buffer, size_t size, size_t offset);
-  int write(INode::ID file_inode_num, const char *buf, size_t size, size_t offset);
-  int truncate(INode::ID file_inode_num, size_t length);
+  int  read(INode::ID file_inode_num, char *buffer, size_t size, size_t offset);
+  int  write(INode::ID file_inode_num, const char *buf, size_t size, size_t offset);
+  int  truncate(INode::ID file_inode_num, size_t length);
+  void unlink(INode::ID id);
+
   std::string dirname(const char* path_cstring);
   std::string basename(const char* path_cstring);
 

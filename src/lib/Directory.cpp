@@ -3,13 +3,13 @@
 #include <cstring>
 
 // To be used when creating (mkdiring) a new directory:
-Directory::Directory(INode::ID id, INode::ID parent): inode_id(id), entries() {
+Directory::Directory(INode::ID id, INode::ID parent): mID(id), mEntries() {
   insert(".",  id);
   insert("..", parent);
 }
 
 // To be used when loading an existing directory from disk:
-Directory::Directory(INode::ID id, const char* data, size_t size): inode_id(id), entries() {
+Directory::Directory(INode::ID id, const char* data, size_t size): mID(id), mEntries() {
   size_t index = 0;
   while(index < size) {
     INode::ID eid;
@@ -20,26 +20,38 @@ Directory::Directory(INode::ID id, const char* data, size_t size): inode_id(id),
   }
 }
 
+bool Directory::contains(const std::string& name) const {
+  return mEntries.find(name) != mEntries.end();
+}
+
+const std::unordered_map<std::string, INode::ID>& Directory::entries() const {
+  return mEntries;
+}
+
 INode::ID Directory::id() const {
-  return inode_id;
+  return mID;
 }
 
 void Directory::insert(const std::string& name, INode::ID id) {
-  entries[name] = id;
+  mEntries[name] = id;
+}
+
+bool Directory::isEmpty() const {
+  return mEntries.size() < 3;
 }
 
 void Directory::remove(const std::string& name) {
-  entries.erase(name);
+  mEntries.erase(name);
 }
 
 INode::ID Directory::search(const std::string& name) const {
-  auto itr = entries.find(name);
-  return (itr == entries.end())? 0 : itr->second;
+  auto itr = mEntries.find(name);
+  return (itr == mEntries.end())? 0 : itr->second;
 }
 
 std::vector<char> Directory::serialize() const {
   int bytes = 0;
-  for(const auto itr: entries) {
+  for(const auto itr: mEntries) {
     bytes += itr.first.length() + sizeof(INode::ID) + 1;
   }
 
@@ -47,7 +59,7 @@ std::vector<char> Directory::serialize() const {
   data.resize(bytes);
 
   char* tgt = &data[0];
-  for(const auto itr: entries) {
+  for(const auto itr: mEntries) {
     std::memcpy(tgt, &itr.second, sizeof(INode::ID));
     tgt += sizeof(INode::ID);
     std::strcpy(tgt, itr.first.c_str());
@@ -58,5 +70,5 @@ std::vector<char> Directory::serialize() const {
 }
 
 std::unordered_map<std::string, INode::ID> Directory::contents() {
-  return entries;
+  return mEntries;
 }
