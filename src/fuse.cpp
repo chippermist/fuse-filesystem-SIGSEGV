@@ -1,4 +1,6 @@
 #include "lib/Filesystem.h"
+#include "lib/FSExceptions.h"
+
 #include "lib/storage/MemoryStorage.h"
 #include "lib/inodes/LinearINodeManager.h"
 #include "lib/blocks/StackBasedBlockManager.h"
