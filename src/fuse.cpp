@@ -12,6 +12,7 @@
 #include <fuse.h>
 #include <cstring>
 #include <cinttypes>
+#include <iostream>
 
 #ifndef NDEBUG
   #include <cstdio>
@@ -87,9 +88,9 @@ extern "C" {
 
     // Update INode
     INode inode = fs->getINode(inode_id);
-    if (uid != 0xffff) inode.uid = uid;
-    if (gid != 0xffff) inode.gid = gid;
-    if (uid != 0xffff || gid != 0xffff) {
+    if (uid != 0xffff && uid != 0xffffffff) inode.uid = uid;
+    if (gid != 0xffff && gid != 0xffffffff) inode.gid = gid;
+    if ((uid != 0xffff && uid != 0xffffffff) || (gid != 0xffff && gid != 0xffffffff)) {
       inode.ctime = time(NULL);
     }
     fs->save(inode_id, inode);
