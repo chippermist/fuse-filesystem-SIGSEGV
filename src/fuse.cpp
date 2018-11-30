@@ -58,6 +58,8 @@ extern "C" {
   int   fs_access(const char *, int);
 
   int fs_access(const char *path, int mode) {
+    debug("access       %s\n", path);
+    UNUSED(mode);
     return 0;
   }
 
