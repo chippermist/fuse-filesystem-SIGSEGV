@@ -69,7 +69,7 @@ extern "C" {
 
     // Check if path exists
     INode::ID inode_id = fs->getINodeID(path);
-    if (inode_id == 0) return -1;
+    if (inode_id == 0) return -2;
 
     // Update INode
     INode inode = fs->getINode(inode_id);
@@ -84,7 +84,7 @@ extern "C" {
 
     // Check if path exists
     INode::ID inode_id = fs->getINodeID(path);
-    if (inode_id == 0) return -1;
+    if (inode_id == 0) return -2;
 
     // Update INode
     INode inode = fs->getINode(inode_id);
@@ -171,14 +171,14 @@ extern "C" {
     debug("link        %s -> %s\n", link, target);
 
     INode::ID inode_id = fs->getINodeID(target);
-    if (inode_id == 0) return -1;
+    if (inode_id == 0) return -2;
 
     std::string dname = fs->dirname(link);
     std::string fname = fs->basename(link);
 
     // Get the link's directory
     Directory dir = fs->getDirectory(dname);
-    if(dir.contains(fname)) return -1;
+    if(dir.contains(fname)) return -2;
 
     // Update the target INode's link count
     INode inode = fs->getINode(inode_id);
@@ -210,7 +210,7 @@ extern "C" {
     std::string parent_dname = fs->dirname(path);
     std::string dname = fs->basename(path);
     INode::ID parent_dir_id = fs->getINodeID(parent_dname);
-    if (parent_dir_id == 0) return -1;
+    if (parent_dir_id == 0) return -2;
 
     // Allocate an inode for new directory and write in parent directory
     INode::ID new_dir_inode_id = inode_manager->reserve();
@@ -245,7 +245,7 @@ extern "C" {
 
     // Check if path's parent directory exists
     INode::ID parent_inode_id = fs->getINodeID(dname);
-    if (parent_inode_id == 0) return -1;
+    if (parent_inode_id == 0) return -2;
 
     // Allocate an inode for new file and write in parent directory
     INode::ID new_file_inode_id = inode_manager->reserve();
@@ -273,7 +273,7 @@ extern "C" {
 
     // Check if file exists
     INode::ID id = fs->getINodeID(path);
-    if(id == 0) return -1;
+    if(id == 0) return -2;
 
     // Make sure it's a regular file
     INode inode = fs->getINode(id);
@@ -304,7 +304,7 @@ extern "C" {
 
     // Check if file exists
     INode::ID id = fs->getINodeID(path);
-    if(id == 0) return -1;
+    if(id == 0) return -2;
 
     // Make sure it's a symlink
     INode inode = fs->getINode(id);
@@ -397,7 +397,7 @@ extern "C" {
 
     // Check if file exists
     INode::ID id = fs->getINodeID(path);
-    if(id == 0) return -1;
+    if(id == 0) return -2;
 
     // Make sure it's a regular file
     INode inode = fs->getINode(id);
@@ -417,7 +417,7 @@ extern "C" {
 
     Directory dir = fs->getDirectory(dname);
     INode::ID fid = dir.search(fname);
-    if(fid == 0) return -1;
+    if(fid == 0) return -2;
 
     dir.remove(fname);
     fs->save(dir);
@@ -433,7 +433,7 @@ extern "C" {
 
     // Check if path exists
     INode::ID inode_id = fs->getINodeID(path);
-    if (inode_id == 0) return -1;
+    if (inode_id == 0) return -2;
 
     // Update INode
     INode inode = fs->getINode(inode_id);
@@ -452,7 +452,7 @@ extern "C" {
 
     // Check if file exists
     INode::ID id = fs->getINodeID(path);
-    if(id == 0) return -1;
+    if(id == 0) return -2;
 
     // Make sure it's a regular file
     INode inode = fs->getINode(id);
@@ -472,7 +472,8 @@ int main(int argc, char** argv) {
 
   // Default ~32GB disk
   // TODO: Read value from argv
-  uint64_t nblocks = 1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2);
+  // uint64_t nblocks = 1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2);
+  uint64_t nblocks =  788496;
 
   // Instantiate objects for filesystem
   Storage *disk = new FileStorage("/dev/vdc", nblocks);
