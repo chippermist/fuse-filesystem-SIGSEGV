@@ -50,7 +50,7 @@ struct NoSuchFile: public FSException {
 };
 
 
-int handle(std::function<int(void)> callback) {
+inline int handle(std::function<int(void)> callback) {
   try {
     return callback();
   }
