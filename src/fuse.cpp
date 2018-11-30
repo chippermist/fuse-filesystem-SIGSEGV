@@ -85,9 +85,11 @@ extern "C" {
 
     // Update INode
     INode inode = fs->getINode(inode_id);
-    inode.ctime = time(NULL);
-    inode.uid   = uid;
-    inode.gid   = gid;
+    if (uid != 0xffff) inode.uid = uid;
+    if (gid != 0xffff) inode.gid = gid;
+    if (uid != 0xffff || gid != 0xffff) {
+      inode.ctime = time(NULL);
+    }
     fs->save(inode_id, inode);
     return 0;
   }
