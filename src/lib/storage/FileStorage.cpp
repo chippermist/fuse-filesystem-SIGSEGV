@@ -1,4 +1,5 @@
 #include "FileStorage.h"
+#include "../FSExceptions.h"
 
 FileStorage::FileStorage(const char* filename, uint64_t nblocks): file(filename) {
   // check if the file exists and create a new file if it doesn't
@@ -19,6 +20,10 @@ void FileStorage::get(Block::ID id, Block& dst) {
 
   file.seekg(id * Block::SIZE);
   file.read(dst.data, Block::SIZE);
+  if(file.fail()) {
+    std::string message = "Block read failed for block ";
+    throw IOError(message + std::to_string(id));
+  }
 }
 
 void FileStorage::set(Block::ID id, const Block& src) {
@@ -28,5 +33,10 @@ void FileStorage::set(Block::ID id, const Block& src) {
 
   file.seekp(id * Block::SIZE);
   file.write(src.data, Block::SIZE);
+  if(file.fail()) {
+    std::string message = "Block write failed for block ";
+    throw IOError(message + std::to_string(id));
+  }
+
   file.flush();
 }

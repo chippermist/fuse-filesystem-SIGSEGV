@@ -1,5 +1,5 @@
 #include "Filesystem.h"
-
+#include "FSExceptions.h"
 #include "Superblock.h"
 
 #include <algorithm>
@@ -69,7 +69,7 @@ Directory Filesystem::getDirectory(INode::ID id) {
   INode inode;
   inode_manager->get(id, inode);
   if(inode.type != FileType::DIRECTORY) {
-    throw "Not a directory!";
+    throw NotADirectory();
   }
 
   char* buffer = new char[inode.size];
@@ -85,6 +85,8 @@ Directory Filesystem::getDirectory(const std::string& path) {
 }
 
 INode Filesystem::getINode(INode::ID id) {
+  if(id == 0) throw NoSuchEntry();
+
   INode inode;
   inode_manager->get(id, inode);
   return inode;
@@ -104,12 +106,10 @@ INode::ID Filesystem::getINodeID(const std::string& path) {
   while(found != std::string::npos) {
     found = path.find('/', start);
     std::string component = path.substr(start, found - start);
+    start = found + 1;
 
     Directory dir = getDirectory(id);
     id = dir.search(component);
-    if(id == 0) return 0;
-
-    start = found + 1;
   }
 
   return id;
@@ -615,12 +615,9 @@ std::string Filesystem::dirname(const char* path_cstring) {
 
 std::string Filesystem::basename(const char* path_cstring) {
   std::string path(path_cstring);
-  if(path.length() > 256) {
-    throw std::length_error("Filename is too long. Maximum allowed length is 256 characters.");
-  }
   size_t loc = path.find_last_of('/');
   if (loc != std::string::npos) {
-    return (path.substr(loc+1, path.length()));
+    return (path.substr(loc + 1));
   }
   return "";
 }
