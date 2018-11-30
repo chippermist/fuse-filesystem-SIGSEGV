@@ -135,9 +135,9 @@ extern "C" {
 
     // Modify mode depending on file type
     if (inode.type == FileType::REGULAR) {
-      info->st_mode = info->st_mode | S_IFDIR;
-    } else if (inode.type == FileType::DIRECTORY) {
       info->st_mode = info->st_mode | S_IFREG;
+    } else if (inode.type == FileType::DIRECTORY) {
+      info->st_mode = info->st_mode | S_IFDIR;
     } else if (inode.type == FileType::SYMLINK) {
       info->st_mode = info->st_mode | S_IFLNK;
     } else {
