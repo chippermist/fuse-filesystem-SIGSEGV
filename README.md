@@ -3,6 +3,8 @@
 <img src="https://travis-ci.com/chippermist/SIGSEGV.svg?branch=master" />
 
 ## Usage
+
+### Mount Filesystem
 To run a fuse filesystem 
 1) Run mkfs on the filesystem device you want to mount the filesystem on
 2) 
@@ -14,3 +16,8 @@ To run a fuse filesystem
 * `-d`   : Debugging mode
 * `-s`   : Single thread
 * `-o`   : Optional Arguments
+
+
+### Unmount Filesystem
+Run `fusermount -u <mount point path name>` 
+
