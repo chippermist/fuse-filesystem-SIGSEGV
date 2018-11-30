@@ -55,7 +55,11 @@ extern "C" {
   int   fs_unlink(const char*);
   int   fs_utime(const char*, utimbuf*);
   int   fs_write(const char*, const char*, size_t, off_t, fuse_file_info*);
+  int   fs_access(const char *, int);
 
+  int fs_access(const char *path, int mode) {
+    return 0;
+  }
 
   int fs_chmod(const char* path, mode_t mode) {
     debug("chmod       %s to %03o\n", path, mode);
@@ -475,6 +479,7 @@ int main(int argc, char** argv) {
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
 
+  ops.access      = &fs_access;
   ops.chmod       = &fs_chmod;
   ops.chown       = &fs_chown;
   // ops.destroy     = &fs_destroy;
