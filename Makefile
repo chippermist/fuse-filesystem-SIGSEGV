@@ -29,7 +29,7 @@ fsck: bin/fsck
 
 # Pattern for executables:
 bin/%: obj/%.o $(OBJECTS)
-	${CXX} $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+	${CXX} $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 # Pattern for objects:
 obj/%.o: src/%.cpp
