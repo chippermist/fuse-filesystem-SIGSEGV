@@ -3,6 +3,12 @@
 #include "Block.h"
 #include "Storage.h"
 
+#if defined(__linux__)
+  #include <sys/statvfs.h>
+#else
+  #include <fuse.h>
+#endif
+
 struct statvfs;
 
 class BlockManager {

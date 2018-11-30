@@ -11,6 +11,7 @@
 #if defined(__linux__)
   #include <sys/statfs.h>
   #include <sys/vfs.h>
+  #include <sys/statvfs.h>
 #else
   #include <fuse.h>
 #endif
