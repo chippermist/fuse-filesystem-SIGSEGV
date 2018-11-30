@@ -1,6 +1,10 @@
 #include "FileStorage.h"
 
 FileStorage::FileStorage(const char* filename, uint64_t nblocks): file(filename) {
+  // check if the file exists and create a new file if it doesn't
+  if(!file.good()) {
+    file.open(filename, std::fstream::in | std::fstream::out | std::fstream::trunc);
+  }
   this->size = nblocks;
 }
 
