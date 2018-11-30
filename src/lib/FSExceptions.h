@@ -1,7 +1,8 @@
 #pragma once
 
-#include <system_error>
+#include <functional>
 #include <iostream>
+#include <system_error>
 
   // Placeholder superclass for inheritence.
 class FSException: public std::system_error {
