@@ -4,6 +4,7 @@
 #include "lib/blocks/StackBasedBlockManager.h"
 #include "lib/inodes/LinearINodeManager.h"
 #include "lib/storage/MemoryStorage.h"
+#include "lib/storage/FileStorage.h"
 
 int main(int argc, char** argv) {
 
@@ -13,7 +14,7 @@ int main(int argc, char** argv) {
   }
 
   uint64_t nblocks = atoi(argv[1]);
-  Storage *disk = new MemoryStorage(nblocks);
+  Storage *disk = new FileStorage("/dev/vdc", nblocks);
 
   // Create a block for superblock
   Block block;
