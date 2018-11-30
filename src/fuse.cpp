@@ -1,5 +1,6 @@
 #include "lib/Filesystem.h"
 #include "lib/storage/MemoryStorage.h"
+#include "lib/storage/FileStorage.h"
 #include "lib/inodes/LinearINodeManager.h"
 #include "lib/blocks/StackBasedBlockManager.h"
 
@@ -465,7 +466,7 @@ int main(int argc, char** argv) {
   uint64_t nblocks = 1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2);
 
   // Instantiate objects for filesystem
-  Storage *disk = new MemoryStorage(nblocks);
+  Storage *disk = new FileStorage("/dev/vdc", nblocks);
   BlockManager *block_manager = new StackBasedBlockManager(*disk);
   inode_manager = new LinearINodeManager(*disk);
   fs = new Filesystem(*block_manager, *inode_manager, *disk);
