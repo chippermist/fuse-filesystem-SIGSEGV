@@ -26,7 +26,26 @@ Filesystem::~Filesystem() {
   // Nothing to do.
 }
 
-void Filesystem::mkfs() {
+void Filesystem::mkfs(uint64_t nblocks) {
+  uint64_t niblocks = nblocks / 10;
+  mkfs(nblocks, niblocks);
+}
+
+void Filesystem::mkfs(uint64_t nblocks, uint64_t niblocks) {
+  Block block;
+  Superblock* superblock = (Superblock*) block.data;
+  block_manager->get(0, block);
+
+  superblock->magic       = 3199905246;
+  superblock->block_size  = Block::SIZE;
+  superblock->block_count = nblocks;
+
+  superblock->inode_block_start = 1;
+  superblock->inode_block_count = niblocks;
+  superblock->data_block_start  = niblocks + 1;
+  superblock->data_block_count  = nblocks - niblocks - 1;
+
+  block_manager->set(0, block);
   inode_manager->mkfs();
   block_manager->mkfs();
 

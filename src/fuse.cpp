@@ -459,6 +459,7 @@ int main(int argc, char** argv) {
   BlockManager *block_manager = new StackBasedBlockManager(*disk);
   inode_manager = new LinearINodeManager(*disk);
   fs = new Filesystem(*block_manager, *inode_manager, *disk);
+  fs->mkfs(1024);
 
   // Set FUSE function pointers
   fuse_operations ops;

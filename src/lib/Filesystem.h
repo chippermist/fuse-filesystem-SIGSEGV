@@ -17,7 +17,8 @@ public:
   Filesystem(BlockManager &block_manager, INodeManager& inode_manager, Storage &storage);
   ~Filesystem();
 
-  void mkfs();
+  void mkfs(uint64_t nblocks);
+  void mkfs(uint64_t nblocks, uint64_t niblocks);
   void statfs(struct statvfs* info);
 
   int  read(INode::ID file_inode_num, char *buffer, size_t size, size_t offset);
