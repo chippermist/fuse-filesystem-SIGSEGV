@@ -594,9 +594,9 @@ std::string Filesystem::dirname(const char* path_cstring) {
     dir_path = "/" + folder_names.top() + dir_path;
     folder_names.pop();
   }
-	if (dir_path.length() == 0) {
-		dir_path = "/";
-	}
+  if (dir_path.length() == 0) {
+    dir_path = "/";
+  }
   return dir_path;
 }
 
@@ -634,10 +634,10 @@ void Filesystem::deallocateLastBlock(INode& file_inode) {
     // 2. Dellocate the direct block
     this->block_manager->release(direct_ptrs[logical_blk_num - INode::DIRECT_POINTERS - 1]);
 
-		// 3. If first block in first level, relesae the first level block as well
-		if (logical_blk_num == INode::DIRECT_POINTERS + 1) {
-			this->block_manager->release(file_inode.block_pointers[INode::DIRECT_POINTERS]);
-		}
+    // 3. If first block in first level, relesae the first level block as well
+    if (logical_blk_num == INode::DIRECT_POINTERS + 1) {
+      this->block_manager->release(file_inode.block_pointers[INode::DIRECT_POINTERS]);
+    }
 
   } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale + (scale * scale)) {
 
@@ -658,15 +658,15 @@ void Filesystem::deallocateLastBlock(INode& file_inode) {
     // 3. Deallocate the direct block
     this->block_manager->release(direct_ptrs[block_idx_in_level % scale]);
 
-		// 4. Check if first block in second level
-		if (block_idx_in_level % scale == 0) {
-			this->block_manager->release(single_indirect_ptrs[block_idx_in_level / scale]);
-		}
+    // 4. Check if first block in second level
+    if (block_idx_in_level % scale == 0) {
+      this->block_manager->release(single_indirect_ptrs[block_idx_in_level / scale]);
+    }
 
-		// 5. Check if first block in first level
-		if (logical_blk_num == INode::DIRECT_POINTERS + scale + 1) {
-			this->block_manager->release(file_inode.block_pointers[INode::DIRECT_POINTERS + 1]);
-		}
+    // 5. Check if first block in first level
+    if (logical_blk_num == INode::DIRECT_POINTERS + scale + 1) {
+      this->block_manager->release(file_inode.block_pointers[INode::DIRECT_POINTERS + 1]);
+    }
 
   } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale + (scale * scale) + (scale * scale * scale)) {
     // Triple-indirect
@@ -693,17 +693,17 @@ void Filesystem::deallocateLastBlock(INode& file_inode) {
     // 4. Deallocate direct block
     this->block_manager->release(direct_ptrs[block_idx_in_level_two % scale]);
 
-		// 5. Check if first block in third level
+    // 5. Check if first block in third level
     if (block_idx_in_level_two % scale == 0) {
-			this->block_manager->release(single_indirect_ptrs[block_idx_in_level_two / scale]);
-		}
+      this->block_manager->release(single_indirect_ptrs[block_idx_in_level_two / scale]);
+    }
 
-		// 6. Check if first block in second level
+    // 6. Check if first block in second level
     if (block_idx_in_level % (scale * scale) == 0) {
       this->block_manager->release(double_indirect_ptrs[block_idx_in_level / (scale * scale)]);
-		}
+    }
 
-		// 7. Check if first block in first level
+    // 7. Check if first block in first level
     if (logical_blk_num == INode::DIRECT_POINTERS + scale + (scale * scale) + 1) {
       this->block_manager->release(file_inode.block_pointers[INode::DIRECT_POINTERS + 2]);
     }
