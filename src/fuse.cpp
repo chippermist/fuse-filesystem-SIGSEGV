@@ -120,7 +120,7 @@ extern "C" {
 
     // Check if path exists
     INode::ID inode_id = fs->getINodeID(path);
-    if (inode_id == 0) return -1;
+    if (inode_id == 0) return -2; // File not found
 
     // Read INode properties
     INode inode = fs->getINode(inode_id);

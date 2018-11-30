@@ -594,6 +594,9 @@ std::string Filesystem::dirname(const char* path_cstring) {
     dir_path = "/" + folder_names.top() + dir_path;
     folder_names.pop();
   }
+	if (dir_path.length() == 0) {
+		dir_path = "/";
+	}
   return dir_path;
 }
 
