@@ -32,6 +32,7 @@ void Filesystem::mkfs() {
 
   INode::ID id = inode_manager->getRoot();
   INode inode(FileType::DIRECTORY, 0777);
+  inode.links = 2;
   save(id, inode);
 
   Directory root(id, id);

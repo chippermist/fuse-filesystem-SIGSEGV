@@ -128,6 +128,16 @@ extern "C" {
     info->st_dev     = inode.dev;
     // info->st_rdev = inode.rdev;
 
+    // Modify mode depending on file type
+    if (inode.type == FileType::REGULAR) {
+      info->st_mode = info->st_mode | S_IFDIR;
+    } else if (inode.type == FileType::DIRECTORY) {
+      info->st_mode = info->st_mode | S_IFREG;
+    } else if (inode.type == FileType::SYMLINK) {
+      info->st_mode = info->st_mode | S_IFLNK;
+    } else {
+      throw std::out_of_range("Called getattr on a free INode!");
+    }
     return 0;
   }
 
