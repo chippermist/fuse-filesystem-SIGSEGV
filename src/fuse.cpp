@@ -2,6 +2,7 @@
 #include "lib/FSExceptions.h"
 
 #include "lib/storage/MemoryStorage.h"
+#include "lib/storage/FileStorage.h"
 #include "lib/inodes/LinearINodeManager.h"
 #include "lib/blocks/StackBasedBlockManager.h"
 
@@ -13,6 +14,7 @@
 #include <fuse.h>
 #include <cstring>
 #include <cinttypes>
+#include <iostream>
 
 #ifndef NDEBUG
   #include <cstdio>
@@ -56,7 +58,13 @@ extern "C" {
   int   fs_unlink(const char*);
   int   fs_utime(const char*, utimbuf*);
   int   fs_write(const char*, const char*, size_t, off_t, fuse_file_info*);
+  int   fs_access(const char *, int);
 
+  int fs_access(const char *path, int mode) {
+    debug("access       %s\n", path);
+    UNUSED(mode);
+    return 0;
+  }
 
   int fs_chmod(const char* path, mode_t mode) {
     debug("chmod       %s to %03o\n", path, mode);
@@ -77,9 +85,11 @@ extern "C" {
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
 
-      inode.ctime = time(NULL);
-      inode.uid   = uid;
-      inode.gid   = gid;
+      if (uid != 0xffff && uid != 0xffffffff) inode.uid = uid;
+      if (gid != 0xffff && gid != 0xffffffff) inode.gid = gid;
+      if ((uid != 0xffff && uid != 0xffffffff) || (gid != 0xffff && gid != 0xffffffff)) {
+        inode.ctime = time(NULL);
+      }
       fs->save(id, inode);
       return 0;
     });
@@ -123,6 +133,17 @@ extern "C" {
       info->st_blksize = Block::SIZE;
       info->st_dev     = inode.dev;
       // info->st_rdev = inode.rdev;
+
+      // Modify mode depending on file type
+      if (inode.type == FileType::REGULAR) {
+        info->st_mode = info->st_mode | S_IFREG;
+      } else if (inode.type == FileType::DIRECTORY) {
+        info->st_mode = info->st_mode | S_IFDIR;
+      } else if (inode.type == FileType::SYMLINK) {
+        info->st_mode = info->st_mode | S_IFLNK;
+      } else {
+        throw std::out_of_range("Called getattr on a free INode!");
+      }
       return 0;
     });
   }
@@ -431,10 +452,11 @@ int main(int argc, char** argv) {
 
   // Default ~32GB disk
   // TODO: Read value from argv
-  uint64_t nblocks = 1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2);
+  // uint64_t nblocks = 1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2);
+  uint64_t nblocks =  788496;
 
   // Instantiate objects for filesystem
-  Storage *disk = new MemoryStorage(nblocks);
+  Storage *disk = new FileStorage("/dev/vdc", nblocks);
   BlockManager *block_manager = new StackBasedBlockManager(*disk);
   inode_manager = new LinearINodeManager(*disk);
   fs = new Filesystem(*block_manager, *inode_manager, *disk);
@@ -443,6 +465,7 @@ int main(int argc, char** argv) {
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
 
+  ops.access      = &fs_access;
   ops.chmod       = &fs_chmod;
   ops.chown       = &fs_chown;
   // ops.destroy     = &fs_destroy;
