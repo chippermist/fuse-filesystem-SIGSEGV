@@ -11,24 +11,30 @@ protected:
   FSException(std::errc code, const std::string& message): std::system_error(std::make_error_code(code), message) {}
 };
 
+
 struct AccessDenied: public FSException {
-  // TODO: Alternative constructor that takes a path.
   AccessDenied(): FSException(std::errc::permission_denied, "Access denied!") {}
+  AccessDenied(const std::string& path): FSException(std::errc::permission_denied, "Access denied: " + path) {}
 };
 
 struct AlreadyExists: public FSException {
-  // TODO: Alternative constructor that takes a path.
-  AlreadyExists(): FSException(std::errc::file_exists, "File already exists!") {}
+  AlreadyExists(): FSException(std::errc::file_exists, "That already exists!") {}
+  AlreadyExists(const std::string& path): FSException(std::errc::file_exists, "Already exists: " + path) {}
 };
 
 struct DirectoryNotEmpty: public FSException {
-  // TODO: Alternative constructor that takes a path.
   DirectoryNotEmpty(): FSException(std::errc::directory_not_empty, "Directory not empty!") {}
+  DirectoryNotEmpty(const std::string& path): FSException(std::errc::directory_not_empty, "Directory not empty: " + path) {}
 };
 
 struct IOError: public FSException {
   IOError(): FSException(std::errc::io_error, "IO error!") {}
   IOError(const std::string& message): FSException(std::errc::io_error, message) {}
+};
+
+struct IsADirectory: public FSException {
+  IsADirectory(): FSException(std::errc::is_a_directory, "That's a directory!") {}
+  IsADirectory(const std::string& path): FSException(std::errc::is_a_directory, "Directory: " + path) {}
 };
 
 struct OutOfDataBlocks: public FSException {
@@ -40,13 +46,24 @@ struct OutOfINodes: public FSException {
 };
 
 struct NotADirectory: public FSException {
-  // TODO: Alternative constructor that takes a path.
-  NotADirectory(): FSException(std::errc::not_a_directory, "Not a directory!") {}
+  NotADirectory(): FSException(std::errc::not_a_directory, "That's not a directory!") {}
+  NotADirectory(const std::string& path): FSException(std::errc::not_a_directory, "Not a directory: " + path) {}
 };
 
-struct NoSuchFile: public FSException {
+struct NotAFile: public FSException {
+  NotAFile(): FSException(std::errc::not_a_directory, "That's not a file!") {}
+  NotAFile(const std::string& path): FSException(std::errc::invalid_argument, "Not a file: " + path) {}
+};
+
+struct NotASymlink: public FSException {
+  NotASymlink(): FSException(std::errc::not_a_directory, "That's not a symlink!") {}
+  NotASymlink(const std::string& path): FSException(std::errc::invalid_argument, "Not a symlink: " + path) {}
+};
+
+struct NoSuchEntry: public FSException {
   // TODO: Alternative constructor that takes a path.
-  NoSuchFile(): FSException(std::errc::no_such_file_or_directory, "No such file!") {}
+  NoSuchEntry(): FSException(std::errc::no_such_file_or_directory, "No such entry!") {}
+  NoSuchEntry(const std::string& path): FSException(std::errc::no_such_file_or_directory, "No such entry: " + path) {}
 };
 
 

@@ -154,7 +154,9 @@ extern "C" {
 
       // Get the link's directory
       Directory dir = fs->getDirectory(dname);
-      if(dir.contains(fname)) throw AlreadyExists();
+      if(dir.contains(fname)) {
+        throw AlreadyExists(link);
+      }
 
       inode.ctime = time(NULL);
       inode.links += 1;
@@ -182,14 +184,14 @@ extern "C" {
       std::string dname = fs->basename(path);
 
       Directory parent = fs->getDirectory(pname);
-      if(parent.contains(dname)) throw AlreadyExists();
+      if(parent.contains(dname)) {
+        throw AlreadyExists(path);
+      }
 
-      // Set the new directory's attributes
       INode::ID id = inode_manager->reserve();
       INode inode(FileType::DIRECTORY, mode);
       fs->save(id, inode);
 
-      // Initialize the new directory's contents
       Directory dir(id, parent.id());
       fs->save(dir);
 
@@ -206,9 +208,10 @@ extern "C" {
       std::string fname = fs->basename(path);
 
       Directory parent = fs->getDirectory(dname);
-      if(parent.contains(dname)) throw AlreadyExists();
+      if(parent.contains(dname)) {
+        throw AlreadyExists(path);
+      }
 
-      // Allocate an inode for new file
       INode::ID id = inode_manager->reserve();
       INode inode(FileType::REGULAR, mode, dev);
       fs->save(id, inode);
@@ -235,7 +238,7 @@ extern "C" {
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
       if(inode.type != FileType::REGULAR) {
-        return -1; // TODO: Exception!
+        throw NotAFile(path);
       }
 
       return fs->read(id, buffer, size, offset);
@@ -264,7 +267,7 @@ extern "C" {
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
       if(inode.type != FileType::SYMLINK) {
-        return -1; // TODO: Exception!
+        throw NotASymlink(path);
       }
 
       return fs->read(id, buffer, size, 0);
@@ -303,7 +306,7 @@ extern "C" {
       Directory parent = fs->getDirectory(pname);
       INode::ID id     = parent.search(dname);
       Directory dir    = fs->getDirectory(id);
-      if(!dir.isEmpty()) throw DirectoryNotEmpty();
+      if(!dir.isEmpty()) throw DirectoryNotEmpty(path);
 
       parent.remove(dname);
       fs->save(parent);
@@ -338,7 +341,9 @@ extern "C" {
       std::string fname = fs->basename(link);
 
       Directory dir = fs->getDirectory(dname);
-      if(dir.contains(fname)) throw AlreadyExists();
+      if(dir.contains(fname)) {
+        throw AlreadyExists(link);
+      }
 
       INode::ID id = inode_manager->reserve();
       INode inode(FileType::SYMLINK, 0777);
@@ -357,7 +362,7 @@ extern "C" {
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
       if(inode.type != FileType::REGULAR) {
-        return -1; // TODO: Exception!
+        throw NotAFile(path);
       }
 
       return fs->truncate(id, offset);
@@ -372,8 +377,11 @@ extern "C" {
 
       Directory dir = fs->getDirectory(dname);
       INode::ID fid = dir.search(fname);
-      if(fid == 0) return -1; // TODO: What exception?
-      // TODO: Make sure it's not a directory!
+
+      INode inode = fs->getINode(fid);
+      if(inode.type == FileType::DIRECTORY) {
+        throw IsADirectory(path);
+      }
 
       dir.remove(fname);
       fs->save(dir);
@@ -408,7 +416,7 @@ extern "C" {
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
       if(inode.type != FileType::REGULAR) {
-        return -1; // TODO: Exception!
+        throw NotAFile(path);
       }
 
       return fs->write(id, data, size, offset);

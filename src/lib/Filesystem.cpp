@@ -72,7 +72,7 @@ Directory Filesystem::getDirectory(const std::string& path) {
 }
 
 INode Filesystem::getINode(INode::ID id) {
-  if(id == 0) throw NoSuchFile();
+  if(id == 0) throw NoSuchEntry();
 
   INode inode;
   inode_manager->get(id, inode);
