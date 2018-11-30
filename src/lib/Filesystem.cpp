@@ -16,19 +16,13 @@
   #include <fuse.h>
 #endif
 
-Filesystem::Filesystem(BlockManager& block_manager, INodeManager& inode_manager, Storage& storage) {
+Filesystem::Filesystem(BlockManager& block_manager, INodeManager& inode_manager) {
   this->block_manager = &block_manager;
   this->inode_manager = &inode_manager;
-  this->disk = &storage;
 }
 
 Filesystem::~Filesystem() {
   // Nothing to do.
-}
-
-void Filesystem::mkfs(uint64_t nblocks) {
-  uint64_t niblocks = nblocks / 10;
-  mkfs(nblocks, niblocks);
 }
 
 void Filesystem::mkfs(uint64_t nblocks, uint64_t niblocks) {
@@ -121,6 +115,10 @@ INode::ID Filesystem::getINodeID(const std::string& path) {
   return id;
 }
 
+INode::ID Filesystem::newINodeID() {
+  return inode_manager->reserve();
+}
+
 void Filesystem::save(const Directory& directory) {
   std::vector<char> data = directory.serialize();
   write(directory.id(), &data[0], data.size(), 0);
@@ -163,7 +161,7 @@ int Filesystem::write(INode::ID file_inode_num, const char *buf, size_t size, si
     // Read in block
     Block block;
     Block::ID block_num = blockAt(file_inode, offset);
-    this->disk->get(block_num, block);
+    this->block_manager->get(block_num, block);
 
     /*
       How many bytes to write?
@@ -186,7 +184,7 @@ int Filesystem::write(INode::ID file_inode_num, const char *buf, size_t size, si
 
     // Copy the data and write to disk
     memcpy(block.data + (offset % Block::SIZE), buf, to_write);
-    this->disk->set(block_num, block);
+    this->block_manager->set(block_num, block);
 
     // Update offset, buf pointer, and num bytes left to write
     offset += to_write;
@@ -230,7 +228,7 @@ size_t Filesystem::appendData(INode& file_inode, const char *buf, size_t size, s
   if (offset % Block::SIZE != 0) {
     Block block;
     Block::ID block_num = blockAt(file_inode, offset);
-    this->disk->get(block_num, block);
+    this->block_manager->get(block_num, block);
 
     /*
       How many bytes to write?
@@ -248,7 +246,7 @@ size_t Filesystem::appendData(INode& file_inode, const char *buf, size_t size, s
     } else {
       memcpy(block.data  + (offset % Block::SIZE), buf, to_write);
     }
-    this->disk->set(block_num, block);
+    this->block_manager->set(block_num, block);
 
     // Update offset, buf pointer, and num bytes left to write
     offset += to_write;
@@ -289,7 +287,7 @@ size_t Filesystem::appendData(INode& file_inode, const char *buf, size_t size, s
     } else {
       memcpy(block.data, buf, to_write);
     }
-    this->disk->set(block_num, block);
+    this->block_manager->set(block_num, block);
 
     // Update offset, buf pointer, and num bytes left to write
     offset += to_write;
@@ -332,13 +330,13 @@ Block::ID Filesystem::allocateNextBlock(INode& file_inode) {
     // 2. Load in first level block
     Block direct_ptrs_blk;
     Block::ID *direct_ptrs = (Block::ID *) &direct_ptrs_blk;
-    this->disk->get(file_inode.block_pointers[INode::DIRECT_POINTERS], direct_ptrs_blk);
+    this->block_manager->get(file_inode.block_pointers[INode::DIRECT_POINTERS], direct_ptrs_blk);
 
     // 3. Allocate the direct block
     logical_blk_num -= INode::DIRECT_POINTERS;
     data_block_num = this->block_manager->reserve();
     direct_ptrs[logical_blk_num - 1] = data_block_num;
-    this->disk->set(file_inode.block_pointers[INode::DIRECT_POINTERS], direct_ptrs_blk);
+    this->block_manager->set(file_inode.block_pointers[INode::DIRECT_POINTERS], direct_ptrs_blk);
 
   } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale + (scale * scale)) {
 
@@ -352,24 +350,24 @@ Block::ID Filesystem::allocateNextBlock(INode& file_inode) {
     // 2. Load in first level block
     Block single_indirect_ptrs_blk;
     Block::ID *single_indirect_ptrs = (Block::ID *) &single_indirect_ptrs_blk;
-    this->disk->get(file_inode.block_pointers[INode::DIRECT_POINTERS + 1], single_indirect_ptrs_blk);
+    this->block_manager->get(file_inode.block_pointers[INode::DIRECT_POINTERS + 1], single_indirect_ptrs_blk);
 
     // 3. Check if need block for direct pointers
     Block::ID block_idx_in_level = logical_blk_num - INode::DIRECT_POINTERS - scale - 1;
     if (block_idx_in_level % scale == 0) {
       single_indirect_ptrs[block_idx_in_level / scale] = this->block_manager->reserve();
-      this->disk->set(file_inode.block_pointers[INode::DIRECT_POINTERS + 1], single_indirect_ptrs_blk);
+      this->block_manager->set(file_inode.block_pointers[INode::DIRECT_POINTERS + 1], single_indirect_ptrs_blk);
     }
 
     // 4. Load in second level block
     Block direct_ptrs_blk;
     Block::ID *direct_ptrs = (Block::ID *) &direct_ptrs_blk;
-    this->disk->get(single_indirect_ptrs[block_idx_in_level / scale], direct_ptrs_blk);
+    this->block_manager->get(single_indirect_ptrs[block_idx_in_level / scale], direct_ptrs_blk);
 
     // 5. Allocate the direct block
     data_block_num = this->block_manager->reserve();
     direct_ptrs[block_idx_in_level % scale] = data_block_num;
-    this->disk->set(single_indirect_ptrs[block_idx_in_level / scale], direct_ptrs_blk);
+    this->block_manager->set(single_indirect_ptrs[block_idx_in_level / scale], direct_ptrs_blk);
 
   } else if (logical_blk_num <= INode::DIRECT_POINTERS + scale + (scale * scale) + (scale * scale * scale)) {
     // Triple-indirect
@@ -382,36 +380,36 @@ Block::ID Filesystem::allocateNextBlock(INode& file_inode) {
     // 2. Load in first level block
     Block double_indirect_ptrs_blk;
     Block::ID *double_indirect_ptrs = (Block::ID *) &double_indirect_ptrs_blk;
-    this->disk->get(file_inode.block_pointers[INode::DIRECT_POINTERS + 2], double_indirect_ptrs_blk);
+    this->block_manager->get(file_inode.block_pointers[INode::DIRECT_POINTERS + 2], double_indirect_ptrs_blk);
 
     // 3. Check if need block for single-indirect pointers
     Block::ID block_idx_in_level = logical_blk_num - INode::DIRECT_POINTERS - scale - scale * scale - 1;
     if (block_idx_in_level % (scale * scale) == 0) {
       double_indirect_ptrs[block_idx_in_level / (scale * scale)] = this->block_manager->reserve();
-      this->disk->set(file_inode.block_pointers[INode::DIRECT_POINTERS + 2], double_indirect_ptrs_blk);
+      this->block_manager->set(file_inode.block_pointers[INode::DIRECT_POINTERS + 2], double_indirect_ptrs_blk);
     }
 
     // 4. Load in second level block
     Block single_indirect_ptrs_blk;
     Block::ID *single_indirect_ptrs = (Block::ID *) &single_indirect_ptrs_blk;
-    this->disk->get(double_indirect_ptrs[block_idx_in_level / (scale * scale)], single_indirect_ptrs_blk);
+    this->block_manager->get(double_indirect_ptrs[block_idx_in_level / (scale * scale)], single_indirect_ptrs_blk);
 
     // 5. Check if need block for direct pointers
     Block::ID block_idx_in_level_two = block_idx_in_level % (scale * scale);
     if (block_idx_in_level_two % scale == 0) {
       single_indirect_ptrs[block_idx_in_level_two / scale] = this->block_manager->reserve();
-      this->disk->set(double_indirect_ptrs[block_idx_in_level / (scale * scale)], single_indirect_ptrs_blk);
+      this->block_manager->set(double_indirect_ptrs[block_idx_in_level / (scale * scale)], single_indirect_ptrs_blk);
     }
 
     // 6. Load in third level block
     Block direct_ptrs_blk;
     Block::ID *direct_ptrs = (Block::ID *) &direct_ptrs_blk;
-    this->disk->get(single_indirect_ptrs[block_idx_in_level_two / scale], direct_ptrs_blk);
+    this->block_manager->get(single_indirect_ptrs[block_idx_in_level_two / scale], direct_ptrs_blk);
 
     // 7. Allocate direct block
     data_block_num = this->block_manager->reserve();
     direct_ptrs[block_idx_in_level_two % scale] = data_block_num;
-    this->disk->set(single_indirect_ptrs[block_idx_in_level_two / scale], direct_ptrs_blk);
+    this->block_manager->set(single_indirect_ptrs[block_idx_in_level_two / scale], direct_ptrs_blk);
 
   } else {
     // Can't allocate any more blocks for this file!
@@ -446,7 +444,7 @@ int Filesystem::read(INode::ID file_inode_num, char *buf, size_t size, size_t of
     // Get datablock of current offset
     Block::ID cur_block_id = blockAt(file_inode, offset);
     Block block;
-    this->disk->get(cur_block_id, block);
+    this->block_manager->get(cur_block_id, block);
 
     /*
       How many bytes to read?
@@ -510,7 +508,7 @@ Block::ID Filesystem::blockAt(const INode& inode, uint64_t offset) {
 
 Block::ID Filesystem::indirectBlockAt(Block::ID bid, uint64_t offset, uint64_t size) {
   Block block;
-  this->disk->get(bid, block);
+  this->block_manager->get(bid, block);
   Block::ID* refs = (Block::ID*) &block;
 
   uint64_t index = offset / size;
@@ -647,7 +645,7 @@ void Filesystem::deallocateLastBlock(INode& file_inode) {
     // 1. Load in first level block
     Block direct_ptrs_blk;
     Block::ID *direct_ptrs = (Block::ID *) &direct_ptrs_blk;
-    this->disk->get(file_inode.block_pointers[INode::DIRECT_POINTERS], direct_ptrs_blk);
+    this->block_manager->get(file_inode.block_pointers[INode::DIRECT_POINTERS], direct_ptrs_blk);
 
     // 2. Dellocate the direct block
     this->block_manager->release(direct_ptrs[logical_blk_num - INode::DIRECT_POINTERS - 1]);
@@ -664,14 +662,14 @@ void Filesystem::deallocateLastBlock(INode& file_inode) {
     // 1. Load in first level block
     Block single_indirect_ptrs_blk;
     Block::ID *single_indirect_ptrs = (Block::ID *) &single_indirect_ptrs_blk;
-    this->disk->get(file_inode.block_pointers[INode::DIRECT_POINTERS + 1], single_indirect_ptrs_blk);
+    this->block_manager->get(file_inode.block_pointers[INode::DIRECT_POINTERS + 1], single_indirect_ptrs_blk);
 
     Block::ID block_idx_in_level = logical_blk_num - INode::DIRECT_POINTERS - scale - 1;
 
     // 2. Load in second level block
     Block direct_ptrs_blk;
     Block::ID *direct_ptrs = (Block::ID *) &direct_ptrs_blk;
-    this->disk->get(single_indirect_ptrs[block_idx_in_level / scale], direct_ptrs_blk);
+    this->block_manager->get(single_indirect_ptrs[block_idx_in_level / scale], direct_ptrs_blk);
 
     // 3. Deallocate the direct block
     this->block_manager->release(direct_ptrs[block_idx_in_level % scale]);
@@ -692,21 +690,21 @@ void Filesystem::deallocateLastBlock(INode& file_inode) {
     // 1. Load in first level block
     Block double_indirect_ptrs_blk;
     Block::ID *double_indirect_ptrs = (Block::ID *) &double_indirect_ptrs_blk;
-    this->disk->get(file_inode.block_pointers[INode::DIRECT_POINTERS + 2], double_indirect_ptrs_blk);
+    this->block_manager->get(file_inode.block_pointers[INode::DIRECT_POINTERS + 2], double_indirect_ptrs_blk);
 
     Block::ID block_idx_in_level = logical_blk_num - INode::DIRECT_POINTERS - scale - scale * scale - 1;
 
     // 2. Load in second level block
     Block single_indirect_ptrs_blk;
     Block::ID *single_indirect_ptrs = (Block::ID *) &single_indirect_ptrs_blk;
-    this->disk->get(double_indirect_ptrs[block_idx_in_level / (scale * scale)], single_indirect_ptrs_blk);
+    this->block_manager->get(double_indirect_ptrs[block_idx_in_level / (scale * scale)], single_indirect_ptrs_blk);
 
     Block::ID block_idx_in_level_two = block_idx_in_level % (scale * scale);
 
     // 3. Load in third level block
     Block direct_ptrs_blk;
     Block::ID *direct_ptrs = (Block::ID *) &direct_ptrs_blk;
-    this->disk->get(single_indirect_ptrs[block_idx_in_level_two / scale], direct_ptrs_blk);
+    this->block_manager->get(single_indirect_ptrs[block_idx_in_level_two / scale], direct_ptrs_blk);
 
     // 4. Deallocate direct block
     this->block_manager->release(direct_ptrs[block_idx_in_level_two % scale]);

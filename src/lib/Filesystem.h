@@ -4,7 +4,6 @@
 #include "INode.h"
 #include "BlockManager.h"
 #include "INodeManager.h"
-#include "Storage.h"
 #include "Directory.h"
 
 struct statvfs;
@@ -12,12 +11,10 @@ struct statvfs;
 class Filesystem {
   BlockManager *block_manager;
   INodeManager *inode_manager;
-  Storage *disk;
 public:
-  Filesystem(BlockManager &block_manager, INodeManager& inode_manager, Storage &storage);
+  Filesystem(BlockManager &block_manager, INodeManager& inode_manager);
   ~Filesystem();
 
-  void mkfs(uint64_t nblocks);
   void mkfs(uint64_t nblocks, uint64_t niblocks);
   void statfs(struct statvfs* info);
 
@@ -34,6 +31,7 @@ public:
   INode     getINode(INode::ID id);
   INode     getINode(const std::string& path);
   INode::ID getINodeID(const std::string& path);
+  INode::ID newINodeID();
 
   void save(const Directory& directory);
   void save(INode::ID id, const INode& inode);

@@ -1,7 +1,5 @@
+#include "lib/CommandLine.h"
 #include "lib/Filesystem.h"
-#include "lib/storage/MemoryStorage.h"
-#include "lib/inodes/LinearINodeManager.h"
-#include "lib/blocks/StackBasedBlockManager.h"
 
 #if defined(__linux__)
   #include <sys/statfs.h>
@@ -21,9 +19,8 @@
 
 #define UNUSED(x) ((void) (x))
 
-// Global Variables
-INodeManager *inode_manager;
-Filesystem *fs;
+// Global Filesystem
+Filesystem* fs;
 
 extern "C" {
 
@@ -193,7 +190,7 @@ extern "C" {
     if (parent_dir_id == 0) return -1;
 
     // Allocate an inode for new directory and write in parent directory
-    INode::ID new_dir_inode_id = inode_manager->reserve();
+    INode::ID new_dir_inode_id = fs->newINodeID();
     Directory dir = fs->getDirectory(parent_dir_id);
     dir.insert(dname, new_dir_inode_id);
     fs->save(dir);
@@ -228,7 +225,7 @@ extern "C" {
     if (parent_inode_id == 0) return -1;
 
     // Allocate an inode for new file and write in parent directory
-    INode::ID new_file_inode_id = inode_manager->reserve();
+    INode::ID new_file_inode_id = fs->newINodeID();
     Directory dir = fs->getDirectory(parent_inode_id);
     dir.insert(fname, new_file_inode_id);
     fs->save(dir);
@@ -362,7 +359,7 @@ extern "C" {
     Directory dir = fs->getDirectory(dname);
     if(dir.contains(fname)) return -1;
 
-    INode::ID id = inode_manager->reserve();
+    INode::ID id = fs->newINodeID();
     INode inode(FileType::SYMLINK, 0777);
     fs->write(id, target, std::strlen(target) + 1, 0);
     fs->save(id, inode);
@@ -446,22 +443,9 @@ extern "C" {
 }
 
 int main(int argc, char** argv) {
-  // added initialization for fuse arguments
-  // can also be changed to 0, NULL for testing empty
-  // struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
+  fs = parse(argc, argv, false);
+  // TODO: Make sure FS config matches!
 
-  // Default ~32GB disk
-  // TODO: Read value from argv
-  uint64_t nblocks = 1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2);
-
-  // Instantiate objects for filesystem
-  Storage *disk = new MemoryStorage(nblocks);
-  BlockManager *block_manager = new StackBasedBlockManager(*disk);
-  inode_manager = new LinearINodeManager(*disk);
-  fs = new Filesystem(*block_manager, *inode_manager, *disk);
-  fs->mkfs(1024);
-
-  // Set FUSE function pointers
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
 
