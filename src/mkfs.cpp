@@ -15,13 +15,13 @@ int main(int argc, char** argv) {
   uint64_t nblocks = atoi(argv[1]);
   Storage *disk = new MemoryStorage(nblocks);
 
-  // Get superblock and clear it out
+  // Create a block for superblock
   Block block;
   Superblock* superblock = (Superblock*) &block;
-  disk->get(0, block);
   memset(&block, 0, Block::SIZE);
 
   // Set basic superblock parameters
+  superblock->magic = 3199905246;
   superblock->block_size = Block::SIZE;
   superblock->block_count = nblocks;
 
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
   // Initialize managers and call mkfs
   LinearINodeManager inode_manager(*disk);
   StackBasedBlockManager block_manager(*disk);
-  Filesystem filesystem(block_manager, inode_manager);
+  Filesystem filesystem(block_manager, inode_manager, *disk);
   filesystem.mkfs();
 
   // Debug stuff

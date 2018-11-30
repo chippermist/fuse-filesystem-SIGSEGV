@@ -1,5 +1,13 @@
 #include "LinearINodeManager.h"
 
+#if defined(__linux__)
+  #include <sys/statfs.h>
+  #include <sys/vfs.h>
+  #include <sys/statvfs.h>
+#else
+  #include <fuse.h>
+#endif
+
 LinearINodeManager::LinearINodeManager(Storage& storage): disk(&storage) {
   Block block;
   Superblock* superblock = (Superblock*) &block;
@@ -122,4 +130,12 @@ void LinearINodeManager::set(INode::ID inode_num, const INode& user_inode) {
 
 INode::ID LinearINodeManager::getRoot() {
   return this->root;
+}
+
+void LinearINodeManager::statfs(struct statvfs* info) {
+  // Based on http://pubs.opengroup.org/onlinepubs/009604599/basedefs/sys/statvfs.h.html
+  // Also see http://man7.org/linux/man-pages/man3/statvfs.3.html
+  info->f_files  = num_inodes; // Total number of file serial numbers.
+  info->f_ffree  = 42; //TODO! // Total number of free file serial numbers.
+  info->f_favail = 42; //TODO! // Number of file serial numbers available to non-privileged process.
 }

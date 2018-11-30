@@ -1,8 +1,11 @@
 sudo: required
 dist: trusty
+cache:  apt
 # Install fuse before installing our code.
 before_install:
+  - sudo apt-get update -qq
   - sudo apt-get install -qq fuse
+  - sudo apt-get install -qq libfuse-dev
 install: true
 notifications:
   email:
@@ -11,4 +14,6 @@ notifications:
 
 language: cpp
 # since we don't have make test, specifying only to do 'make'
-script: make
+script: 
+  - make clean
+  - make

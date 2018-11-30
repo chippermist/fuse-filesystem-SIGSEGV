@@ -3,9 +3,10 @@
 #include "Block.h"
 
 enum FileType: uint8_t {
-  FREE = 0,
-  REGULAR = 1,
-  DIRECTORY = 2
+  FREE      = 0,
+  REGULAR   = 1,
+  DIRECTORY = 2,
+  SYMLINK   = 3
 };
 
 struct INode {
@@ -21,17 +22,18 @@ struct INode {
 
   // Taken from page 6 of http://pages.cs.wisc.edu/~remzi/OSTEP/file-implementation.pdf
   // TODO: Check if the field sizes make sense for us
-  uint16_t mode; // can it be read/written/executed?
-  uint16_t uid; // who owns this file?
-  uint16_t gid; // which group does this file belong to?
-  uint32_t time; // what time was the file last accessed?
-  uint32_t ctime; // what time was the file created?
-  uint32_t mtime; // what time was this file last modified?
-  uint16_t links_count; // how many hard links are there to this file?
+  uint16_t mode;   // can it be read/written/executed?
+  uint16_t uid;    // who owns this file?
+  uint16_t gid;    // which group does this file belong to?
+  uint32_t atime;  // what time was the file last accessed?
+  uint32_t ctime;  // what time was the file created?
+  uint32_t mtime;  // what time was this file last modified?
+  uint16_t links;  // how many hard links are there to this file?
   uint64_t blocks; // how many blocks have been allocated to this file?
-  uint64_t size; // how many bytes are in this file?
-  uint32_t flags; // how should our FS use this inode?
-  uint8_t type; // what kind of inode is this
+  uint64_t size;   // how many bytes are in this file?
+  uint32_t flags;  // how should our FS use this inode?
+  uint8_t  type;   // what kind of inode is this
+  uint64_t dev;    // what kind of device this is
 
   /*
     Max File Size Computation
@@ -39,7 +41,11 @@ struct INode {
     (10 + 512 + 512 ** 2 + 512 ** 3) * 4096 = 550831693824 ~= pow(2, 39) bytes = 512 GB
    */
   Block::ID block_pointers[REF_BLOCKS_COUNT];
-  uint64_t __padding[13]; // padding to 256 bytes
+  uint64_t __padding[12]; // padding to 256 bytes
+
+public:
+  INode();
+  INode(FileType type, uint16_t mode, uint64_t dev = 0);
 };
 
 static_assert(sizeof(INode) == 256, "INode must be exactly 256 bytes!");

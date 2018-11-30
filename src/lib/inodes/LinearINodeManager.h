@@ -13,12 +13,14 @@ public:
   LinearINodeManager(Storage& storage);
   ~LinearINodeManager();
 
-  virtual void mkfs();
+  void mkfs();
+  void statfs(struct statvfs* info);
+  INode::ID getRoot();
+
   INode::ID reserve();
   void release(INode::ID id);
   void get(INode::ID id, INode& dst);
   void set(INode::ID id, const INode& src);
-  INode::ID getRoot();
 
 private:
   Storage *disk;
