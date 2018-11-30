@@ -412,7 +412,7 @@ int Filesystem::read(INode::ID file_inode_num, char *buf, size_t size, size_t of
   this->inode_manager->get(file_inode_num, file_inode);
 
   if (offset >= file_inode.size) {
-    return -1; // Can't begin reading from after file
+    return 0; // Can't begin reading from after file
   }
 
   file_inode.atime = time(NULL);
