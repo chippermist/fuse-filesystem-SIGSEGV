@@ -28,6 +28,11 @@ struct DirectoryNotEmpty: public FSException {
   DirectoryNotEmpty(const std::string& path): FSException(std::errc::directory_not_empty, "Directory not empty: " + path) {}
 };
 
+struct FileTooBig: public FSException {
+  FileTooBig(): FSException(std::errc::file_too_large, "File too big!") {}
+  FileTooBig(const std::string& path): FSException(std::errc::file_too_large, "File too big: " + path) {}
+};
+
 struct IOError: public FSException {
   IOError(): FSException(std::errc::io_error, "IO error!") {}
   IOError(const std::string& message): FSException(std::errc::io_error, message) {}
