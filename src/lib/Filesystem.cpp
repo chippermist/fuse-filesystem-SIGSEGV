@@ -79,14 +79,16 @@ int Filesystem::mount(fuse_operations* ops) {
     exit(1);
   }
 
-  char s[] = "-s";
-  char d[] = "-d";
+  char s[] = "-s"; // Use a single thread.
+  char d[] = "-d"; // Print debuging output.
+  char f[] = "-f"; // Run in the foreground.
 
   int argc = 0;
-  char* argv[4] = {0};
+  char* argv[8] = {0};
 
   if(!parallel) argv[argc++] = s;
   if(debug)     argv[argc++] = d;
+  argv[argc++] = f;
   argv[argc++] = mount_point;
 
   return fuse_main(argc, argv, ops, 0);

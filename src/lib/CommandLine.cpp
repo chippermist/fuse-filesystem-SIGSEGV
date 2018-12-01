@@ -20,10 +20,6 @@ static void usage(const char* message = NULL) {
 }
 
 Filesystem::Filesystem(int argc, char** argv, bool mkfs) {
-  for(int i = 0; i < argc; ++i) {
-    std::cout << i << ": " << argv[i] << '\n';
-  }
-
   char*    disk_file   = NULL;
   uint64_t block_size  = 4096;
   uint64_t block_count = 0;
