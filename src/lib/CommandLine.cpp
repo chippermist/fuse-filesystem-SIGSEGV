@@ -10,12 +10,13 @@
 
 static void usage(const char* message = NULL) {
   if(message) std::cerr << message << "\n\n";
-  std::cerr << "--block-size  -b <num>  Block size (defaults to 4096).\n";
-  std::cerr << "--block-count -n <num>  Total number of blocks (mkfs only).\n";
-  std::cerr << "--inode-count -i <num>  Minimum number of INodes (mkfs only).\n";
-  std::cerr << "--disk-file   -f <str>  File or device to use for storage.\n";
-  std::cerr << "--debug       -d        Enable FUSE debugging output.\n";
-  std::cerr << "--parallel    -p        Run in multithreaded mode.\n";
+  std::cerr << "USAGE: program [options] [mount-point]\n";
+  std::cerr << "  --block-size  -b <num>  Block size (defaults to 4096).\n";
+  std::cerr << "  --block-count -n <num>  Total number of blocks (mkfs only).\n";
+  std::cerr << "  --inode-count -i <num>  Minimum number of INodes (mkfs only).\n";
+  std::cerr << "  --disk-file   -f <str>  File or device to use for storage.\n";
+  std::cerr << "  --debug       -d        Enable FUSE debugging output.\n";
+  std::cerr << "  --parallel    -p        Run in multithreaded mode.\n";
   exit(1);
 }
 
