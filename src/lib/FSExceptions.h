@@ -76,13 +76,17 @@ inline int handle(std::function<int(void)> callback) {
   try {
     return callback();
   }
+  catch(NoSuchEntry& ex) {
+    std::cerr << "[\e[2;33mfile not found\e[0m]: " << ex.what() << '\n';
+    return -ex.code().value();
+  }
   catch(FSException& ex) {
-    std::cerr << " ! " << ex.what() << '\n';
+    std::cerr << "[\e[33mfs exception  \e[0m]: " << ex.what() << '\n';
     return -ex.code().value();
   }
   catch(std::exception& ex) {
-    std::cerr << " ! Unknown std::exception: " << ex.what() << '\n';
-    return -1;
+    std::cerr << "[\e[1;31msystem error  \e[0m]: " << ex.what() << '\n';
+    return -222; // Hopefully an unknown error code (-1 is access denied).
   }
   // catch(...) {
   //   // This will catch literally anything, so it can be dangerous...
