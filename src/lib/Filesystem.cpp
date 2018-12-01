@@ -20,6 +20,13 @@ Filesystem::Filesystem(BlockManager& block_manager, INodeManager& inode_manager,
   this->block_manager = &block_manager;
   this->inode_manager = &inode_manager;
   this->disk = &storage;
+
+  uint64_t ipb   = Block::SIZE / sizeof(Block::ID);
+  max_file_size  = INode::DIRECT_POINTERS;
+  max_file_size += INode::SINGLE_INDIRECT_POINTERS * ipb;
+  max_file_size += INode::DOUBLE_INDIRECT_POINTERS * ipb * ipb;
+  max_file_size += INode::TRIPLE_INDIRECT_POINTERS * ipb * ipb * ipb;
+  max_file_size *= Block::SIZE;
 }
 
 Filesystem::~Filesystem() {
@@ -129,6 +136,9 @@ void Filesystem::save(INode::ID id, const INode& inode) {
  * - TODO: Incorrect ownership/permissions
  */
 int Filesystem::write(INode::ID file_inode_num, const char *buf, size_t size, size_t offset) {
+  if(offset > max_file_size || size > max_file_size - offset) {
+    throw FileTooBig();
+  }
 
   // Read the file's inode and do some sanity checks
   INode file_inode;
@@ -408,9 +418,7 @@ Block::ID Filesystem::allocateNextBlock(INode& file_inode) {
 int Filesystem::read(INode::ID file_inode_num, char *buf, size_t size, size_t offset) {
 
   // Read the file's inode and do some sanity checks
-  INode file_inode;
-  this->inode_manager->get(file_inode_num, file_inode);
-
+  INode file_inode = getINode(file_inode_num);
   if (offset >= file_inode.size) {
     return 0; // Can't begin reading from after file
   }
@@ -507,11 +515,12 @@ Block::ID Filesystem::indirectBlockAt(Block::ID bid, uint64_t offset, uint64_t s
 }
 
 int Filesystem::truncate(INode::ID file_inode_num, size_t length) {
+  if(length > max_file_size) {
+    throw FileTooBig();
+  }
 
   // Read the file's inode and do some sanity checks
-  INode file_inode;
-  this->inode_manager->get(file_inode_num, file_inode);
-
+  INode file_inode = getINode(file_inode_num);
   if (file_inode.size == length) {
     return 0;
   }
