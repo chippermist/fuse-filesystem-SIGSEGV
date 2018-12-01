@@ -23,7 +23,12 @@ public:
   void set(INode::ID id, const INode& src);
 
 private:
-  Storage *disk;
-  uint64_t num_inodes;
   static const uint64_t root = 1;
+
+  Storage*  disk;
+  Block::ID start_block;
+  uint64_t  block_count;
+  uint64_t  num_inodes;
+
+  void reload();
 };
