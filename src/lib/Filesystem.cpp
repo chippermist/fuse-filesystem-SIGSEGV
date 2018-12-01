@@ -459,6 +459,8 @@ int Filesystem::read(INode::ID file_inode_num, char *buf, size_t size, size_t of
 
     total_read += to_read;
   }
+  // Write back changes to file_inode
+  this->inode_manager->set(file_inode_num, file_inode);
   return total_read;
 }
 
@@ -521,6 +523,8 @@ int Filesystem::truncate(INode::ID file_inode_num, size_t length) {
   // If increasing size, fill with NULL bytes
   if (length > file_inode.size) {
     appendData(file_inode, NULL, length - file_inode.size, file_inode.size, true);
+    // Write back changes to file_inode
+    this->inode_manager->set(file_inode_num, file_inode);
     return 0;
   } else {
 
@@ -530,6 +534,8 @@ int Filesystem::truncate(INode::ID file_inode_num, size_t length) {
       // If removing remainder of last block is too much, just truncate to the desired length
       if (file_inode.size % Block::SIZE > file_inode.size - length) {
         file_inode.size = length;
+        // Write back changes to file_inode
+        this->inode_manager->set(file_inode_num, file_inode);
         return 0;
       }
 
@@ -537,6 +543,8 @@ int Filesystem::truncate(INode::ID file_inode_num, size_t length) {
       deallocateLastBlock(file_inode);
 
       if (file_inode.size == length) {
+        // Write back changes to file_inode
+        this->inode_manager->set(file_inode_num, file_inode);
         return 0;
       }
     }
@@ -552,6 +560,8 @@ int Filesystem::truncate(INode::ID file_inode_num, size_t length) {
     if (file_inode.size > length) {
       file_inode.size = length;
     }
+    // Write back changes to file_inode
+    this->inode_manager->set(file_inode_num, file_inode);
     return 0;
   }
 }
