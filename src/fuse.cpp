@@ -322,11 +322,9 @@ extern "C" {
       INode::ID newname_id = fs->getINodeID(name);
       if (newname_id != 0) {
         INode newname_inode = fs->getINode(newname_id);
-        if (newname_inode.type != FileType::DIRECTORY) {
-          throw AlreadyExists(name);
+        if (newname_inode.type == FileType::DIRECTORY) {
+          real_name = real_name + "/" + fs->basename(path);
         }
-
-        real_name = real_name + fs->basename(path);
       }
 
       std::string dname = fs->dirname(real_name.c_str());
@@ -345,6 +343,7 @@ extern "C" {
       fs->save(dir);
 
       // Unlink old path
+      if (newname_id != 0) fs->unlink(newname_id);
       return fs_unlink(path);
     });
   }
