@@ -67,7 +67,6 @@ struct NotASymlink: public FSException {
 };
 
 struct NoSuchEntry: public FSException {
-  // TODO: Alternative constructor that takes a path.
   NoSuchEntry(): FSException(std::errc::no_such_file_or_directory, "No such entry!") {}
   NoSuchEntry(const std::string& path): FSException(std::errc::no_such_file_or_directory, "No such entry: " + path) {}
 };

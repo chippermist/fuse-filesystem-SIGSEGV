@@ -12,11 +12,16 @@ class Filesystem {
   BlockManager* block_manager;
   INodeManager* inode_manager;
   uint64_t      max_file_size;
+  char*         mount_point;
+  bool          parallel;
+  bool          debug;
 public:
+  Filesystem(int argc, char** argv, bool mkfs);
   Filesystem(BlockManager &block_manager, INodeManager& inode_manager);
   ~Filesystem();
 
   void mkfs(uint64_t nblocks, uint64_t niblocks);
+  int  mount(fuse_operations* ops);
   void statfs(struct statvfs* info);
 
   int  read(INode::ID file_inode_num, char *buffer, size_t size, size_t offset);

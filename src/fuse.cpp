@@ -1,4 +1,3 @@
-#include "lib/CommandLine.h"
 #include "lib/Filesystem.h"
 #include "lib/FSExceptions.h"
 
@@ -441,7 +440,7 @@ extern "C" {
 }
 
 int main(int argc, char** argv) {
-  fs = parse(argc, argv, false);
+  fs = new Filesystem(argc, argv, false);
   // TODO: Make sure FS config matches!
 
   fuse_operations ops;
@@ -479,8 +478,7 @@ int main(int argc, char** argv) {
   ops.utime       = &fs_utime;
   ops.write       = &fs_write;
 
-  // Run the FUSE daemon!
-  return fuse_main(argc, argv, &ops, NULL);
+  return fs->mount(&ops);
 }
 
 /*

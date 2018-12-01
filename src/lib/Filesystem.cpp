@@ -73,6 +73,25 @@ void Filesystem::statfs(struct statvfs* info) {
   info->f_namemax = 256;                    // Maximum filename length.
 }
 
+int Filesystem::mount(fuse_operations* ops) {
+  if(mount_point == NULL) {
+    std::cerr << "No mount point given.\n";
+    exit(1);
+  }
+
+  char s[] = "-s";
+  char d[] = "-d";
+
+  int argc = 0;
+  char* argv[4] = {0};
+
+  if(!parallel) argv[argc++] = s;
+  if(debug)     argv[argc++] = d;
+  argv[argc++] = mount_point;
+
+  return fuse_main(argc, argv, ops, 0);
+}
+
 Directory Filesystem::getDirectory(INode::ID id) {
   INode inode;
   inode_manager->get(id, inode);

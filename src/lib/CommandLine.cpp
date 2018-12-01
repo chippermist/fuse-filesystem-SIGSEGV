@@ -14,26 +14,38 @@ static void usage(const char* message = NULL) {
   std::cerr << "--block-count -n <num>  Total number of blocks (mkfs only).\n";
   std::cerr << "--inode-count -i <num>  Minimum number of INodes (mkfs only).\n";
   std::cerr << "--disk-file   -f <str>  File or device to use for storage.\n";
-  exit(1);;
+  std::cerr << "--debug       -d        Enable FUSE debugging output.\n";
+  std::cerr << "--parallel    -p        Run in multithreaded mode.\n";
+  exit(1);
 }
 
-Filesystem* parse(int argc, char** argv, bool mkfs) {
+Filesystem::Filesystem(int argc, char** argv, bool mkfs) {
+  for(int i = 0; i < argc; ++i) {
+    std::cout << i << ": " << argv[i] << '\n';
+  }
+
   char*    disk_file   = NULL;
   uint64_t block_size  = 4096;
   uint64_t block_count = 0;
   uint64_t inode_count = 0;
+
+  mount_point = NULL;
+  parallel    = false;
+  debug       = false;
 
   struct option options[] = {
     {"block-size",  required_argument, 0, 'b'},
     {"block-count", required_argument, 0, 'n'},
     {"inode-count", required_argument, 0, 'i'},
     {"disk-file",   required_argument, 0, 'f'},
+    {"debug",             no_argument, 0, 'd'},
+    {"parallel",          no_argument, 0, 'p'},
     {0, 0, 0, 0}
   };
 
   while(true) {
     int i = 0;
-    int c = getopt_long(argc, argv, "b:n:i:f:", options, &i);
+    int c = getopt_long(argc, argv, "b:n:i:f:dp", options, &i);
     if(c == -1) break;
 
     switch(c) {
@@ -49,31 +61,53 @@ Filesystem* parse(int argc, char** argv, bool mkfs) {
     case 'f':
       disk_file = optarg;
       break;
+    case 'd':
+      debug = true;
+      break;
+    case 'p':
+      parallel = true;
     default:
       std::cerr << "Unknown argument: " << argv[i] << '\n';
       exit(1);
     }
   }
 
-  // We always need to initialize memory storage.
-  if(disk_file == NULL) mkfs = true;
+
+  std::cout << "optind: " << optind << '\n';
+  if(optind == argc - 1) {
+    mount_point = argv[optind];
+  }
+  else if(optind > argc) {
+    usage("Too many positional arguments.");
+  }
+
+  if(disk_file == NULL) {
+    // We always need to initialize memory storage.
+    mkfs = true;
+  }
 
   if(block_size < 256) {
     usage("Block size must be at least 256 bytes.");
   }
 
   uint64_t n = block_size;
-  while(n > 0) n <<= 1;
+  while((n & 1) == 0) n >>= 1;
   if(n != 1) {
     usage("Block size must be a power of two.");
   }
 
   if(block_count == 0) {
     usage("Block count is a required argument.");
+    // if(mkfs) {
+    //   usage("Block count is required for mkfs.");
+    // }
+    // else {
+    //   // TODO: Load the block count from disk!
+    // }
   }
-  else if(!mkfs) {
-    usage("Block count option is only valid for mkfs.");
-  }
+  // else if(!mkfs) {
+  //   usage("Block count option is only valid for mkfs.");
+  // }
 
   uint64_t inode_blocks = 0;
   if(inode_count == 0) {
@@ -94,18 +128,24 @@ Filesystem* parse(int argc, char** argv, bool mkfs) {
   Storage* disk = NULL;
   if(disk_file != NULL) {
     disk = new FileStorage(disk_file, block_count);
+    if(mkfs) {
+      Block block;
+      std::memset(block.data, 0, Block::SIZE);
+      disk->set(block_count - 1, block);
+    }
   }
   else {
     disk = new MemoryStorage(block_count);
   }
 
-  INodeManager* inodes     = new LinearINodeManager(*disk);
-  BlockManager* blocks     = new StackBasedBlockManager(*disk);
-  Filesystem*   filesystem = new Filesystem(*blocks, *inodes);
+  uint64_t ipb   = Block::SIZE / sizeof(Block::ID);
+  max_file_size  = INode::DIRECT_POINTERS;
+  max_file_size += INode::SINGLE_INDIRECT_POINTERS * ipb;
+  max_file_size += INode::DOUBLE_INDIRECT_POINTERS * ipb * ipb;
+  max_file_size += INode::TRIPLE_INDIRECT_POINTERS * ipb * ipb * ipb;
+  max_file_size *= Block::SIZE;
 
-  if(mkfs) {
-    filesystem->mkfs(block_count, inode_blocks);
-  }
-
-  return filesystem;
+  inode_manager = new LinearINodeManager(*disk);
+  block_manager = new StackBasedBlockManager(*disk);
+  if(mkfs) this->mkfs(block_count, inode_blocks);
 }

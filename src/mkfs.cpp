@@ -1,13 +1,11 @@
 #include <iostream>
 #include <vector>
 
-#include "lib/CommandLine.h"
 #include "lib/Filesystem.h"
 
 int main(int argc, char** argv) {
-  Filesystem* fs = parse(argc, argv, true);
+  Filesystem fs(argc, argv, true);
   // TODO: Check that everything was saved?
-  delete fs;
 
   /*
   ******************************************************************
