@@ -9,8 +9,9 @@
 struct statvfs;
 
 class Filesystem {
-  BlockManager *block_manager;
-  INodeManager *inode_manager;
+  BlockManager* block_manager;
+  INodeManager* inode_manager;
+  uint64_t      max_file_size;
 public:
   Filesystem(BlockManager &block_manager, INodeManager& inode_manager);
   ~Filesystem();

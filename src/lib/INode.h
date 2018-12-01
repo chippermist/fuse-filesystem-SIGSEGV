@@ -22,9 +22,9 @@ struct INode {
 
   // Taken from page 6 of http://pages.cs.wisc.edu/~remzi/OSTEP/file-implementation.pdf
   // TODO: Check if the field sizes make sense for us
-  uint16_t mode;   // can it be read/written/executed?
-  uint16_t uid;    // who owns this file?
-  uint16_t gid;    // which group does this file belong to?
+  uint32_t mode;   // can it be read/written/executed?
+  uint32_t uid;    // who owns this file?
+  uint32_t gid;    // which group does this file belong to?
   uint32_t atime;  // what time was the file last accessed?
   uint32_t ctime;  // what time was the file created?
   uint32_t mtime;  // what time was this file last modified?
@@ -41,7 +41,7 @@ struct INode {
     (10 + 512 + 512 ** 2 + 512 ** 3) * 4096 = 550831693824 ~= pow(2, 39) bytes = 512 GB
    */
   Block::ID block_pointers[REF_BLOCKS_COUNT];
-  uint64_t __padding[12]; // padding to 256 bytes
+  uint8_t __padding[88]; // padding to 256 bytes
 
 public:
   INode();
