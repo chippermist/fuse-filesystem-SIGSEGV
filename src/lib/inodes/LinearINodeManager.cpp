@@ -23,8 +23,6 @@ LinearINodeManager::~LinearINodeManager() {}
 // Initialize inodes during mkfs()
 void LinearINodeManager::mkfs() {
 
-  // TODO: Initialize root directory and set this->root
-
   // Read superblock
   Block block;
   this->disk->get(0, block);
