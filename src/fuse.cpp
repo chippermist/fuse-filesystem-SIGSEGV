@@ -290,7 +290,8 @@ extern "C" {
         throw NotASymlink(path);
       }
 
-      return fs->read(id, buffer, size, 0);
+      fs->read(id, buffer, size, 0);
+      return 0;
     });
   }
 
@@ -311,10 +312,36 @@ extern "C" {
 
   int fs_rename(const char* path, const char* name) {
     debug2("rename", "%s -> %s", path, name);
+    return handle([=]{
+      // Check if name is an existing directory - if so, move into it and not name's parent
+      std::string real_name = name;
+      INode::ID newname_id = fs->getINodeID(name);
+      if (newname_id != 0) {
+        INode newname_inode = fs->getINode(newname_id);
+        if (newname_inode.type == FileType::DIRECTORY) {
+          real_name = real_name + "/" + fs->basename(path);
+        }
+      }
 
-    int result = fs_link(path, name);
-    if (result < 0) return result;
-    return fs_unlink(path);
+      std::string dname = fs->dirname(real_name.c_str());
+      std::string fname = fs->basename(real_name.c_str());
+
+      // Update "path" INode links count
+      INode::ID id = fs->getINodeID(path);
+      INode inode  = fs->getINode(id);
+      inode.ctime = time(NULL);
+      inode.links += 1;
+      fs->save(id, inode);
+
+      // Write reference into link's parent directory
+      Directory dir = fs->getDirectory(dname);
+      dir.insert(fname, id);
+      fs->save(dir);
+
+      // Unlink old path
+      if (newname_id != 0) fs->unlink(newname_id);
+      return fs_unlink(path);
+    });
   }
 
   int fs_rmdir(const char* path) {
@@ -367,8 +394,8 @@ extern "C" {
 
       INode::ID id = fs->newINodeID();
       INode inode(FileType::SYMLINK, 0777);
-      fs->write(id, target, std::strlen(target) + 1, 0);
       fs->save(id, inode);
+      fs->write(id, target, std::strlen(target) + 1, 0);
 
       dir.insert(fname, id);
       fs->save(dir);
@@ -397,11 +424,6 @@ extern "C" {
 
       Directory dir = fs->getDirectory(dname);
       INode::ID fid = dir.search(fname);
-
-      INode inode = fs->getINode(fid);
-      if(inode.type == FileType::DIRECTORY) {
-        throw IsADirectory(path);
-      }
 
       dir.remove(fname);
       fs->save(dir);
