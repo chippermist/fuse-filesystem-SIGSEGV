@@ -152,12 +152,7 @@ INode::ID Filesystem::newINodeID() {
 
 void Filesystem::save(const Directory& directory) {
   std::vector<char> data = directory.serialize();
-  write(directory.id(), &data[0], data.size(), 0);
-
-  INode inode = getINode(directory.id());
-  if(inode.size > data.size()) {
-    truncate(directory.id(), data.size());
-  }
+  write(directory.id(), &data[0], data.size(), 0, true);
 }
 
 void Filesystem::save(INode::ID id, const INode& inode) {
