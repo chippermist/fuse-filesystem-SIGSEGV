@@ -317,44 +317,50 @@ extern "C" {
     return -1;
   }
 
-  int fs_rename(const char* path, const char* name) {
-    debug("rename      %s -> %s\n", path, name);
+  int fs_rename(const char* oldname, const char* newname) {
+    debug("rename      %s -> %s\n", oldname, newname);
     return handle([=]{
+      std::string dname = fs->dirname(newname);
+      std::string fname = fs->basename(newname);
 
-      // Create link "name" that points to same INode as "path"
+      // Stuff for the INode we're moving:
+      INode::ID id = fs->getINodeID(oldname);
+      INode inode  = fs->getINode(id);
 
-      // Check if name is an existing directory - if so, move into it and not name's parent
-      std::string real_name = name;
-      INode::ID newname_id = fs->getINodeID(name);
-      if (newname_id != 0) {
-        INode newname_inode = fs->getINode(newname_id);
-        if (newname_inode.type == FileType::DIRECTORY) {
-          real_name = real_name + "/" + fs->basename(path);
-          // TODO: Need to check if the file we're moving in clobbers something...
+      // Stuff for the INode we might be replacing:
+      Directory newparent = fs->getDirectory(dname);
+      INode::ID clobber   = newparent.search(fname);
 
+      if(clobber != 0) {
+        INode clobnode = fs->getINode(clobber);
+        if(clobnode.type == FileType::DIRECTORY) {
+          if(inode.type != FileType::DIRECTORY) {
+            // [EISDIR]  New is a directory, but old is not a directory.
+            throw IsADirectory(newname);
+          }
+
+          Directory clobdir = fs->getDirectory(clobber);
+          if(!clobdir.isEmpty()) {
+            // [ENOTEMPTY]  New is a directory and is not empty.
+            throw DirectoryNotEmpty(newname);
+          }
+        }
+        else if(inode.type == FileType::DIRECTORY) {
+          // [ENOTDIR]  Old is a directory, but new is not a directory.
+          throw NotADirectory(newname);
         }
       }
 
-      std::string dname = fs->dirname(real_name.c_str());
-      std::string fname = fs->basename(real_name.c_str());
-
-      // Update "path" INode links count
-      INode::ID id = fs->getINodeID(path);
-      INode inode  = fs->getINode(id);
-      inode.ctime = time(NULL);
       inode.links += 1;
+      inode.ctime  = time(NULL);
       fs->save(id, inode);
 
-      // Write reference into link's parent directory
-      Directory dir = fs->getDirectory(dname);
-      dir.insert(fname, id);
-      fs->save(dir);
+      newparent.insert(fname, id);
+      fs->save(newparent);
 
-      // Unlink old path
-      if (newname_id != 0) {
-        fs->unlink(newname_id);
-      }
-      return fs_unlink(path);
+      // Unlink all the old paths:
+      if (clobber != 0) fs->unlink(clobber);
+      return fs_unlink(oldname);
     });
   }
 
