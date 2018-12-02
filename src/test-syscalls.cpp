@@ -45,15 +45,8 @@ static unsigned int skip_test = 0;
 
 static void test_perror(const char *func, int line, const char *msg)
 {
-  fprintf(stderr, "%s %s() at line %d - %s: %s\n", testname, func, line, msg,
-    strerror(errno));
+  fprintf(stderr, "%s %s() at line %d - %s: %s\n", testname, func, line, msg, strerror(errno));
 }
-
-static void test_error(const char *func, const char *msg, ...)
-  __attribute__ ((format (printf, 2, 3)));
-
-static void __start_test(const char *fmt, ...)
-  __attribute__ ((format (printf, 1, 2)));
 
 static void test_error(const char *func, int line, const char *msg, ...)
 {
@@ -678,7 +671,8 @@ static int test_seekdir(void)
   }
 
   /* Remember dir offsets */
-  for (i = 0; i < ARRAY_SIZE(seekdir_offsets); i++) {
+  int array_size = ARRAY_SIZE(seekdir_offsets);
+  for (i = 0; i < array_size; i++) {
     seekdir_offsets[i] = telldir(dp);
     errno = 0;
     de = readdir(dp);
