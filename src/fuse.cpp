@@ -60,7 +60,7 @@ extern "C" {
   int   fs_access(const char *, int);
 
   int fs_access(const char *path, int mode) {
-    debug1("access       %s\n", path);
+    debug1("access", "%s", path);
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
