@@ -496,7 +496,6 @@ extern "C" {
       if(buffer->actime  == 0) buffer->actime  = inode.ctime;
       if(buffer->modtime == 0) buffer->modtime = inode.ctime;
       inode.atime = buffer->actime;
-      inode.ctime = buffer->actime;
       inode.mtime = buffer->modtime;
       fs->save(id, inode);
       return 0;
