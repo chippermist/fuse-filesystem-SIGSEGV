@@ -97,7 +97,7 @@ int Filesystem::mount(char* program, fuse_operations* ops) {
   char r[] = "allow_root"; // Only allow root and user to access files
 
   int argc = 0;
-  char* argv[8] = {0};
+  char* argv[12] = {0};
 
   argv[argc++] = program;
   if(!parallel) argv[argc++] = s;
@@ -259,7 +259,7 @@ int Filesystem::write(INode::ID file_inode_num, const char *buf, size_t size, si
 
   // 4. Write back changes to file_inode
   this->inode_manager->set(file_inode_num, file_inode);
-  return total_written;
+  return total_written - null_filler;
 }
 
 /**
