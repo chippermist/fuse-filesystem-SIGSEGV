@@ -13,9 +13,13 @@
 
 #ifndef NDEBUG
   #include <cstdio>
-  #define debug(format, ...) fprintf(stderr, format, __VA_ARGS__)
+  #define debug0(name, format, ...) fprintf(stderr, "[\e[90m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
+  #define debug1(name, format, ...) fprintf(stderr, "[\e[32m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
+  #define debug2(name, format, ...) fprintf(stderr, "[\e[1;92m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
 #else
-  #define debug(...)
+  #define debug0(...)
+  #define debug1(...)
+  #define debug2(...)
 #endif
 
 #define UNUSED(x) ((void) (x))
@@ -55,13 +59,13 @@ extern "C" {
   int   fs_access(const char *, int);
 
   int fs_access(const char *path, int mode) {
-    debug("access       %s\n", path);
+    debug0("access", "%s %03o", path, mode);
     UNUSED(mode);
     return 0;
   }
 
   int fs_chmod(const char* path, mode_t mode) {
-    debug("chmod       %s to %03o\n", path, mode);
+    debug2("chmod", "%s to %03o", path, mode);
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
@@ -74,7 +78,7 @@ extern "C" {
   }
 
   int fs_chown(const char* path, uid_t uid, gid_t gid) {
-    debug("chown       %s to %d:%d\n", path, uid, gid);
+    debug2("chown", "%s to %d:%d", path, uid, gid);
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
@@ -90,7 +94,7 @@ extern "C" {
   }
 
   int fs_flush(const char* path, fuse_file_info* info) {
-    debug("flush       %s\n", path);
+    debug1("flush", "%s", path);
     UNUSED(info);
 
     // TODO...
@@ -98,7 +102,7 @@ extern "C" {
   }
 
   int fs_fsync(const char* path, int unknown, fuse_file_info* info) {
-    debug("fsync       %s\n", path);
+    debug1("fsync", "%s", path);
     UNUSED(unknown);
     UNUSED(info);
 
@@ -107,7 +111,7 @@ extern "C" {
   }
 
   int fs_getattr(const char* path, struct stat* info) {
-    debug("getattr     %s\n", path);
+    debug1("getattr", "%s", path);
     UNUSED(info);
 
     return handle([=]{
@@ -143,7 +147,7 @@ extern "C" {
   }
 
   int fs_getxattr(const char* path, const char* attr, char* buffer, size_t size) {
-    debug("getxattr    %s %s\n", path, attr);
+    debug1("getxattr", "%s %s", path, attr);
     UNUSED(buffer);
     UNUSED(size);
 
@@ -152,6 +156,7 @@ extern "C" {
   }
 
   void* fs_init(struct fuse_conn_info* conn) {
+    debug2("init", "%p", conn);
     UNUSED(conn);
 
     // Useless function for us
@@ -159,7 +164,7 @@ extern "C" {
   }
 
   int fs_link(const char* target, const char* link) {
-    debug("link        %s -> %s\n", link, target);
+    debug2("link", "%s -> %s", link, target);
     return handle([=]{
       INode::ID id = fs->getINodeID(target);
       INode inode  = fs->getINode(id);
@@ -184,7 +189,7 @@ extern "C" {
   }
 
   int fs_listxattr(const char* path, char* buffer, size_t size) {
-    debug("listxattr   %s\n", path);
+    debug1("listxattr", "%s", path);
     UNUSED(buffer);
     UNUSED(size);
 
@@ -193,8 +198,7 @@ extern "C" {
   }
 
   int fs_mkdir(const char* path, mode_t mode) {
-    debug("mkdir       %s %03o\n", path, mode);
-
+    debug2("mkdir", "%s %03o", path, mode);
     return handle([=]{
       std::string pname = fs->dirname(path);
       std::string dname = fs->basename(path);
@@ -218,7 +222,7 @@ extern "C" {
   }
 
   int fs_mknod(const char* path, mode_t mode, dev_t dev) {
-    debug("mknod       %s %03o\n", path, mode);
+    debug2("mknod", "%s %03o", path, mode);
 
     if (!S_ISREG(mode)) {
       return -ENOTSUP;
@@ -244,7 +248,7 @@ extern "C" {
   }
 
   int fs_open(const char* path, fuse_file_info* info) {
-    debug("open        %s\n", path);
+    debug1("open", "%s", path);
     UNUSED(info);
 
     // TODO...
@@ -252,7 +256,7 @@ extern "C" {
   }
 
   int fs_read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
-    debug("read        %s %" PRIu64 "b at %" PRId64 "\n", path, (uint64_t) size, offset);
+    debug2("read", "%s %" PRIu64 "b at %" PRId64, path, (uint64_t) size, offset);
     UNUSED(info);
 
     return handle([=]{
@@ -267,7 +271,7 @@ extern "C" {
   }
 
   int fs_readdir(const char* path, void* buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* info) {
-    debug("readdir     %s\n", path);
+    debug2("readdir", "%s", path);
     UNUSED(offset);
     UNUSED(info);
 
@@ -283,7 +287,7 @@ extern "C" {
   }
 
   int fs_readlink(const char* path, char* buffer, size_t size) {
-    debug("readlink    %s\n", path);
+    debug2("readlink", "%s", path);
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
@@ -297,7 +301,7 @@ extern "C" {
   }
 
   int fs_release(const char* path, fuse_file_info* info) {
-    debug("release     %s\n", path);
+    debug1("release", "%s", path);
     UNUSED(info);
 
     // TODO...
@@ -305,14 +309,14 @@ extern "C" {
   }
 
   int fs_removexattr(const char* path, const char* attr) {
-    debug("removexattr %s %s\n", path, attr);
+    debug1("removexattr", "%s %s", path, attr);
 
     // Not implemented!
     return -1;
   }
 
   int fs_rename(const char* oldname, const char* newname) {
-    debug("rename      %s -> %s\n", oldname, newname);
+    debug2("rename", "%s -> %s", oldname, newname);
     return handle([=]{
       std::string dname = fs->dirname(newname);
       std::string fname = fs->basename(newname);
@@ -359,7 +363,7 @@ extern "C" {
   }
 
   int fs_rmdir(const char* path) {
-    debug("rmdir       %s\n", path);
+    debug2("rmdir", "%s", path);
     return handle([=]{
       std::string pname = fs->dirname(path);
       std::string dname = fs->basename(path);
@@ -378,7 +382,7 @@ extern "C" {
   }
 
   int fs_setxattr(const char* path, const char* attr, const char* val, size_t size, int unknown) {
-    debug("setxattr    %s %s\n", path, attr);
+    debug1("setxattr", "%s %s", path, attr);
     UNUSED(val);
     UNUSED(size);
     UNUSED(unknown);
@@ -388,7 +392,7 @@ extern "C" {
   }
 
   int fs_statfs(const char* path, struct statvfs* info) {
-    debug("statfs      %s\n", path);
+    debug1("statfs", "%s", path);
     return handle([=]{
       fs->statfs(info);
       return 0;
@@ -396,7 +400,7 @@ extern "C" {
   }
 
   int fs_symlink(const char* target, const char* link) {
-    debug("symlink     %s -> %s\n", link, target);
+    debug2("symlink", "%s -> %s", link, target);
     return handle([=]{
       std::string dname = fs->dirname(link);
       std::string fname = fs->basename(link);
@@ -418,7 +422,7 @@ extern "C" {
   }
 
   int fs_truncate(const char* path, off_t offset) {
-    debug("truncate    %s to %" PRId64 "b\n", path, (int64_t) offset);
+    debug2("truncate", "%s to %" PRId64 "b", path, (int64_t) offset);
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
@@ -431,7 +435,7 @@ extern "C" {
   }
 
   int fs_unlink(const char* path) {
-    debug("unlink      %s\n", path);
+    debug2("unlink", "%s", path);
     return handle([=]{
       std::string dname = fs->dirname(path);
       std::string fname = fs->basename(path);
@@ -450,7 +454,7 @@ extern "C" {
   // int(* fuse_operations::utimens) (const char *, const struct timespec tv[2], struct fuse_file_info *fi)
   // This supersedes the old utime() interface. New applications should use this.
   int fs_utime(const char* path, utimbuf* buffer) {
-    debug("utime       %s\n", path);
+    debug2("utime", "%s", path);
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode = fs->getINode(id);
@@ -465,7 +469,7 @@ extern "C" {
   }
 
   int fs_write(const char* path, const char* data, size_t size, off_t offset, fuse_file_info* info) {
-    debug("write       %s %" PRIu64 "b at %" PRId64 "\n", path, (uint64_t) size, offset);
+    debug2("write", "%s %" PRIu64 "b at %" PRId64, path, (uint64_t) size, offset);
     UNUSED(info);
 
     return handle([=]{
