@@ -1,4 +1,9 @@
 #include "LinearINodeManager.h"
+#include "../FSExceptions.h"
+
+#include <cassert>
+#include <cstring>
+#include <stdexcept>
 
 #if defined(__linux__)
   #include <sys/statfs.h>
@@ -7,6 +12,7 @@
 #else
   #include <fuse.h>
 #endif
+
 
 LinearINodeManager::LinearINodeManager(Storage& storage): disk(&storage) {
   this->reload();
@@ -26,48 +32,35 @@ void LinearINodeManager::mkfs() {
   }
 
   // Reserve INodes for null and root:
-  INode* inodes = (INode*) block.data;
+  INode::Data* inodes = (INode::Data*) block.data;
   inodes[0].type = FileType::RESERVED;
   inodes[1].type = FileType::RESERVED;
   this->disk->set(start_block, block);
 }
 
 // Get an inode from the freelist and return it
-INode::ID LinearINodeManager::reserve() {
+INode LinearINodeManager::reserve() {
   Block block;
   uint64_t num_inodes_per_block = Block::SIZE / INode::SIZE;
   for(uint64_t i = 0; i < block_count; i++) {
     this->disk->get(start_block + i, block);
-    INode* inodes = (INode*) block.data;
+    INode::Data* inodes = (INode::Data*) block.data;
 
     for (uint64_t j = 0; j < num_inodes_per_block; j++) {
       if(inodes[j].type == FileType::FREE) {
-        return i * num_inodes_per_block + j;
+        return INode(&inodes[j]);
       }
     }
   }
 
-  throw std::out_of_range("Can't allocate any more inodes!");
+  throw OutOfINodes();
 }
 
 // Free an inode and return to the freelist
-void LinearINodeManager::release(INode::ID inode_num) {
-  if (inode_num >= this->num_inodes || inode_num < this->root) {
-    throw std::out_of_range("INode index is out of range!");
-  }
-
-  uint64_t num_inodes_per_block = (Block::SIZE / INode::SIZE);
-  uint64_t block_index = inode_num / num_inodes_per_block;
-  uint64_t inode_index = inode_num % num_inodes_per_block;
-
-  // Load the inode and modify attribute
-  Block block;
-  this->disk->get(start_block + block_index, block);
-  INode *inode = (INode *) &(block.data[inode_index * INode::SIZE]);
-  inode->type = FileType::FREE;
-
-  // Write the inode back to disk
-  this->disk->set(start_block + block_index, block);
+void LinearINodeManager::release(INode inode) {
+  inode.save([](INode::Data& data) {
+    std::memset(&data, 0, INode::SIZE);
+  });
 }
 
 void LinearINodeManager::reload() {
@@ -83,36 +76,39 @@ void LinearINodeManager::reload() {
 }
 
 // Reads an inode from disk into the memory provided by the user
-void LinearINodeManager::get(INode::ID inode_num, INode& user_inode) {
-  if (inode_num >= this->num_inodes || inode_num < this->root) {
+INode LinearINodeManager::get(INode::ID id) {
+  if (id >= this->num_inodes || id < this->root) {
     throw std::out_of_range("INode index is out of range!");
   }
 
   uint64_t num_inodes_per_block = (Block::SIZE / INode::SIZE);
-  uint64_t block_index = inode_num / num_inodes_per_block;
-  uint64_t inode_index = inode_num % num_inodes_per_block;
+  uint64_t block_index = id / num_inodes_per_block;
+  uint64_t inode_index = id % num_inodes_per_block;
 
   Block block;
   this->disk->get(start_block + block_index, block);
-  INode *inode = (INode *) &(block.data[inode_index * INode::SIZE]);
 
-  memcpy(&user_inode, inode, INode::SIZE);
+  INode::Data* inodes = (INode::Data*) block.data;
+  return INode(&inodes[inode_index]);
 }
 
-void LinearINodeManager::set(INode::ID inode_num, const INode& user_inode) {
-  if (inode_num >= this->num_inodes || inode_num < this->root) {
+void LinearINodeManager::set(const INode& inode) {
+  if(inode.id() >= this->num_inodes || inode.id() < this->root) {
     throw std::out_of_range("INode index is out of range!");
   }
 
   uint64_t num_inodes_per_block = (Block::SIZE / INode::SIZE);
-  uint64_t block_index = inode_num / num_inodes_per_block;
-  uint64_t inode_index = inode_num % num_inodes_per_block;
+  uint64_t block_index = inode.id() / num_inodes_per_block;
+  uint64_t inode_index = inode.id() % num_inodes_per_block;
 
   Block block;
   this->disk->get(start_block + block_index, block);
-  INode *inode = (INode *) &(block.data[inode_index * INode::SIZE]);
 
-  memcpy(inode, &user_inode, INode::SIZE);
+  inode.read([=](const INode::Data& data) {
+    INode::Data* inodes = (INode::Data*) block.data;
+    std::memcpy(&inodes[inode_index], &data, INode::SIZE);
+  });
+
   this->disk->set(start_block + block_index, block);
 }
 

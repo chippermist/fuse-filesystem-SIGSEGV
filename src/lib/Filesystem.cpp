@@ -17,17 +17,17 @@
 #include <fuse.h>
 
 
-Filesystem::Filesystem(BlockManager& block_manager, INodeManager& inode_manager) {
-  this->block_manager = &block_manager;
-  this->inode_manager = &inode_manager;
+// Filesystem::Filesystem(BlockManager& block_manager, INodeManager& inode_manager) {
+//   this->block_manager = &block_manager;
+//   this->inode_manager = &inode_manager;
 
-  uint64_t ipb   = Block::SIZE / sizeof(Block::ID);
-  max_file_size  = INode::DIRECT_POINTERS;
-  max_file_size += INode::SINGLE_INDIRECT_POINTERS * ipb;
-  max_file_size += INode::DOUBLE_INDIRECT_POINTERS * ipb * ipb;
-  max_file_size += INode::TRIPLE_INDIRECT_POINTERS * ipb * ipb * ipb;
-  max_file_size *= Block::SIZE;
-}
+//   uint64_t ipb   = Block::SIZE / sizeof(Block::ID);
+//   max_file_size  = INode::DIRECT_POINTERS;
+//   max_file_size += INode::SINGLE_INDIRECT_POINTERS * ipb;
+//   max_file_size += INode::DOUBLE_INDIRECT_POINTERS * ipb * ipb;
+//   max_file_size += INode::TRIPLE_INDIRECT_POINTERS * ipb * ipb * ipb;
+//   max_file_size *= Block::SIZE;
+// }
 
 Filesystem::~Filesystem() {
   // Nothing to do.
@@ -96,19 +96,9 @@ int Filesystem::mount(char* program, fuse_operations* ops) {
   return fuse_main(argc, argv, ops, 0);
 }
 
-Directory Filesystem::getDirectory(INode::ID id) {
-  INode inode;
-  inode_manager->get(id, inode);
-  if(inode.type != FileType::DIRECTORY) {
-    throw NotADirectory();
-  }
-
-  char* buffer = new char[inode.size];
-  read(id, buffer, inode.size, 0);
-
-  Directory directory(id, buffer, inode.size);
-  delete [] buffer;
-  return directory;
+Directory Filesystem::getDirectory(INode& inode) {
+  std::vector<char> buffer = inode.read();
+  return Directory(inode, &buffer[0], buffer.size());
 }
 
 Directory Filesystem::getDirectory(const std::string& path) {
@@ -117,10 +107,7 @@ Directory Filesystem::getDirectory(const std::string& path) {
 
 INode Filesystem::getINode(INode::ID id) {
   if(id == 0) throw NoSuchEntry();
-
-  INode inode;
-  inode_manager->get(id, inode);
-  return inode;
+  return inode_manager->get(id);
 }
 
 INode Filesystem::getINode(const std::string& path) {
@@ -146,22 +133,20 @@ INode::ID Filesystem::getINodeID(const std::string& path) {
   return id;
 }
 
-INode::ID Filesystem::newINodeID() {
+INode Filesystem::newINodeID() {
   return inode_manager->reserve();
 }
 
 void Filesystem::save(const Directory& directory) {
-  std::vector<char> data = directory.serialize();
-  write(directory.id(), &data[0], data.size(), 0);
-
+  std::vector<char> dump = directory.serialize();
   INode inode = getINode(directory.id());
-  if(inode.size > data.size()) {
-    truncate(directory.id(), data.size());
-  }
+
+  write(inode, &dump[0], dump.size(), 0, true);
+  save(inode);
 }
 
-void Filesystem::save(INode::ID id, const INode& inode) {
-  inode_manager->set(id, inode);
+void Filesystem::save(const INode& inode) {
+  inode_manager->set(inode);
 }
 
 /**

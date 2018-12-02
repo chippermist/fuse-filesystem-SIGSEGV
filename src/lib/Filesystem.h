@@ -3,7 +3,6 @@
 #include "Block.h"
 #include "INode.h"
 #include "BlockManager.h"
-#include "INodeManager.h"
 #include "Directory.h"
 
 struct fuse_operations;
@@ -11,14 +10,14 @@ struct statvfs;
 
 class Filesystem {
   BlockManager* block_manager;
-  INodeManager* inode_manager;
+  INode::Manager* inode_manager;
   uint64_t      max_file_size;
   char*         mount_point;
   bool          parallel;
   bool          debug;
 public:
   Filesystem(int argc, char** argv, bool mkfs);
-  Filesystem(BlockManager &block_manager, INodeManager& inode_manager);
+  // Filesystem(BlockManager &block_manager, INodeManager& inode_manager);
   ~Filesystem();
 
   void mkfs(uint64_t nblocks, uint64_t niblocks);
@@ -38,15 +37,13 @@ public:
   INode     getINode(INode::ID id);
   INode     getINode(const std::string& path);
   INode::ID getINodeID(const std::string& path);
-  INode::ID newINodeID();
+  INode     newINodeID();
 
   void save(const Directory& directory);
   void save(INode::ID id, const INode& inode);
 
 private:
   Block::ID blockAt(const INode& inode, uint64_t offset);
-  INode::ID componentLookup(INode::ID cur_inode_num, std::string filename);
-  INode::ID directLookup(Block *directory, std::string filename);
   Block::ID indirectBlockAt(Block::ID bid, uint64_t offset, uint64_t size);
   Block::ID allocateNextBlock(INode& file_inode);
   size_t appendData(INode& file_inode, const char *buf, size_t size, size_t offset, bool null_filler);
