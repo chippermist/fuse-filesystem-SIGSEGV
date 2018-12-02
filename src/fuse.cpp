@@ -200,9 +200,6 @@ extern "C" {
 
   int fs_mkdir(const char* path, mode_t mode) {
     debug("mkdir       %s %03o\n", path, mode);
-    if (!S_ISDIR(mode)) {
-      return -ENOTSUP;
-    }
 
     return handle([=]{
       std::string pname = fs->dirname(path);
