@@ -13,7 +13,6 @@ notifications:
     on_success: always
 
 language: cpp
-# since we don't have make test, specifying only to do 'make'
-script: 
+script:
   - make clean
-  - make
+  - make tests
