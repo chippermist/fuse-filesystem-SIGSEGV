@@ -40,10 +40,12 @@ obj/%.o: src/%.cpp
 
 tests: $(BINARIES)
 	@mkdir -p tmp/mnt
-	bin/test tmp/mnt
+	bin/test -m tmp/mnt
+	bin/test -mf tmp/disk tmp/mnt
+	@rm -f tmp/disk
 
 clean:
-	rm -rf obj tmp/tests $(patsubst %, bin/%, $(BINARIES))
+	rm -rf obj/* tmp/tests $(patsubst %, bin/%, $(BINARIES))
 
 # Automatic dependencies:
 -include $(OBJECTS:.o=.d)
