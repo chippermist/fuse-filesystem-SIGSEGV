@@ -6,7 +6,7 @@ before_install:
   - sudo apt-get update  -qq
   - sudo apt-get install -qq fuse
   - sudo apt-get install -qq libfuse-dev
-  - sudo echo user_allow_other > /etc/fuse.conf
+  - echo user_allow_other | sudo tee -a /etc/fuse.conf > /dev/null
 install: true
 notifications:
   email:
