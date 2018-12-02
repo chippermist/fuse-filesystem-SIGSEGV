@@ -2,8 +2,8 @@
 
 #if defined(__linux__)
   #include <sys/statfs.h>
-  #include <sys/vfs.h>
   #include <sys/statvfs.h>
+  #include <sys/vfs.h>
 #else
   #include <fuse.h>
 #endif
