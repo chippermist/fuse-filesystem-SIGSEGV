@@ -36,7 +36,7 @@ Filesystem::~Filesystem() {
 void Filesystem::mkfs(uint64_t nblocks, uint64_t niblocks) {
   Block block;
   Superblock* superblock = (Superblock*) block.data;
-  block_manager->get(0, block);
+  std::memset(block.data, 0, Block::SIZE);
 
   superblock->magic       = 3199905246;
   superblock->block_size  = Block::SIZE;
@@ -74,7 +74,7 @@ void Filesystem::statfs(struct statvfs* info) {
   info->f_namemax = 256;                    // Maximum filename length.
 }
 
-int Filesystem::mount(fuse_operations* ops) {
+int Filesystem::mount(char* program, fuse_operations* ops) {
   if(mount_point == NULL) {
     std::cerr << "No mount point given.\n";
     exit(1);
@@ -87,6 +87,7 @@ int Filesystem::mount(fuse_operations* ops) {
   int argc = 0;
   char* argv[8] = {0};
 
+  argv[argc++] = program;
   if(!parallel) argv[argc++] = s;
   if(debug)     argv[argc++] = d;
   argv[argc++] = f;

@@ -22,7 +22,7 @@ public:
   ~Filesystem();
 
   void mkfs(uint64_t nblocks, uint64_t niblocks);
-  int  mount(fuse_operations* ops);
+  int  mount(char* program, fuse_operations* ops);
   void statfs(struct statvfs* info);
 
   int  read(INode::ID file_inode_num, char *buffer, size_t size, size_t offset);

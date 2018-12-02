@@ -519,7 +519,7 @@ int main(int argc, char** argv) {
   ops.utime       = &fs_utime;
   ops.write       = &fs_write;
 
-  return fs->mount(&ops);
+  return fs->mount(argv[0], &ops);
 }
 
 /*

@@ -25,7 +25,7 @@ void LinearINodeManager::mkfs() {
     this->disk->set(start_block + i, block);
   }
 
-  // Reserve the first two INodes for null and root:
+  // Reserve INodes for null and root:
   INode* inodes = (INode*) block.data;
   inodes[0].type = FileType::RESERVED;
   inodes[1].type = FileType::RESERVED;
