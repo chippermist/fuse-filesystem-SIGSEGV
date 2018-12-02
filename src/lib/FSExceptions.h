@@ -77,7 +77,7 @@ inline int handle(std::function<int(void)> callback) {
     return callback();
   }
   catch(NoSuchEntry& ex) {
-    std::cerr << "[\e[2;33mfile not found\e[0m]: " << ex.what() << '\n';
+    std::cerr << "[\e[2;33mnot found     \e[0m]: " << ex.what() << '\n';
     return -ex.code().value();
   }
   catch(FSException& ex) {
