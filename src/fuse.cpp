@@ -65,22 +65,35 @@ extern "C" {
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
-      int inode_mode = 0;
-      inode_mode = inode_mode | inode.mode;
-      std::cout << inode_mode << "\t" << inode.mode << "\t" << mode << std::endl;
       
       struct fuse_context *context = fuse_get_context();
 
-      std::cout << "Context UID is " << context->uid << " INode UID is " << inode.uid << " Context GID is " << context->gid << " INode GID is " << inode.gid << std::endl;
-      
       // should root be allowed to access everyting?
       if((context->uid == 0) && (context->gid == 0)) {
         return 0;
       }
-
       // checking uid and gid as well so restrict access
-      if((context->uid != inode.uid) || (context->gid != inode.gid) ||  ((inode_mode & mode) != mode)) {
+      if((context->uid != inode.uid) || (context->gid != inode.gid)) {
         throw AccessDenied(path);
+      }
+
+      for(int i = 0, check_mode = mode; i<3; ++i) {
+        if(i == 0 && (check_mode & 1)) {
+          if(!(inode.mode & S_IXUSR)) {
+            throw AccessDenied(path);
+          }
+        }
+        else if(i == 1 && (check_mode & 1)) {
+          if(!(inode.mode & S_IWUSR)) {
+            throw AccessDenied(path);
+          }
+        }
+        else if(i == 2 && (check_mode & 1)) {
+          if(!(inode.mode & S_IRUSR)) {
+            throw AccessDenied(path);
+          }
+        }
+        check_mode >>= 1;
       }
 
       return 0;
