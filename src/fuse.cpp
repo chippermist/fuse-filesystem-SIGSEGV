@@ -200,6 +200,10 @@ extern "C" {
 
   int fs_mkdir(const char* path, mode_t mode) {
     debug("mkdir       %s %03o\n", path, mode);
+    if (!S_ISDIR(mode)) {
+      return -ENOTSUP;
+    }
+
     return handle([=]{
       std::string pname = fs->dirname(path);
       std::string dname = fs->basename(path);
@@ -224,6 +228,11 @@ extern "C" {
 
   int fs_mknod(const char* path, mode_t mode, dev_t dev) {
     debug("mknod       %s %03o\n", path, mode);
+
+    if (!S_ISREG(mode)) {
+      return -ENOTSUP;
+    }
+
     return handle([=]{
       std::string dname = fs->dirname(path);
       std::string fname = fs->basename(path);
@@ -324,6 +333,7 @@ extern "C" {
         INode newname_inode = fs->getINode(newname_id);
         if (newname_inode.type == FileType::DIRECTORY) {
           real_name = real_name + "/" + fs->basename(path);
+          // Need to check if the file we're moving in clobbers something...
         }
       }
 
@@ -343,7 +353,9 @@ extern "C" {
       fs->save(dir);
 
       // Unlink old path
-      if (newname_id != 0) fs->unlink(newname_id);
+      if (newname_id != 0) {
+        fs->unlink(newname_id);
+      }
       return fs_unlink(path);
     });
   }
