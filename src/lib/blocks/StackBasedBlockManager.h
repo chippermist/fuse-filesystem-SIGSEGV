@@ -18,6 +18,9 @@ public:
   virtual void get(Block::ID id, Block& dst);
   virtual void set(Block::ID id, const Block& src);
 
+  virtual void getSuperblock(Block& dst);
+  virtual void setSuperblock(const Block& src);
+
   virtual void release(Block::ID block_num);
   virtual Block::ID reserve();
 

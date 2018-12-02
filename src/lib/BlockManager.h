@@ -3,6 +3,8 @@
 #include "Block.h"
 #include "Storage.h"
 
+#include <vector>
+
 #if defined(__linux__)
   #include <sys/statvfs.h>
 #else
@@ -22,6 +24,12 @@ public:
   virtual void get(Block::ID id, Block& dst) = 0;
   virtual void set(Block::ID id, const Block& src) = 0;
 
-  virtual void release(Block::ID block_number) = 0;
+  virtual void getSuperblock(Block& dst) = 0;
+  virtual void setSuperblock(const Block& src) = 0;
+
   virtual Block::ID reserve() = 0;
+  virtual void release(Block::ID id) = 0;
+  virtual void release(const std::vector<Block::ID>& ids) {
+    for(const auto id: ids) release(id);
+  }
 };

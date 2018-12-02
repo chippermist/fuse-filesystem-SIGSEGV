@@ -25,9 +25,9 @@ public:
   int  mount(char* program, fuse_operations* ops);
   void statfs(struct statvfs* info);
 
-  int  read(INode::ID file_inode_num, char *buffer, size_t size, size_t offset);
-  int  write(INode::ID file_inode_num, const char *buf, size_t size, size_t offset);
-  int  truncate(INode::ID file_inode_num, size_t length);
+  int  read(INode::ID file_inode_num, char *buffer, uint64_t size, uint64_t offset);
+  int  write(INode::ID file_inode_num, const char *buf, uint64_t size, uint64_t offset = 0, bool truncate = false);
+  int  truncate(INode::ID file_inode_num, uint64_t length);
   void unlink(INode::ID id);
 
   std::string dirname(const char* path_cstring);

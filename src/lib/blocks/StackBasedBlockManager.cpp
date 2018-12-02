@@ -29,7 +29,7 @@ StackBasedBlockManager::StackBasedBlockManager(Storage& storage): disk(&storage)
   Block block;
   Superblock* superblock = (Superblock*) &block;
   Config* config = (Config*) superblock->data_config;
-  this->disk->get(0, block);
+  this->getSuperblock(block);
 
   this->top_block   = config->top_block;
   this->top_index   = config->top_index;
@@ -43,14 +43,23 @@ StackBasedBlockManager::~StackBasedBlockManager() {
 }
 
 void StackBasedBlockManager::get(Block::ID id, Block& dst) {
-  disk->get(id, dst);
+  if(id == 0) {
+    std::memset(dst.data, 0, Block::SIZE);
+  }
+  else {
+    disk->get(id, dst);
+  }
+}
+
+void StackBasedBlockManager::getSuperblock(Block& dst) {
+  disk->get(0, dst);
 }
 
 void StackBasedBlockManager::mkfs() {
 
   // Read superblock
   Block superblock_blk;
-  this->disk->get(0, superblock_blk);
+  this->getSuperblock(superblock_blk);
   Superblock *superblock = (Superblock *) &superblock_blk;
   Config* config = (Config*) superblock->data_config;
   Block::ID start = superblock->data_block_start;
@@ -87,7 +96,7 @@ void StackBasedBlockManager::mkfs() {
         config->top_index = DatablockNode::NREFS - 1;
         config->first_block = start + count - 1;
         superblock->data_block_count = free_block - start - 1; // we don't allow allocation of last free block
-        this->disk->set(0, superblock_blk);
+        this->setSuperblock(superblock_blk);
 
         // Update class members with true values
         this->top_block   = config->top_block;
@@ -114,10 +123,10 @@ void StackBasedBlockManager::update_superblock() {
   Superblock* superblock = (Superblock*) &block;
   Config* config = (Config*) superblock->data_config;
 
-  this->disk->get(0, block);
+  this->getSuperblock(block);
   config->top_block = this->top_block;
   config->top_index = this->top_index;
-  this->disk->set(0, block);
+  this->setSuperblock(block);
 }
 
 void StackBasedBlockManager::release(Block::ID free_block_num) {
@@ -167,6 +176,19 @@ Block::ID StackBasedBlockManager::reserve() {
   return free_block_num;
 }
 
+void StackBasedBlockManager::set(Block::ID id, const Block& src) {
+  if(id == 0) {
+    throw std::out_of_range("Use setSuperblock() to modify the Superblock!");
+  }
+  else {
+    disk->set(id, src);
+  }
+}
+
+void StackBasedBlockManager::setSuperblock(const Block& src) {
+  disk->set(0, src);
+}
+
 void StackBasedBlockManager::statfs(struct statvfs* info) {
   uint64_t nrefs = DatablockNode::NREFS;
   uint64_t total = (last_block - first_block) * nrefs + last_index;
@@ -177,8 +199,4 @@ void StackBasedBlockManager::statfs(struct statvfs* info) {
   info->f_blocks  = total;        // Total number of blocks on file system in units of f_frsize.
   info->f_bfree   = total - used; // Total number of free blocks.
   info->f_bavail  = total - used; // Number of free blocks available to non-privileged process.
-}
-
-void StackBasedBlockManager::set(Block::ID id, const Block& src) {
-  disk->set(id, src);
 }
