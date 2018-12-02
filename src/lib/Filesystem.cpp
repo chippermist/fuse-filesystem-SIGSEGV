@@ -36,7 +36,7 @@ Filesystem::~Filesystem() {
 void Filesystem::mkfs(uint64_t nblocks, uint64_t niblocks) {
   Block block;
   Superblock* superblock = (Superblock*) block.data;
-  block_manager->get(0, block);
+  std::memset(block.data, 0, Block::SIZE);
 
   superblock->magic       = 3199905246;
   superblock->block_size  = Block::SIZE;
