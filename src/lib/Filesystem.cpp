@@ -12,9 +12,10 @@
   #include <sys/statfs.h>
   #include <sys/vfs.h>
   #include <sys/statvfs.h>
-#else
-  #include <fuse.h>
 #endif
+
+#include <fuse.h>
+
 
 Filesystem::Filesystem(BlockManager& block_manager, INodeManager& inode_manager) {
   this->block_manager = &block_manager;
