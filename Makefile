@@ -43,7 +43,7 @@ tests: $(BINARIES)
 	bin/test tmp/mnt
 
 clean:
-	rm -rf obj tmp/test $(patsubst %, bin/%, $(BINARIES))
+	rm -rf obj tmp/tests $(patsubst %, bin/%, $(BINARIES))
 
 # Automatic dependencies:
 -include $(OBJECTS:.o=.d)
