@@ -83,8 +83,8 @@ extern "C" {
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
 
-      if (uid != 0xffff && uid != 0xffffffff) inode.uid = uid;
-      if (gid != 0xffff && gid != 0xffffffff) inode.gid = gid;
+      if (uid != uid_t(0) - 1) inode.uid = uid;
+      if (gid != gid_t(0) - 1) inode.gid = gid;
       if ((uid != 0xffff && uid != 0xffffffff) || (gid != 0xffff && gid != 0xffffffff)) {
         inode.ctime = time(NULL);
       }
@@ -523,7 +523,7 @@ int main(int argc, char** argv) {
   ops.utime       = &fs_utime;
   ops.write       = &fs_write;
 
-  return fs->mount(&ops);
+  return fs->mount(argv[0], &ops);
 }
 
 /*
