@@ -1,0 +1,35 @@
+#! /bin/bash
+
+# Make a test folder:
+mkdir -p "tmp/tests/mnt"
+
+# Test writing to memory:
+bin/fuse -n 1024 "tmp/tests/mnt" &> "tmp/tests/memory.log" &
+pid=$!
+
+bin/test-syscalls "$(pwd)/tmp/tests/mnt"
+status=$?
+
+kill "$pid"
+sleep 0.1
+kill -9 "$pid" 2> /dev/null
+
+if [ $status -ne 0 ]; then
+  exit 1
+fi
+
+# Test writing to a test file:
+bin/mkfs -n 1024 -f "tmp/tests/disk"
+bin/fuse -n 1024 -f "tmp/tests/disk" "tmp/tests/mnt" &> "tmp/tests/file.log" &
+pid=$!
+
+bin/test-syscalls "$(pwd)/tmp/tests/mnt"
+status=$?
+
+kill "$pid"
+sleep 0.1
+kill -9 "$pid" 2> /dev/null
+
+if [ $status -ne 0 ]; then
+  exit 1
+fi

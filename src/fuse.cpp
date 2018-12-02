@@ -1,11 +1,6 @@
 #include "lib/Filesystem.h"
 #include "lib/FSExceptions.h"
 
-#include "lib/storage/MemoryStorage.h"
-#include "lib/storage/FileStorage.h"
-#include "lib/inodes/LinearINodeManager.h"
-#include "lib/blocks/StackBasedBlockManager.h"
-
 #if defined(__linux__)
   #include <sys/statfs.h>
   #include <sys/vfs.h>
@@ -19,16 +14,19 @@
 
 #ifndef NDEBUG
   #include <cstdio>
-  #define debug(format, ...) fprintf(stderr, format, __VA_ARGS__)
+  #define debug0(name, format, ...) fprintf(stderr, "[\e[90m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
+  #define debug1(name, format, ...) fprintf(stderr, "[\e[32m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
+  #define debug2(name, format, ...) fprintf(stderr, "[\e[1;92m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
 #else
-  #define debug(...)
+  #define debug0(...)
+  #define debug1(...)
+  #define debug2(...)
 #endif
 
 #define UNUSED(x) ((void) (x))
 
-// Global Variables
-INodeManager *inode_manager;
-Filesystem *fs;
+// Global Filesystem
+Filesystem* fs;
 
 extern "C" {
 
@@ -66,7 +64,7 @@ extern "C" {
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
-      
+
       struct fuse_context *context = fuse_get_context();
 
       // should root be allowed to access everyting?
@@ -106,7 +104,7 @@ extern "C" {
   }
 
   int fs_chmod(const char* path, mode_t mode) {
-    debug("chmod       %s to %03o\n", path, mode);
+    debug2("chmod", "%s to %03o", path, mode);
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
@@ -119,13 +117,13 @@ extern "C" {
   }
 
   int fs_chown(const char* path, uid_t uid, gid_t gid) {
-    debug("chown       %s to %d:%d\n", path, uid, gid);
+    debug2("chown", "%s to %d:%d", path, uid, gid);
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
 
-      if (uid != 0xffff && uid != 0xffffffff) inode.uid = uid;
-      if (gid != 0xffff && gid != 0xffffffff) inode.gid = gid;
+      if (uid != uid_t(0) - 1) inode.uid = uid;
+      if (gid != gid_t(0) - 1) inode.gid = gid;
       if ((uid != 0xffff && uid != 0xffffffff) || (gid != 0xffff && gid != 0xffffffff)) {
         inode.ctime = time(NULL);
       }
@@ -135,7 +133,7 @@ extern "C" {
   }
 
   int fs_flush(const char* path, fuse_file_info* info) {
-    debug("flush       %s\n", path);
+    debug1("flush", "%s", path);
     UNUSED(info);
 
     // TODO...
@@ -143,7 +141,7 @@ extern "C" {
   }
 
   int fs_fsync(const char* path, int unknown, fuse_file_info* info) {
-    debug("fsync       %s\n", path);
+    debug1("fsync", "%s", path);
     UNUSED(unknown);
     UNUSED(info);
 
@@ -152,7 +150,7 @@ extern "C" {
   }
 
   int fs_getattr(const char* path, struct stat* info) {
-    debug("getattr     %s\n", path);
+    debug1("getattr", "%s", path);
     UNUSED(info);
 
     return handle([=]{
@@ -188,7 +186,7 @@ extern "C" {
   }
 
   int fs_getxattr(const char* path, const char* attr, char* buffer, size_t size) {
-    debug("getxattr    %s %s\n", path, attr);
+    debug1("getxattr", "%s %s", path, attr);
     UNUSED(buffer);
     UNUSED(size);
 
@@ -197,6 +195,7 @@ extern "C" {
   }
 
   void* fs_init(struct fuse_conn_info* conn) {
+    debug2("init", "%p", conn);
     UNUSED(conn);
 
     // Useless function for us
@@ -204,7 +203,7 @@ extern "C" {
   }
 
   int fs_link(const char* target, const char* link) {
-    debug("link        %s -> %s\n", link, target);
+    debug2("link", "%s -> %s", link, target);
     return handle([=]{
       INode::ID id = fs->getINodeID(target);
       INode inode  = fs->getINode(id);
@@ -229,7 +228,7 @@ extern "C" {
   }
 
   int fs_listxattr(const char* path, char* buffer, size_t size) {
-    debug("listxattr   %s\n", path);
+    debug1("listxattr", "%s", path);
     UNUSED(buffer);
     UNUSED(size);
 
@@ -238,7 +237,7 @@ extern "C" {
   }
 
   int fs_mkdir(const char* path, mode_t mode) {
-    debug("mkdir       %s %03o\n", path, mode);
+    debug2("mkdir", "%s %03o", path, mode);
     return handle([=]{
       std::string pname = fs->dirname(path);
       std::string dname = fs->basename(path);
@@ -248,7 +247,7 @@ extern "C" {
         throw AlreadyExists(path);
       }
 
-      INode::ID id = inode_manager->reserve();
+      INode::ID id = fs->newINodeID();
       INode inode(FileType::DIRECTORY, mode);
       fs->save(id, inode);
 
@@ -262,7 +261,12 @@ extern "C" {
   }
 
   int fs_mknod(const char* path, mode_t mode, dev_t dev) {
-    debug("mknod       %s %03o\n", path, mode);
+    debug2("mknod", "%s %03o", path, mode);
+
+    if (!S_ISREG(mode)) {
+      return -ENOTSUP;
+    }
+
     return handle([=]{
       std::string dname = fs->dirname(path);
       std::string fname = fs->basename(path);
@@ -272,7 +276,7 @@ extern "C" {
         throw AlreadyExists(path);
       }
 
-      INode::ID id = inode_manager->reserve();
+      INode::ID id = fs->newINodeID();
       INode inode(FileType::REGULAR, mode, dev);
       fs->save(id, inode);
 
@@ -283,7 +287,7 @@ extern "C" {
   }
 
   int fs_open(const char* path, fuse_file_info* info) {
-    debug("open        %s\n", path);
+    debug1("open", "%s", path);
     UNUSED(info);
 
     // TODO...
@@ -291,7 +295,7 @@ extern "C" {
   }
 
   int fs_read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
-    debug("read        %s %" PRIu64 "b at %" PRId64 "\n", path, (uint64_t) size, offset);
+    debug2("read", "%s %" PRIu64 "b at %" PRId64, path, (uint64_t) size, offset);
     UNUSED(info);
 
     return handle([=]{
@@ -306,7 +310,7 @@ extern "C" {
   }
 
   int fs_readdir(const char* path, void* buffer, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info* info) {
-    debug("readdir     %s\n", path);
+    debug2("readdir", "%s", path);
     UNUSED(offset);
     UNUSED(info);
 
@@ -322,7 +326,7 @@ extern "C" {
   }
 
   int fs_readlink(const char* path, char* buffer, size_t size) {
-    debug("readlink    %s\n", path);
+    debug2("readlink", "%s", path);
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
@@ -330,12 +334,13 @@ extern "C" {
         throw NotASymlink(path);
       }
 
-      return fs->read(id, buffer, size, 0);
+      fs->read(id, buffer, size, 0);
+      return 0;
     });
   }
 
   int fs_release(const char* path, fuse_file_info* info) {
-    debug("release     %s\n", path);
+    debug1("release", "%s", path);
     UNUSED(info);
 
     // TODO...
@@ -343,22 +348,61 @@ extern "C" {
   }
 
   int fs_removexattr(const char* path, const char* attr) {
-    debug("removexattr %s %s\n", path, attr);
+    debug1("removexattr", "%s %s", path, attr);
 
     // Not implemented!
     return -1;
   }
 
-  int fs_rename(const char* path, const char* name) {
-    debug("rename      %s -> %s\n", path, name);
+  int fs_rename(const char* oldname, const char* newname) {
+    debug2("rename", "%s -> %s", oldname, newname);
+    return handle([=]{
+      std::string dname = fs->dirname(newname);
+      std::string fname = fs->basename(newname);
 
-    int result = fs_link(path, name);
-    if (result < 0) return result;
-    return fs_unlink(path);
+      // Stuff for the INode we're moving:
+      INode::ID id = fs->getINodeID(oldname);
+      INode inode  = fs->getINode(id);
+
+      // Stuff for the INode we might be replacing:
+      Directory newparent = fs->getDirectory(dname);
+      INode::ID clobber   = newparent.search(fname);
+
+      if(clobber != 0) {
+        INode clobnode = fs->getINode(clobber);
+        if(clobnode.type == FileType::DIRECTORY) {
+          if(inode.type != FileType::DIRECTORY) {
+            // [EISDIR]  New is a directory, but old is not a directory.
+            throw IsADirectory(newname);
+          }
+
+          Directory clobdir = fs->getDirectory(clobber);
+          if(!clobdir.isEmpty()) {
+            // [ENOTEMPTY]  New is a directory and is not empty.
+            throw DirectoryNotEmpty(newname);
+          }
+        }
+        else if(inode.type == FileType::DIRECTORY) {
+          // [ENOTDIR]  Old is a directory, but new is not a directory.
+          throw NotADirectory(newname);
+        }
+      }
+
+      inode.links += 1;
+      inode.ctime  = time(NULL);
+      fs->save(id, inode);
+
+      newparent.insert(fname, id);
+      fs->save(newparent);
+
+      // Unlink all the old paths:
+      if (clobber != 0) fs->unlink(clobber);
+      return fs_unlink(oldname);
+    });
   }
 
   int fs_rmdir(const char* path) {
-    debug("rmdir       %s\n", path);
+    debug2("rmdir", "%s", path);
     return handle([=]{
       std::string pname = fs->dirname(path);
       std::string dname = fs->basename(path);
@@ -377,7 +421,7 @@ extern "C" {
   }
 
   int fs_setxattr(const char* path, const char* attr, const char* val, size_t size, int unknown) {
-    debug("setxattr    %s %s\n", path, attr);
+    debug1("setxattr", "%s %s", path, attr);
     UNUSED(val);
     UNUSED(size);
     UNUSED(unknown);
@@ -387,7 +431,7 @@ extern "C" {
   }
 
   int fs_statfs(const char* path, struct statvfs* info) {
-    debug("statfs      %s\n", path);
+    debug1("statfs", "%s", path);
     return handle([=]{
       fs->statfs(info);
       return 0;
@@ -395,7 +439,7 @@ extern "C" {
   }
 
   int fs_symlink(const char* target, const char* link) {
-    debug("symlink     %s -> %s\n", link, target);
+    debug2("symlink", "%s -> %s", link, target);
     return handle([=]{
       std::string dname = fs->dirname(link);
       std::string fname = fs->basename(link);
@@ -405,10 +449,10 @@ extern "C" {
         throw AlreadyExists(link);
       }
 
-      INode::ID id = inode_manager->reserve();
+      INode::ID id = fs->newINodeID();
       INode inode(FileType::SYMLINK, 0777);
-      fs->write(id, target, std::strlen(target) + 1, 0);
       fs->save(id, inode);
+      fs->write(id, target, std::strlen(target) + 1, 0);
 
       dir.insert(fname, id);
       fs->save(dir);
@@ -417,7 +461,7 @@ extern "C" {
   }
 
   int fs_truncate(const char* path, off_t offset) {
-    debug("truncate    %s to %" PRId64 "b\n", path, (int64_t) offset);
+    debug2("truncate", "%s to %" PRId64 "b", path, (int64_t) offset);
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
@@ -430,18 +474,13 @@ extern "C" {
   }
 
   int fs_unlink(const char* path) {
-    debug("unlink      %s\n", path);
+    debug2("unlink", "%s", path);
     return handle([=]{
       std::string dname = fs->dirname(path);
       std::string fname = fs->basename(path);
 
       Directory dir = fs->getDirectory(dname);
       INode::ID fid = dir.search(fname);
-
-      INode inode = fs->getINode(fid);
-      if(inode.type == FileType::DIRECTORY) {
-        throw IsADirectory(path);
-      }
 
       dir.remove(fname);
       fs->save(dir);
@@ -454,7 +493,7 @@ extern "C" {
   // int(* fuse_operations::utimens) (const char *, const struct timespec tv[2], struct fuse_file_info *fi)
   // This supersedes the old utime() interface. New applications should use this.
   int fs_utime(const char* path, utimbuf* buffer) {
-    debug("utime       %s\n", path);
+    debug2("utime", "%s", path);
     return handle([=]{
       INode::ID id = fs->getINodeID(path);
       INode inode = fs->getINode(id);
@@ -469,7 +508,7 @@ extern "C" {
   }
 
   int fs_write(const char* path, const char* data, size_t size, off_t offset, fuse_file_info* info) {
-    debug("write       %s %" PRIu64 "b at %" PRId64 "\n", path, (uint64_t) size, offset);
+    debug2("write", "%s %" PRIu64 "b at %" PRId64, path, (uint64_t) size, offset);
     UNUSED(info);
 
     return handle([=]{
@@ -485,22 +524,9 @@ extern "C" {
 }
 
 int main(int argc, char** argv) {
-  // added initialization for fuse arguments
-  // can also be changed to 0, NULL for testing empty
-  // struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
+  fs = new Filesystem(argc, argv, false);
+  // TODO: Make sure FS config matches!
 
-  // Default ~32GB disk
-  // TODO: Read value from argv
-  // uint64_t nblocks = 1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2);
-  uint64_t nblocks =  8388608;
-
-  // Instantiate objects for filesystem
-  Storage *disk = new FileStorage("/dev/vdd", nblocks);
-  BlockManager *block_manager = new StackBasedBlockManager(*disk);
-  inode_manager = new LinearINodeManager(*disk);
-  fs = new Filesystem(*block_manager, *inode_manager, *disk);
-
-  // Set FUSE function pointers
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
 
@@ -536,8 +562,7 @@ int main(int argc, char** argv) {
   ops.utime       = &fs_utime;
   ops.write       = &fs_write;
 
-  // Run the FUSE daemon!
-  return fuse_main(argc, argv, &ops, NULL);
+  return fs->mount(argv[0], &ops);
 }
 
 /*

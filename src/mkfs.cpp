@@ -1,56 +1,11 @@
 #include <iostream>
 #include <vector>
+
 #include "lib/Filesystem.h"
-#include "lib/blocks/StackBasedBlockManager.h"
-#include "lib/inodes/LinearINodeManager.h"
-#include "lib/storage/MemoryStorage.h"
-#include "lib/storage/FileStorage.h"
 
 int main(int argc, char** argv) {
-
-  // Read number of blocks on disk
-  if (argc < 2) {
-    std::cout << "Not Enough Arguments." << std::endl;
-  }
-
-  uint64_t nblocks = atoi(argv[1]);
-  Storage *disk = new FileStorage("/dev/vdc", nblocks);
-
-  // Create a block for superblock
-  Block block;
-  Superblock* superblock = (Superblock*) &block;
-  memset(&block, 0, Block::SIZE);
-
-  // Set basic superblock parameters
-  superblock->magic = 3199905246;
-  superblock->block_size = Block::SIZE;
-  superblock->block_count = nblocks;
-
-  // Have approximately 1 inode per 2048 bytes of disk space
-  superblock->inode_block_start = 1;
-  if (((nblocks * Block::SIZE) / 2048 * INode::SIZE) % Block::SIZE == 0) {
-    superblock->inode_block_count = ((nblocks * Block::SIZE) / 2048 * INode::SIZE) / Block::SIZE;
-  } else {
-    superblock->inode_block_count = ((nblocks * Block::SIZE) / 2048 * INode::SIZE) / Block::SIZE + 1;
-  }
-  superblock->data_block_start = superblock->inode_block_start + superblock->inode_block_count;
-  superblock->data_block_count = superblock->block_count - superblock->data_block_start;
-
-  // Write superblock to disk
-  disk->set(0, block);
-
-  // Initialize managers and call mkfs
-  LinearINodeManager inode_manager(*disk);
-  StackBasedBlockManager block_manager(*disk);
-  Filesystem filesystem(block_manager, inode_manager, *disk);
-  filesystem.mkfs();
-
-  // Debug stuff
-  disk->get(0, block);
-  std::cout << "INode block count: " << superblock->inode_block_count << std::endl;
-  std::cout << "Real data block count: " << superblock->data_block_count << std::endl;
-  std::cout << "Size of Inode: " << sizeof(INode) << std::endl;
-  // std::cout << "Should be wasting 1-2 data blocks" << std::endl;
+  Filesystem fs(argc, argv, true);
+  // TODO: Check that everything was saved?
 
   /*
   ******************************************************************
