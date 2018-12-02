@@ -6,17 +6,18 @@
   #include <sys/vfs.h>
 #endif
 
-#include <fuse.h>
 #include <cstring>
 #include <cinttypes>
-#include <iostream>
-#include <bitset>
+#include <fuse.h>
+
+// Global Filesystem
+Filesystem* fs;
 
 #ifndef NDEBUG
   #include <cstdio>
-  #define debug0(name, format, ...) fprintf(stderr, "[\e[90m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
-  #define debug1(name, format, ...) fprintf(stderr, "[\e[32m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
-  #define debug2(name, format, ...) fprintf(stderr, "[\e[1;92m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
+  #define debug0(name, format, ...) if(fs->verbosity > 2) fprintf(stderr, "[\e[90m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
+  #define debug1(name, format, ...) if(fs->verbosity > 1) fprintf(stderr, "[\e[32m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
+  #define debug2(name, format, ...) if(fs->verbosity > 0) fprintf(stderr, "[\e[1;92m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
 #else
   #define debug0(...)
   #define debug1(...)
@@ -24,9 +25,6 @@
 #endif
 
 #define UNUSED(x) ((void) (x))
-
-// Global Filesystem
-Filesystem* fs;
 
 extern "C" {
 
@@ -528,7 +526,7 @@ int main(int argc, char** argv) {
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
 
-  ops.access      = &fs_access;
+  // ops.access      = &fs_access;
   ops.chmod       = &fs_chmod;
   ops.chown       = &fs_chown;
   // ops.destroy     = &fs_destroy;

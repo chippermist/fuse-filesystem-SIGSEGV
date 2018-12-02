@@ -17,6 +17,7 @@ static void usage(const char* message = NULL) {
   std::cerr << "  --disk-file   -f <str>  File or device to use for storage.\n";
   std::cerr << "  --debug       -d        Enable FUSE debugging output.\n";
   std::cerr << "  --parallel    -p        Run in multithreaded mode.\n";
+  std::cerr << "  --quiet       -q        Reduce verbosity; may be repeated.\n";
   exit(1);
 }
 
@@ -29,6 +30,7 @@ Filesystem::Filesystem(int argc, char** argv, bool mkfs) {
   mount_point = NULL;
   parallel    = false;
   debug       = false;
+  verbosity   = 3;
 
   struct option options[] = {
     {"block-size",  required_argument, 0, 'b'},
@@ -37,12 +39,13 @@ Filesystem::Filesystem(int argc, char** argv, bool mkfs) {
     {"disk-file",   required_argument, 0, 'f'},
     {"debug",             no_argument, 0, 'd'},
     {"parallel",          no_argument, 0, 'p'},
+    {"quiet",             no_argument, 0, 'q'},
     {0, 0, 0, 0}
   };
 
   while(true) {
     int i = 0;
-    int c = getopt_long(argc, argv, "b:n:i:f:dp", options, &i);
+    int c = getopt_long(argc, argv, "b:n:i:f:dpq", options, &i);
     if(c == -1) break;
 
     switch(c) {
@@ -63,6 +66,10 @@ Filesystem::Filesystem(int argc, char** argv, bool mkfs) {
       break;
     case 'p':
       parallel = true;
+      break;
+    case 'q':
+      verbosity -= 1;
+      break;
     default:
       std::cerr << "Unknown argument: " << argv[i] << '\n';
       exit(1);
