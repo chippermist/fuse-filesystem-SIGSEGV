@@ -85,8 +85,8 @@ extern "C" {
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
 
-      if (uid != 0xffff && uid != 0xffffffff) inode.uid = uid;
-      if (gid != 0xffff && gid != 0xffffffff) inode.gid = gid;
+      if (uid != uid_t(0) - 1) inode.uid = uid;
+      if (gid != gid_t(0) - 1) inode.gid = gid;
       if ((uid != 0xffff && uid != 0xffffffff) || (gid != 0xffff && gid != 0xffffffff)) {
         inode.ctime = time(NULL);
       }
@@ -330,7 +330,8 @@ extern "C" {
         INode newname_inode = fs->getINode(newname_id);
         if (newname_inode.type == FileType::DIRECTORY) {
           real_name = real_name + "/" + fs->basename(path);
-          // Need to check if the file we're moving in clobbers something...
+          // TODO: Need to check if the file we're moving in clobbers something...
+
         }
       }
 

@@ -738,7 +738,7 @@ void Filesystem::deallocateLastBlock(INode& file_inode) {
 
 void Filesystem::unlink(INode::ID id) {
   INode inode = getINode(id);
-  if(inode.links < 2) {
+  if(inode.links < 1) {
     truncate(id, 0);
     inode_manager->release(id);
   }
