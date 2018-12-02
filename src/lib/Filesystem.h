@@ -6,6 +6,7 @@
 #include "INodeManager.h"
 #include "Directory.h"
 
+struct fuse_operations;
 struct statvfs;
 
 class Filesystem {
