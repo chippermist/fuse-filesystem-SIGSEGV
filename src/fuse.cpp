@@ -10,6 +10,7 @@
 #include <cstring>
 #include <cinttypes>
 #include <iostream>
+#include <bitset>
 
 #ifndef NDEBUG
   #include <cstdio>
@@ -59,9 +60,43 @@ extern "C" {
   int   fs_access(const char *, int);
 
   int fs_access(const char *path, int mode) {
-    debug0("access", "%s %03o", path, mode);
-    UNUSED(mode);
-    return 0;
+    debug1("access", "%s", path);
+    return handle([=]{
+      INode::ID id = fs->getINodeID(path);
+      INode inode  = fs->getINode(id);
+
+      struct fuse_context *context = fuse_get_context();
+
+      // should root be allowed to access everyting?
+      if((context->uid == 0) && (context->gid == 0)) {
+        return 0;
+      }
+      // checking uid and gid as well so restrict access
+      if((context->uid != inode.uid) || (context->gid != inode.gid)) {
+        throw AccessDenied(path);
+      }
+
+      for(int i = 0, check_mode = mode; i<3; ++i) {
+        if(i == 0 && (check_mode & 1)) {
+          if(!(inode.mode & S_IXUSR)) {
+            throw AccessDenied(path);
+          }
+        }
+        else if(i == 1 && (check_mode & 1)) {
+          if(!(inode.mode & S_IWUSR)) {
+            throw AccessDenied(path);
+          }
+        }
+        else if(i == 2 && (check_mode & 1)) {
+          if(!(inode.mode & S_IRUSR)) {
+            throw AccessDenied(path);
+          }
+        }
+        check_mode >>= 1;
+      }
+
+      return 0;
+    });
   }
 
   int fs_chmod(const char* path, mode_t mode) {
@@ -210,6 +245,9 @@ extern "C" {
 
       INode::ID id = fs->newINodeID();
       INode inode(FileType::DIRECTORY, mode);
+      struct fuse_context *context = fuse_get_context();
+      inode.uid = context->uid;
+      inode.gid = context->gid;
       fs->save(id, inode);
 
       Directory dir(id, parent.id());
@@ -239,6 +277,9 @@ extern "C" {
 
       INode::ID id = fs->newINodeID();
       INode inode(FileType::REGULAR, mode, dev);
+      struct fuse_context *context = fuse_get_context();
+      inode.uid = context->uid;
+      inode.gid = context->gid;
       fs->save(id, inode);
 
       parent.insert(fname, id);
@@ -412,6 +453,9 @@ extern "C" {
 
       INode::ID id = fs->newINodeID();
       INode inode(FileType::SYMLINK, 0777);
+      struct fuse_context *context = fuse_get_context();
+      inode.uid = context->uid;
+      inode.gid = context->gid;
       fs->save(id, inode);
       fs->write(id, target, std::strlen(target) + 1, 0);
 
