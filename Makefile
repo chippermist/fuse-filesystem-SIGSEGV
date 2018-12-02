@@ -25,6 +25,13 @@ fuse: bin/fuse
 fsck: bin/fsck
 
 test-syscalls: bin/test-syscalls
+pjdfstest:     bin/pjdfstest
+
+bin/pjdfstest: ext/pjdfstest/pjdfstest
+	cp $^ $@
+
+ext/pjdfstest/pjdfstest:
+	cd ext/pjdfstest; autoreconf -ifv; ./configure; make
 
 # Pattern for executables:
 bin/%: obj/%.o $(OBJECTS)
