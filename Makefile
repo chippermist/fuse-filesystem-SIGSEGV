@@ -7,9 +7,12 @@ CXXFLAGS += -DFUSE_USE_VERSION=26
 CXXFLAGS += -D_FILE_OFFSET_BITS=64
 
 ifeq ($(shell uname -s), Darwin)
+	# Root for OSXFUSE includes and libraries
 	OSXFUSE_ROOT = /usr/local
-	INCLUDE_DIR  = $(OSXFUSE_ROOT)/include/osxfuse/fuse
-	LIBRARY_DIR  = $(OSXFUSE_ROOT)/lib
+	#OSXFUSE_ROOT = /opt/local
+
+	INCLUDE_DIR = $(OSXFUSE_ROOT)/include/osxfuse/fuse
+	LIBRARY_DIR = $(OSXFUSE_ROOT)/lib
 
 	CXXFLAGS += -I$(INCLUDE_DIR)
 	CXXFLAGS += -D_DARWIN_USE_64_BIT_INODE
@@ -25,13 +28,6 @@ fuse: bin/fuse
 fsck: bin/fsck
 
 test-syscalls: bin/test-syscalls
-pjdfstest:     bin/pjdfstest
-
-bin/pjdfstest: ext/pjdfstest/pjdfstest
-	cp $^ $@
-
-ext/pjdfstest/pjdfstest:
-	cd ext/pjdfstest; autoreconf -ifv; ./configure; make
 
 # Pattern for executables:
 bin/%: obj/%.o $(OBJECTS)
@@ -44,17 +40,10 @@ obj/%.o: src/%.cpp
 
 tests: $(BINARIES)
 	@mkdir -p tmp/mnt
-	bin/test -m tmp/mnt
-	bin/test -mf tmp/disk tmp/mnt
-	@rm -f tmp/disk
-
-# Include testing libraries as Git subtrees.  See:
-# https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree
-subtrees:
-	git subtree pull --prefix ext/pjdfstest https://github.com/pjd/pjdfstest.git master --squash
+	bin/test tmp/mnt
 
 clean:
-	rm -rf obj/* tmp/tests $(patsubst %, bin/%, $(BINARIES))
+	rm -rf obj tmp/tests $(patsubst %, bin/%, $(BINARIES))
 
 # Automatic dependencies:
 -include $(OBJECTS:.o=.d)
