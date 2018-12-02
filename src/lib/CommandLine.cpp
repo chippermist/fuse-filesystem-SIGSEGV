@@ -69,8 +69,6 @@ Filesystem::Filesystem(int argc, char** argv, bool mkfs) {
     }
   }
 
-
-  std::cout << "optind: " << optind << '\n';
   if(optind == argc - 1) {
     mount_point = argv[optind];
   }
