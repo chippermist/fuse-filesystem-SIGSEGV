@@ -13,5 +13,6 @@ notifications:
 
 language: cpp
 script:
+  - echo user_allow_other > /etc/fuse.conf
   - make clean
   - make tests
