@@ -43,9 +43,9 @@ static unsigned int skip_test = 0;
 
 #define MAX_ENTRIES 1024
 
-static void test_perror(const char *func, const char *msg)
+static void test_perror(const char *func, int line, const char *msg)
 {
-  fprintf(stderr, "%s %s() - %s: %s\n", testname, func, msg,
+  fprintf(stderr, "%s %s() at line %d - %s: %s\n", testname, func, line, msg,
     strerror(errno));
 }
 
@@ -55,10 +55,10 @@ static void test_error(const char *func, const char *msg, ...)
 static void __start_test(const char *fmt, ...)
   __attribute__ ((format (printf, 1, 2)));
 
-static void test_error(const char *func, const char *msg, ...)
+static void test_error(const char *func, int line, const char *msg, ...)
 {
   va_list ap;
-  fprintf(stderr, "%s %s() - ", testname, func);
+  fprintf(stderr, "%s %s() at line %d - ", testname, func, line);
   va_start(ap, msg);
   vfprintf(stderr, msg, ap);
   va_end(ap);
@@ -90,8 +90,8 @@ static void __start_test(const char *fmt, ...)
   __start_test(msg, ##args);    \
 }
 
-#define PERROR(msg) test_perror(__FUNCTION__, msg)
-#define ERROR(msg, args...) test_error(__FUNCTION__, msg, ##args)
+#define PERROR(msg) test_perror(__FUNCTION__, __LINE__, msg)
+#define ERROR(msg, args...) test_error(__FUNCTION__, __LINE__, msg, ##args)
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
@@ -1643,7 +1643,7 @@ fail:
 
   rmdir(PATH("a/d/e"));
   rmdir(PATH("a/d"));
- 
+
   rmdir(PATH("a/b/c"));
   rmdir(PATH("a/b"));
   rmdir(PATH("a"));
