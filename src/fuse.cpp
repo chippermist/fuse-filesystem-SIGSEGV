@@ -15,6 +15,7 @@
 #include <cstring>
 #include <cinttypes>
 #include <iostream>
+#include <bitset>
 
 #ifndef NDEBUG
   #include <cstdio>
