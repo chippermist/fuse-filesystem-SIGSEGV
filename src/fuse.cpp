@@ -69,7 +69,7 @@ extern "C" {
       inode_mode = inode_mode | inode.mode;
       std::cout << inode_mode << "\t" << inode.mode << "\t" << mode << std::endl;
       if((inode_mode & mode) != mode) {
-        return -1;
+        throw AccessDenied(path);
       }
       return 0;
     });
