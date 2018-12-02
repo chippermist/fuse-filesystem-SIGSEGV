@@ -83,6 +83,9 @@ int Filesystem::mount(char* program, fuse_operations* ops) {
   char s[] = "-s"; // Use a single thread.
   char d[] = "-d"; // Print debuging output.
   char f[] = "-f"; // Run in the foreground.
+  char o[] = "-o"; // Other options
+  char p[] = "default_permissions"; // Defer permissions checks to kernel
+  char r[] = "allow_root"; // Only allow root and user to access files
 
   int argc = 0;
   char* argv[8] = {0};
@@ -92,6 +95,10 @@ int Filesystem::mount(char* program, fuse_operations* ops) {
   if(debug)     argv[argc++] = d;
   argv[argc++] = f;
   argv[argc++] = mount_point;
+  argv[argc++] = o;
+  argv[argc++] = p;
+  argv[argc++] = o;
+  argv[argc++] = r;
 
   return fuse_main(argc, argv, ops, 0);
 }

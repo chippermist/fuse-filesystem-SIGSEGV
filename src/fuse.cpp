@@ -249,6 +249,9 @@ extern "C" {
 
       INode::ID id = fs->newINodeID();
       INode inode(FileType::DIRECTORY, mode);
+      struct fuse_context *context = fuse_get_context();
+      inode.uid = context->uid;
+      inode.gid = context->gid;
       fs->save(id, inode);
 
       Directory dir(id, parent.id());
@@ -278,6 +281,9 @@ extern "C" {
 
       INode::ID id = fs->newINodeID();
       INode inode(FileType::REGULAR, mode, dev);
+      struct fuse_context *context = fuse_get_context();
+      inode.uid = context->uid;
+      inode.gid = context->gid;
       fs->save(id, inode);
 
       parent.insert(fname, id);
@@ -451,6 +457,9 @@ extern "C" {
 
       INode::ID id = fs->newINodeID();
       INode inode(FileType::SYMLINK, 0777);
+      struct fuse_context *context = fuse_get_context();
+      inode.uid = context->uid;
+      inode.gid = context->gid;
       fs->save(id, inode);
       fs->write(id, target, std::strlen(target) + 1, 0);
 
