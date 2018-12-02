@@ -1,11 +1,6 @@
 #include "lib/Filesystem.h"
 #include "lib/FSExceptions.h"
 
-#include "lib/storage/MemoryStorage.h"
-#include "lib/storage/FileStorage.h"
-#include "lib/inodes/LinearINodeManager.h"
-#include "lib/blocks/StackBasedBlockManager.h"
-
 #if defined(__linux__)
   #include <sys/statfs.h>
   #include <sys/vfs.h>
@@ -25,9 +20,8 @@
 
 #define UNUSED(x) ((void) (x))
 
-// Global Variables
-INodeManager *inode_manager;
-Filesystem *fs;
+// Global Filesystem
+Filesystem* fs;
 
 extern "C" {
 
@@ -210,7 +204,7 @@ extern "C" {
         throw AlreadyExists(path);
       }
 
-      INode::ID id = inode_manager->reserve();
+      INode::ID id = fs->newINodeID();
       INode inode(FileType::DIRECTORY, mode);
       fs->save(id, inode);
 
@@ -239,7 +233,7 @@ extern "C" {
         throw AlreadyExists(path);
       }
 
-      INode::ID id = inode_manager->reserve();
+      INode::ID id = fs->newINodeID();
       INode inode(FileType::REGULAR, mode, dev);
       fs->save(id, inode);
 
@@ -412,7 +406,7 @@ extern "C" {
         throw AlreadyExists(link);
       }
 
-      INode::ID id = inode_manager->reserve();
+      INode::ID id = fs->newINodeID();
       INode inode(FileType::SYMLINK, 0777);
       fs->save(id, inode);
       fs->write(id, target, std::strlen(target) + 1, 0);
@@ -487,25 +481,9 @@ extern "C" {
 }
 
 int main(int argc, char** argv) {
-  // added initialization for fuse arguments
-  // can also be changed to 0, NULL for testing empty
-  // struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
+  fs = new Filesystem(argc, argv, false);
+  // TODO: Make sure FS config matches!
 
-  // Default ~32GB disk
-  // TODO: Read value from argv
-  // uint64_t nblocks = 1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2);
-
-  // Read number of blocks on disk
-  // uint64_t nblocks = atoi(argv[1]);
-  uint64_t nblocks = 8388608;
-
-  // Instantiate objects for filesystem
-  Storage *disk = new FileStorage("/dev/vdc", nblocks);
-  BlockManager *block_manager = new StackBasedBlockManager(*disk);
-  inode_manager = new LinearINodeManager(*disk);
-  fs = new Filesystem(*block_manager, *inode_manager, *disk);
-
-  // Set FUSE function pointers
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
 
@@ -541,8 +519,7 @@ int main(int argc, char** argv) {
   ops.utime       = &fs_utime;
   ops.write       = &fs_write;
 
-  // Run the FUSE daemon!
-  return fuse_main(argc, argv, &ops, NULL);
+  return fs->mount(argv[0], &ops);
 }
 
 /*

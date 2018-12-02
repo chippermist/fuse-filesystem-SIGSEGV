@@ -6,7 +6,8 @@ enum FileType: uint8_t {
   FREE      = 0,
   REGULAR   = 1,
   DIRECTORY = 2,
-  SYMLINK   = 3
+  SYMLINK   = 3,
+  RESERVED  = 255
 };
 
 struct INode {
