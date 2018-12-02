@@ -79,17 +79,17 @@ extern "C" {
 
       for(int i = 0, check_mode = mode; i<3; ++i) {
         if(i == 0 && (check_mode & 1)) {
-          if(!(inode.mode & S_IXUSR)) {
+          if(!((inode.mode & S_IXUSR) & 1)) {
             throw AccessDenied(path);
           }
         }
         else if(i == 1 && (check_mode & 1)) {
-          if(!(inode.mode & S_IWUSR)) {
+          if(!((inode.mode & S_IWUSR) & 1)) {
             throw AccessDenied(path);
           }
         }
         else if(i == 2 && (check_mode & 1)) {
-          if(!(inode.mode & S_IRUSR)) {
+          if(!((inode.mode & S_IRUSR) & 1)) {
             throw AccessDenied(path);
           }
         }
@@ -490,7 +490,7 @@ int main(int argc, char** argv) {
   uint64_t nblocks =  788496;
 
   // Instantiate objects for filesystem
-  Storage *disk = new FileStorage("/dev/vdc", nblocks);
+  Storage *disk = new FileStorage("/dev/vdd", nblocks);
   BlockManager *block_manager = new StackBasedBlockManager(*disk);
   inode_manager = new LinearINodeManager(*disk);
   fs = new Filesystem(*block_manager, *inode_manager, *disk);
