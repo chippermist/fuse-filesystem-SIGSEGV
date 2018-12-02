@@ -62,8 +62,17 @@ extern "C" {
 
   int fs_access(const char *path, int mode) {
     debug("access       %s\n", path);
-    UNUSED(mode);
-    return 0;
+    return handle([=]{
+      INode::ID id = fs->getINodeID(path);
+      INode inode  = fs->getINode(id);
+      int inode_mode = 0;
+      inode_mode = inode_mode | inode.mode;
+      std::cout << inode_mode << "\t" << inode.mode << "\t" << mode << std::endl;
+      if((inode_mode & mode) != mode) {
+        return -1;
+      }
+      return 0;
+    });
   }
 
   int fs_chmod(const char* path, mode_t mode) {
