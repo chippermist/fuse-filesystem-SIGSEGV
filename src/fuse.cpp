@@ -68,9 +68,21 @@ extern "C" {
       int inode_mode = 0;
       inode_mode = inode_mode | inode.mode;
       std::cout << inode_mode << "\t" << inode.mode << "\t" << mode << std::endl;
-      if((inode_mode & mode) != mode) {
+      
+      struct fuse_context *context = fuse_get_context();
+
+      std::cout << "Context UID is " << context->uid << " INode UID is " << inode.uid << " Context GID is " << context->gid << " INode GID is " << inode.gid << std::endl;
+      
+      // should root be allowed to access everyting?
+      if((context->uid == 0) && (context->gid == 0)) {
+        return 0;
+      }
+
+      // checking uid and gid as well so restrict access
+      if((context->uid != inode.uid) || (context->gid != inode.gid) ||  ((inode_mode & mode) != mode)) {
         throw AccessDenied(path);
       }
+
       return 0;
     });
   }
