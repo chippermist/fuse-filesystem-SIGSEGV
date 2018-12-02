@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <string>
+#include <unistd.h>
 
 #if defined(__linux__)
   #include <sys/statfs.h>
@@ -55,12 +56,10 @@ void Filesystem::mkfs(uint64_t nblocks, uint64_t niblocks) {
 
   INode::ID id = inode_manager->getRoot();
   INode inode(FileType::DIRECTORY, 0777);
-  if(const char* uid_env = std::getenv("UID")) {
-    unsigned int uid = std::stoul(uid_env, nullptr);
+  if(uid_t uid = getuid()) {
     inode.uid = uid;
   }
-  if(const char* gid_env = std::getenv("GROUPS")) {
-    unsigned int gid = std::stoul(gid_env, nullptr);
+  if(gid_t gid = getgid()) {
     inode.gid = gid;
   }
   inode.links = 2;
