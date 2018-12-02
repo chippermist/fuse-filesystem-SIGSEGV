@@ -290,10 +290,17 @@ extern "C" {
 
   int fs_open(const char* path, fuse_file_info* info) {
     debug1("open", "%s", path);
-    UNUSED(info);
-
-    // TODO...
-    return 0;
+    int mode = -1;
+    if((info->flags & O_RDONLY) == O_RDONLY) {
+        mode = 4;
+    }
+    else if((info->flags & O_WRONLY) == O_WRONLY) {
+        mode = 2;
+    }
+    else if((info->flags & O_RDWR) == O_RDWR) {
+        mode = 6;
+    }
+    return fs_access(path, mode);
   }
 
   int fs_read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
