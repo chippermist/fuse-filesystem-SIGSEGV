@@ -7,12 +7,9 @@ CXXFLAGS += -DFUSE_USE_VERSION=26
 CXXFLAGS += -D_FILE_OFFSET_BITS=64
 
 ifeq ($(shell uname -s), Darwin)
-	# Root for OSXFUSE includes and libraries
 	OSXFUSE_ROOT = /usr/local
-	#OSXFUSE_ROOT = /opt/local
-
-	INCLUDE_DIR = $(OSXFUSE_ROOT)/include/osxfuse/fuse
-	LIBRARY_DIR = $(OSXFUSE_ROOT)/lib
+	INCLUDE_DIR  = $(OSXFUSE_ROOT)/include/osxfuse/fuse
+	LIBRARY_DIR  = $(OSXFUSE_ROOT)/lib
 
 	CXXFLAGS += -I$(INCLUDE_DIR)
 	CXXFLAGS += -D_DARWIN_USE_64_BIT_INODE
@@ -43,6 +40,11 @@ tests: $(BINARIES)
 	bin/test -m tmp/mnt
 	bin/test -mf tmp/disk tmp/mnt
 	@rm -f tmp/disk
+
+# Include testing libraries as Git subtrees.  See:
+# https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree
+subtrees:
+	git subtree pull --prefix ext/pjdfstest https://github.com/pjd/pjdfstest.git master --squash
 
 clean:
 	rm -rf obj/* tmp/tests $(patsubst %, bin/%, $(BINARIES))
