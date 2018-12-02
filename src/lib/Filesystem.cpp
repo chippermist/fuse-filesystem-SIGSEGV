@@ -94,7 +94,7 @@ int Filesystem::mount(char* program, fuse_operations* ops) {
   char f[] = "-f"; // Run in the foreground.
   char o[] = "-o"; // Other options
   char p[] = "default_permissions"; // Defer permissions checks to kernel
-  char r[] = "allow_other"; // All users can access the filesystem
+  char r[] = "allow_other"; // Allow all users to access files
 
   int argc = 0;
   char* argv[12] = {0};
@@ -244,7 +244,7 @@ int Filesystem::write(INode::ID file_inode_num, const char *buf, size_t size, si
     total_written += to_write;
   }
 
-  if (size == 0) {
+  if (size == 0 && offset - file_inode.size <= 0) {
     return total_written;
   }
 
