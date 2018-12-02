@@ -97,7 +97,7 @@ int Filesystem::mount(char* program, fuse_operations* ops) {
   char r[] = "allow_root"; // Only allow root and user to access files
 
   int argc = 0;
-  char* argv[8] = {0};
+  char* argv[12] = {0};
 
   argv[argc++] = program;
   if(!parallel) argv[argc++] = s;
