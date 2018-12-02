@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 // Taken from the libfuse GitHub repository:
 // https://raw.githubusercontent.com/libfuse/libfuse/master/test/test_syscalls.c
 
