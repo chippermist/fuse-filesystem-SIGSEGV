@@ -76,23 +76,19 @@ extern "C" {
         throw AccessDenied(path);
       }
 
-      std::cout << "INode mode is " << std::bitset<16>(inode.mode) << "\nMode is\n" << std::bitset<16>(mode) << std::endl;
       for(int i = 0, check_mode = mode; i<3; ++i) {
         if(i == 0 && (check_mode & 1)) {
           if(!(inode.mode & S_IXUSR)) {
-            std::cout << "Execute Access not set\n";
             throw AccessDenied(path);
           }
         }
         else if(i == 1 && (check_mode & 1)) {
           if(!(inode.mode & S_IWUSR)) {
-            std::cout << "Write Access not set\n";
             throw AccessDenied(path);
           }
         }
         else if(i == 2 && (check_mode & 1)) {
           if(!(inode.mode & S_IRUSR)) {
-            std::cout << "Read Access not set\n";
             throw AccessDenied(path);
           }
         }
