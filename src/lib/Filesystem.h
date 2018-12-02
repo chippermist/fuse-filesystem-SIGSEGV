@@ -4,21 +4,25 @@
 #include "INode.h"
 #include "BlockManager.h"
 #include "INodeManager.h"
-#include "Storage.h"
 #include "Directory.h"
 
+struct fuse_operations;
 struct statvfs;
 
 class Filesystem {
   BlockManager* block_manager;
   INodeManager* inode_manager;
   uint64_t      max_file_size;
-  Storage*      disk;
+  char*         mount_point;
+  bool          parallel;
+  bool          debug;
 public:
-  Filesystem(BlockManager &block_manager, INodeManager& inode_manager, Storage &storage);
+  Filesystem(int argc, char** argv, bool mkfs);
+  Filesystem(BlockManager &block_manager, INodeManager& inode_manager);
   ~Filesystem();
 
-  void mkfs();
+  void mkfs(uint64_t nblocks, uint64_t niblocks);
+  int  mount(fuse_operations* ops);
   void statfs(struct statvfs* info);
 
   int  read(INode::ID file_inode_num, char *buffer, size_t size, size_t offset);
@@ -34,6 +38,7 @@ public:
   INode     getINode(INode::ID id);
   INode     getINode(const std::string& path);
   INode::ID getINodeID(const std::string& path);
+  INode::ID newINodeID();
 
   void save(const Directory& directory);
   void save(INode::ID id, const INode& inode);

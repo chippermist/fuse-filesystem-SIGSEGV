@@ -1,11 +1,6 @@
 #include "lib/Filesystem.h"
 #include "lib/FSExceptions.h"
 
-#include "lib/storage/MemoryStorage.h"
-#include "lib/storage/FileStorage.h"
-#include "lib/inodes/LinearINodeManager.h"
-#include "lib/blocks/StackBasedBlockManager.h"
-
 #if defined(__linux__)
   #include <sys/statfs.h>
   #include <sys/vfs.h>
@@ -25,9 +20,8 @@
 
 #define UNUSED(x) ((void) (x))
 
-// Global Variables
-INodeManager *inode_manager;
-Filesystem *fs;
+// Global Filesystem
+Filesystem* fs;
 
 extern "C" {
 
@@ -85,8 +79,8 @@ extern "C" {
       INode::ID id = fs->getINodeID(path);
       INode inode  = fs->getINode(id);
 
-      if (uid != 0xffff && uid != 0xffffffff) inode.uid = uid;
-      if (gid != 0xffff && gid != 0xffffffff) inode.gid = gid;
+      if (uid != uid_t(0) - 1) inode.uid = uid;
+      if (gid != gid_t(0) - 1) inode.gid = gid;
       if ((uid != 0xffff && uid != 0xffffffff) || (gid != 0xffff && gid != 0xffffffff)) {
         inode.ctime = time(NULL);
       }
@@ -200,6 +194,7 @@ extern "C" {
 
   int fs_mkdir(const char* path, mode_t mode) {
     debug("mkdir       %s %03o\n", path, mode);
+
     return handle([=]{
       std::string pname = fs->dirname(path);
       std::string dname = fs->basename(path);
@@ -209,7 +204,7 @@ extern "C" {
         throw AlreadyExists(path);
       }
 
-      INode::ID id = inode_manager->reserve();
+      INode::ID id = fs->newINodeID();
       INode inode(FileType::DIRECTORY, mode);
       fs->save(id, inode);
 
@@ -224,6 +219,11 @@ extern "C" {
 
   int fs_mknod(const char* path, mode_t mode, dev_t dev) {
     debug("mknod       %s %03o\n", path, mode);
+
+    if (!S_ISREG(mode)) {
+      return -ENOTSUP;
+    }
+
     return handle([=]{
       std::string dname = fs->dirname(path);
       std::string fname = fs->basename(path);
@@ -233,7 +233,7 @@ extern "C" {
         throw AlreadyExists(path);
       }
 
-      INode::ID id = inode_manager->reserve();
+      INode::ID id = fs->newINodeID();
       INode inode(FileType::REGULAR, mode, dev);
       fs->save(id, inode);
 
@@ -291,7 +291,8 @@ extern "C" {
         throw NotASymlink(path);
       }
 
-      return fs->read(id, buffer, size, 0);
+      fs->read(id, buffer, size, 0);
+      return 0;
     });
   }
 
@@ -310,12 +311,51 @@ extern "C" {
     return -1;
   }
 
-  int fs_rename(const char* path, const char* name) {
-    debug("rename      %s -> %s\n", path, name);
+  int fs_rename(const char* oldname, const char* newname) {
+    debug("rename      %s -> %s\n", oldname, newname);
+    return handle([=]{
+      std::string dname = fs->dirname(newname);
+      std::string fname = fs->basename(newname);
 
-    int result = fs_link(path, name);
-    if (result < 0) return result;
-    return fs_unlink(path);
+      // Stuff for the INode we're moving:
+      INode::ID id = fs->getINodeID(oldname);
+      INode inode  = fs->getINode(id);
+
+      // Stuff for the INode we might be replacing:
+      Directory newparent = fs->getDirectory(dname);
+      INode::ID clobber   = newparent.search(fname);
+
+      if(clobber != 0) {
+        INode clobnode = fs->getINode(clobber);
+        if(clobnode.type == FileType::DIRECTORY) {
+          if(inode.type != FileType::DIRECTORY) {
+            // [EISDIR]  New is a directory, but old is not a directory.
+            throw IsADirectory(newname);
+          }
+
+          Directory clobdir = fs->getDirectory(clobber);
+          if(!clobdir.isEmpty()) {
+            // [ENOTEMPTY]  New is a directory and is not empty.
+            throw DirectoryNotEmpty(newname);
+          }
+        }
+        else if(inode.type == FileType::DIRECTORY) {
+          // [ENOTDIR]  Old is a directory, but new is not a directory.
+          throw NotADirectory(newname);
+        }
+      }
+
+      inode.links += 1;
+      inode.ctime  = time(NULL);
+      fs->save(id, inode);
+
+      newparent.insert(fname, id);
+      fs->save(newparent);
+
+      // Unlink all the old paths:
+      if (clobber != 0) fs->unlink(clobber);
+      return fs_unlink(oldname);
+    });
   }
 
   int fs_rmdir(const char* path) {
@@ -366,10 +406,10 @@ extern "C" {
         throw AlreadyExists(link);
       }
 
-      INode::ID id = inode_manager->reserve();
+      INode::ID id = fs->newINodeID();
       INode inode(FileType::SYMLINK, 0777);
-      fs->write(id, target, std::strlen(target) + 1, 0);
       fs->save(id, inode);
+      fs->write(id, target, std::strlen(target) + 1, 0);
 
       dir.insert(fname, id);
       fs->save(dir);
@@ -398,11 +438,6 @@ extern "C" {
 
       Directory dir = fs->getDirectory(dname);
       INode::ID fid = dir.search(fname);
-
-      INode inode = fs->getINode(fid);
-      if(inode.type == FileType::DIRECTORY) {
-        throw IsADirectory(path);
-      }
 
       dir.remove(fname);
       fs->save(dir);
@@ -446,22 +481,9 @@ extern "C" {
 }
 
 int main(int argc, char** argv) {
-  // added initialization for fuse arguments
-  // can also be changed to 0, NULL for testing empty
-  // struct fuse_args args = FUSE_ARGS_INIT(argc, argv);
+  fs = new Filesystem(argc, argv, false);
+  // TODO: Make sure FS config matches!
 
-  // Default ~32GB disk
-  // TODO: Read value from argv
-  // uint64_t nblocks = 1 + 10 + (1 + 512) + (1 + 512 + 512*512) + (1 + 2 + 512*2 + 512*512*2);
-  uint64_t nblocks =  788496;
-
-  // Instantiate objects for filesystem
-  Storage *disk = new FileStorage("/dev/vdc", nblocks);
-  BlockManager *block_manager = new StackBasedBlockManager(*disk);
-  inode_manager = new LinearINodeManager(*disk);
-  fs = new Filesystem(*block_manager, *inode_manager, *disk);
-
-  // Set FUSE function pointers
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
 
@@ -497,8 +519,7 @@ int main(int argc, char** argv) {
   ops.utime       = &fs_utime;
   ops.write       = &fs_write;
 
-  // Run the FUSE daemon!
-  return fuse_main(argc, argv, &ops, NULL);
+  return fs->mount(&ops);
 }
 
 /*
