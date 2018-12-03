@@ -162,6 +162,10 @@ INode::ID Filesystem::getINodeID(const std::string& path) {
   return id;
 }
 
+INode::ID Filesystem::getINodeID(const char* path, fuse_file_info* info) {
+  return (info->fh != 0) ? info->fh : getINodeID(path);
+}
+
 INode::ID Filesystem::newINodeID() {
   return inode_manager->reserve();
 }
@@ -226,8 +230,8 @@ int Filesystem::read(INode::ID file_inode_num, char *buf, uint64_t size, uint64_
 
     total_read += to_read;
   }
-  // Write back changes to file_inode
-  this->inode_manager->set(file_inode_num, file_inode);
+  // relatime - Don't write back changes to file_inode!
+  // this->inode_manager->set(file_inode_num, file_inode);
   return total_read;
 }
 
