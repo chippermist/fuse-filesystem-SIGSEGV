@@ -244,7 +244,7 @@ int Filesystem::write(INode::ID file_inode_num, const char *buf, size_t size, si
     total_written += to_write;
   }
 
-  if (size == 0 && offset <= file_inode.size) {
+  if (size == 0) {
     return total_written;
   }
 
