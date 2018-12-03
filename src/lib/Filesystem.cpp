@@ -162,6 +162,10 @@ INode::ID Filesystem::getINodeID(const std::string& path) {
   return id;
 }
 
+INode::ID Filesystem::getINodeID(const char* path, fuse_file_info* info) {
+  return (info->fh != 0) ? info->fh : getINodeID(path);
+}
+
 INode::ID Filesystem::newINodeID() {
   return inode_manager->reserve();
 }

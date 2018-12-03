@@ -294,7 +294,7 @@ extern "C" {
     UNUSED(info);
 
     return handle([=]{
-      INode::ID id = (info->fh != 0) ? info->fh : fs->getINodeID(path);
+      INode::ID id = fs->getINodeID(path, info);
       INode inode  = fs->getINode(id);
       if(inode.type != FileType::REGULAR) {
         throw NotAFile(path);
@@ -506,7 +506,7 @@ extern "C" {
     UNUSED(info);
 
     return handle([=]{
-      INode::ID id = (info->fh != 0) ? info->fh : fs->getINodeID(path);
+      INode::ID id = fs->getINodeID(path, info);
       INode inode  = fs->getINode(id);
       if(inode.type != FileType::REGULAR) {
         throw NotAFile(path);

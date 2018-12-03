@@ -5,6 +5,7 @@
 #include "BlockManager.h"
 #include "INodeManager.h"
 #include "Directory.h"
+#include <fuse.h>
 
 struct fuse_operations;
 struct statvfs;
@@ -39,6 +40,7 @@ public:
   Directory getDirectory(const std::string& path);
   INode     getINode(INode::ID id);
   INode     getINode(const std::string& path);
+  INode::ID getINodeID(const char* path, fuse_file_info* info);
   INode::ID getINodeID(const std::string& path);
   INode::ID newINodeID();
 
