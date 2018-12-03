@@ -10,7 +10,6 @@ install: true
 notifications:
   email:
     on_failure: never
-    on_success: always
 
 language: cpp
 script:

@@ -6,16 +6,18 @@
   #include <sys/vfs.h>
 #endif
 
-#include <fuse.h>
 #include <cstring>
 #include <cinttypes>
-#include <iostream>
+#include <fuse.h>
+
+// Global Filesystem
+Filesystem* fs;
 
 #ifndef NDEBUG
   #include <cstdio>
-  #define debug0(name, format, ...) fprintf(stderr, "[\e[90m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
-  #define debug1(name, format, ...) fprintf(stderr, "[\e[32m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
-  #define debug2(name, format, ...) fprintf(stderr, "[\e[1;92m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
+  #define debug0(name, format, ...) if(fs->verbosity > 2) fprintf(stderr, "[\e[90m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
+  #define debug1(name, format, ...) if(fs->verbosity > 1) fprintf(stderr, "[\e[32m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
+  #define debug2(name, format, ...) if(fs->verbosity > 0) fprintf(stderr, "[\e[1;92m%-14s\e[0m]: " format "\n", name, __VA_ARGS__)
 #else
   #define debug0(...)
   #define debug1(...)
@@ -23,9 +25,6 @@
 #endif
 
 #define UNUSED(x) ((void) (x))
-
-// Global Filesystem
-Filesystem* fs;
 
 extern "C" {
 
@@ -59,9 +58,43 @@ extern "C" {
   int   fs_access(const char *, int);
 
   int fs_access(const char *path, int mode) {
-    debug0("access", "%s %03o", path, mode);
-    UNUSED(mode);
-    return 0;
+    debug1("access", "%s", path);
+    return handle([=]{
+      INode::ID id = fs->getINodeID(path);
+      INode inode  = fs->getINode(id);
+
+      struct fuse_context *context = fuse_get_context();
+
+      // should root be allowed to access everyting?
+      if((context->uid == 0) && (context->gid == 0)) {
+        return 0;
+      }
+      // checking uid and gid as well so restrict access
+      if((context->uid != inode.uid) || (context->gid != inode.gid)) {
+        throw AccessDenied(path);
+      }
+
+      for(int i = 0, check_mode = mode; i<3; ++i) {
+        if(i == 0 && (check_mode & 1)) {
+          if(!(inode.mode & S_IXUSR)) {
+            throw AccessDenied(path);
+          }
+        }
+        else if(i == 1 && (check_mode & 1)) {
+          if(!(inode.mode & S_IWUSR)) {
+            throw AccessDenied(path);
+          }
+        }
+        else if(i == 2 && (check_mode & 1)) {
+          if(!(inode.mode & S_IRUSR)) {
+            throw AccessDenied(path);
+          }
+        }
+        check_mode >>= 1;
+      }
+
+      return 0;
+    });
   }
 
   int fs_chmod(const char* path, mode_t mode) {
@@ -413,6 +446,7 @@ extern "C" {
       INode::ID id = fs->newINodeID();
       INode inode(FileType::SYMLINK, 0777);
       fs->save(id, inode);
+
       fs->write(id, target, std::strlen(target) + 1, 0);
 
       dir.insert(fname, id);
@@ -491,7 +525,7 @@ int main(int argc, char** argv) {
   fuse_operations ops;
   memset(&ops, 0, sizeof(ops));
 
-  ops.access      = &fs_access;
+  // ops.access      = &fs_access;
   ops.chmod       = &fs_chmod;
   ops.chown       = &fs_chown;
   // ops.destroy     = &fs_destroy;
