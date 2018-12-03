@@ -125,8 +125,8 @@ void StackBasedBlockManager::update_superblock() {
   config->top_block = this->top_block;
   config->top_index = this->top_index;
 
-  // Write back the superblock every 1000 calls to write
-  if (this->update_count % 1000 == 0) {
+  // Write back the superblock every 100000 calls to write
+  if (this->update_count % 100000 == 0) {
     this->setSuperblock(incore_superblock);
     this->update_count = 0;
   } else {
