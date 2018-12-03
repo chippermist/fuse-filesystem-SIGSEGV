@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
   printf("Running with file %s and seed %d...\n", argv[1], seed);
   srand(seed);
 
-  int64_t offsets[] = {0, 3072, 36864, 2101760};
+  int64_t offsets[] = {0, 3072, 36864, 2101760, 1075879936};
 
   int64_t start = getusec();
   for(int i = 0; i < 4; ++i) {

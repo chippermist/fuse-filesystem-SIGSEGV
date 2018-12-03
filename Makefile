@@ -40,8 +40,7 @@ obj/%.o: src/%.cpp
 	${CXX} $(CXXFLAGS) -MMD -c -o $@ $<
 
 tests: $(BINARIES)
-	@mkdir -p tmp/mnt
-	bin/test tmp/mnt
+	bin/test
 
 clean:
 	rm -rf obj/* tmp/tests $(patsubst %, bin/%, $(BINARIES))
