@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cerrno>
 #include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
@@ -23,6 +24,7 @@ const char    zeros[1024] = {0};
 int64_t filesize   = 0;
 int64_t fileoffset = 0;
 char    filedata[MAX_SIZE];
+bool    verbose = false;
 
 int64_t n_reads  = 0;
 int64_t n_writes = 0;
@@ -55,7 +57,7 @@ void randbytes(char* buffer, int64_t size) {
 int openfile(const char* file, int mode) {
   int fd = open(file, mode);
   if(fd <= 0) {
-    fprintf(stderr, "FILE OPEN FAIL\n");
+    fprintf(stderr, "FILE OPEN FAIL: %d\n", errno);
     exit(1);
   }
 
@@ -63,7 +65,7 @@ int openfile(const char* file, int mode) {
 }
 
 void read(const char* file, char* data, int64_t length, int64_t offset) {
-  // printf("READ:  %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
+  if(verbose) printf("READ:  %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
   int64_t len = min(filesize - offset, length);
   len = max(len, 0);
 
@@ -72,13 +74,21 @@ void read(const char* file, char* data, int64_t length, int64_t offset) {
   close(fd);
 
   if(result != len) {
-    fprintf(stderr, "READ FAIL (%" PRId64 " != %" PRId64 ")\n", result, len);
+    fprintf(stderr, "READ FAIL (%" PRId64 " != %" PRId64 "): %d\n", result, len, errno);
+    fprintf(stderr, "Read Offset: %" PRId64 "\n", offset);
+    fprintf(stderr, "Read Length: %" PRId64 "\n", length);
+    fprintf(stderr, "File Length: %" PRId64 "\n", filesize);
+    fprintf(stderr, "Expected:    %" PRId64 "\n", len);
     exit(1);
   }
 
   if(offset < 0) {
     if(memcmp(data, zeros, -offset) != 0) {
-      fprintf(stderr, "READ ZERO FAIL\n");
+      fprintf(stderr, "READ ZERO FAIL: %d\n", errno);
+      fprintf(stderr, "Read Offset: %" PRId64 "\n", offset);
+      fprintf(stderr, "Read Length: %" PRId64 "\n", length);
+      fprintf(stderr, "File Length: %" PRId64 "\n", filesize);
+      fprintf(stderr, "Expected:    %" PRId64 "\n", len);
       exit(1);
     }
 
@@ -88,7 +98,11 @@ void read(const char* file, char* data, int64_t length, int64_t offset) {
   }
 
   if(memcmp(data, filedata + offset, len) != 0) {
-    fprintf(stderr, "READ DATA FAIL\n");
+    fprintf(stderr, "READ DATA FAIL: %d\n", errno);
+    fprintf(stderr, "Read Offset: %" PRId64 "\n", offset);
+    fprintf(stderr, "Read Length: %" PRId64 "\n", length);
+    fprintf(stderr, "File Length: %" PRId64 "\n", filesize);
+    fprintf(stderr, "Expected:    %" PRId64 "\n", len);
     exit(1);
   }
 
@@ -97,7 +111,7 @@ void read(const char* file, char* data, int64_t length, int64_t offset) {
 }
 
 void write(const char* file, const char* data, int64_t length, int64_t offset) {
-  // printf("WRITE: %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
+  if(verbose) printf("WRITE: %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
 
   // Update our in-memory copy of the file:
   memcpy(filedata + offset, data, length);
@@ -111,7 +125,7 @@ void write(const char* file, const char* data, int64_t length, int64_t offset) {
   int64_t result = pwrite(fd, data, length, fileoffset + offset);
 
   if(result != length) {
-    fprintf(stderr, "WRITE FAIL (%" PRId64 " != %" PRId64 ")\n", result, length);
+    fprintf(stderr, "WRITE FAIL (%" PRId64 " != %" PRId64 "): %d\n", result, length, errno);
     close(fd);
     exit(1);
   }
@@ -120,7 +134,7 @@ void write(const char* file, const char* data, int64_t length, int64_t offset) {
   close(fd);
 
   if(result != 0) {
-    fprintf(stderr, "WRITE SYNC FAIL\n");
+    fprintf(stderr, "WRITE SYNC FAIL: %d\n", errno);
     exit(1);
   }
 
@@ -129,7 +143,7 @@ void write(const char* file, const char* data, int64_t length, int64_t offset) {
 }
 
 void trunc(const char* file, int64_t offset) {
-  // printf("TRUNC: %8" PRId64 " bytes\n", offset);
+  if(verbose) printf("TRUNC: %8" PRId64 " bytes\n", offset);
   if(offset < filesize) {
     bytes_chopped  += filesize - offset;
     n_chops += 1;
@@ -149,7 +163,7 @@ void trunc(const char* file, int64_t offset) {
   close(fd);
 
   if(result != 0) {
-    fprintf(stderr, "TRUNCATE FAIL\n");
+    fprintf(stderr, "TRUNCATE FAIL: %d\n", errno);
     exit(1);
   }
 }
@@ -202,11 +216,12 @@ int main(int argc, char** argv) {
   int depth = 6;
   int c;
 
-  while((c = getopt(argc, argv, "s:d:n:")) != -1) {
+  while((c = getopt(argc, argv, "s:d:n:v")) != -1) {
     switch(c) {
     case 's': seed  = atoi(optarg); break;
     case 'n': loops = atoi(optarg); break;
     case 'd': depth = atoi(optarg); break;
+    case 'v': verbose = true;       break;
     default:
       usage();
     }
