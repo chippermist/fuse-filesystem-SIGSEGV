@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cerrno>
 #include <cinttypes>
 #include <cstdio>
 #include <cstdlib>
@@ -55,7 +56,7 @@ void randbytes(char* buffer, int64_t size) {
 int openfile(const char* file, int mode) {
   int fd = open(file, mode);
   if(fd <= 0) {
-    fprintf(stderr, "FILE OPEN FAIL\n");
+    fprintf(stderr, "FILE OPEN FAIL: %d\n", errno);
     exit(1);
   }
 
@@ -72,13 +73,13 @@ void read(const char* file, char* data, int64_t length, int64_t offset) {
   close(fd);
 
   if(result != len) {
-    fprintf(stderr, "READ FAIL (%" PRId64 " != %" PRId64 ")\n", result, len);
+    fprintf(stderr, "READ FAIL (%" PRId64 " != %" PRId64 "): %d\n", result, len, errno);
     exit(1);
   }
 
   if(offset < 0) {
     if(memcmp(data, zeros, -offset) != 0) {
-      fprintf(stderr, "READ ZERO FAIL\n");
+      fprintf(stderr, "READ ZERO FAIL: %d\n", errno);
       exit(1);
     }
 
@@ -88,7 +89,7 @@ void read(const char* file, char* data, int64_t length, int64_t offset) {
   }
 
   if(memcmp(data, filedata + offset, len) != 0) {
-    fprintf(stderr, "READ DATA FAIL\n");
+    fprintf(stderr, "READ DATA FAIL: %d\n", errno);
     exit(1);
   }
 
@@ -111,7 +112,7 @@ void write(const char* file, const char* data, int64_t length, int64_t offset) {
   int64_t result = pwrite(fd, data, length, fileoffset + offset);
 
   if(result != length) {
-    fprintf(stderr, "WRITE FAIL (%" PRId64 " != %" PRId64 ")\n", result, length);
+    fprintf(stderr, "WRITE FAIL (%" PRId64 " != %" PRId64 "): %d\n", result, length, errno);
     close(fd);
     exit(1);
   }
@@ -120,7 +121,7 @@ void write(const char* file, const char* data, int64_t length, int64_t offset) {
   close(fd);
 
   if(result != 0) {
-    fprintf(stderr, "WRITE SYNC FAIL\n");
+    fprintf(stderr, "WRITE SYNC FAIL: %d\n", errno);
     exit(1);
   }
 
@@ -149,7 +150,7 @@ void trunc(const char* file, int64_t offset) {
   close(fd);
 
   if(result != 0) {
-    fprintf(stderr, "TRUNCATE FAIL\n");
+    fprintf(stderr, "TRUNCATE FAIL: %d\n", errno);
     exit(1);
   }
 }
