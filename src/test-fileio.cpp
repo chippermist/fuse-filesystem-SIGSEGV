@@ -65,9 +65,10 @@ int openfile(const char* file, int mode) {
 void read(const char* file, char* data, int64_t length, int64_t offset) {
   // printf("READ:  %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
   int64_t len = min(filesize - offset, length);
+  len = max(len, 0);
 
   int fd = openfile(file, O_RDONLY);
-  int64_t result = pread(fd, data, len, fileoffset + offset);
+  int64_t result = pread(fd, data, length, fileoffset + offset);
   close(fd);
 
   if(result != len) {
@@ -100,7 +101,10 @@ void write(const char* file, const char* data, int64_t length, int64_t offset) {
 
   // Update our in-memory copy of the file:
   memcpy(filedata + offset, data, length);
-  filesize = max(filesize, offset + length);
+  if(length > 0) {
+    // Writes of length zero do not modify the file:
+    filesize = max(filesize, offset + length);
+  }
 
   // Update the real file:
   int fd = openfile(file, O_WRONLY);
@@ -164,7 +168,7 @@ void test_write(const char* file, int64_t length, int64_t offset) {
     offset = -fileoffset;
   }
 
-  read(file, buffer + 7, length, offset);
+  read(file, buffer, length, offset);
 }
 
 void test_trunc(const char* file, int64_t offset) {
