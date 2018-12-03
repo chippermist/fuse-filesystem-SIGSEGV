@@ -50,7 +50,7 @@ void Filesystem::mkfs(uint64_t nblocks, uint64_t niblocks) {
   superblock->data_block_start  = niblocks + 1;
   superblock->data_block_count  = nblocks - niblocks - 1;
 
-  block_manager->set(0, block);
+  block_manager->setSuperblock(block);
   inode_manager->mkfs();
   block_manager->mkfs();
 
@@ -72,7 +72,7 @@ void Filesystem::mkfs(uint64_t nblocks, uint64_t niblocks) {
 void Filesystem::statfs(struct statvfs* info) {
   Block block;
   Superblock* superblock = (Superblock*) block.data;
-  block_manager->get(0, block);
+  block_manager->getSuperblock(block);
 
   // Based on http://pubs.opengroup.org/onlinepubs/009604599/basedefs/sys/statvfs.h.html
   // Also see http://man7.org/linux/man-pages/man3/statvfs.3.html

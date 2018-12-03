@@ -27,10 +27,9 @@ namespace {
 }
 
 StackBasedBlockManager::StackBasedBlockManager(Storage& storage): disk(&storage) {
-  Block block;
-  Superblock* superblock = (Superblock*) &block;
+  Superblock* superblock = (Superblock*) &incore_superblock;
   Config* config = (Config*) superblock->data_config;
-  this->getSuperblock(block);
+  this->getSuperblock(incore_superblock);
 
   this->top_block   = config->top_block;
   this->top_index   = config->top_index;
@@ -120,14 +119,18 @@ void StackBasedBlockManager::mkfs() {
 }
 
 void StackBasedBlockManager::update_superblock() {
-  Block block;
-  Superblock* superblock = (Superblock*) &block;
+  Superblock* superblock = (Superblock*) &incore_superblock;
   Config* config = (Config*) superblock->data_config;
-
-  this->getSuperblock(block);
   config->top_block = this->top_block;
   config->top_index = this->top_index;
-  this->setSuperblock(block);
+
+  // Write back the superblock every 1000 calls to write
+  if (this->update_count % 1000 == 0) {
+    this->setSuperblock(incore_superblock);
+    this->update_count = 0;
+  } else {
+    this->update_count++;
+  }
 }
 
 void StackBasedBlockManager::release(Block::ID free_block_num) {

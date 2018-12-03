@@ -33,4 +33,6 @@ private:
   Block::ID first_block;
   Block::ID last_block;
   Storage*  disk;
+  Block incore_superblock;
+  uint64_t update_count = 0;
 };
