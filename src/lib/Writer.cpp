@@ -37,18 +37,28 @@ struct Writer {
       scale /= nrefs;
       for(uint64_t i = 0; i < nrefs; ++i) {
         if(offset >= scale) {
+          // We're still burning up offset...
           offset -= scale;
         }
         else if(length > 0) {
+          // We still have data to write...
           refs[i] = write(refs[i], scale);
         }
         else if(!truncate) {
+          // We're past the write - stop if we're not truncating!
           break;
         }
+        else if(refs[i] == 0) {
+          // This block is already zero, no need to truncate...
+          continue;
+        }
         else if(scale > Block::SIZE) {
+          // We have data in a sub-block - better clear it out!
           refs[i] = write(refs[i], scale);
         }
         else {
+          // It's a data block - clean it up:
+          old_blocks.push_back(refs[i]);
           refs[i] = 0;
         }
       }
