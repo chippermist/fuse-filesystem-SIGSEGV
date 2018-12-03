@@ -16,9 +16,21 @@ const int64_t MAX_CALL = 1024 * 1024;
 const int64_t MAX_SIZE = MAX_CALL * 2 + 2048;
 const char    zeros[1024] = {0};
 
-int64_t filesize = 0;
+
+// Global variables are evil.
+int64_t filesize   = 0;
 int64_t fileoffset = 0;
-char    filedata[MAX_SIZE] = {0};
+char    filedata[MAX_SIZE];
+
+int64_t n_reads  = 0;
+int64_t n_writes = 0;
+int64_t n_exts   = 0;
+int64_t n_chops  = 0;
+
+int64_t bytes_read     = 0;
+int64_t bytes_written  = 0;
+int64_t bytes_chopped  = 0;
+int64_t bytes_extended = 0;
 
 
 int64_t randomize(int64_t max, int64_t align) {
@@ -28,10 +40,8 @@ int64_t randomize(int64_t max, int64_t align) {
 
 void randbytes(char* buffer, int64_t size) {
   for(int i = 0; i < size; ++i) {
-    buffer[i] = char(rand() % 26) + 'a';
+    buffer[i] = rand();
   }
-
-  buffer[size] = '\0';
 }
 
 int openfile(const char* file, int mode) {
@@ -45,22 +55,25 @@ int openfile(const char* file, int mode) {
 }
 
 void read(const char* file, char* data, int64_t length, int64_t offset) {
-  printf("READ:  %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
+  // printf("READ:  %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
   int64_t len = min(filesize - offset, length);
 
   int fd = openfile(file, O_RDONLY);
   int64_t result = pread(fd, data, len, fileoffset + offset);
+  close(fd);
 
   if(result != len) {
     fprintf(stderr, "READ FAIL (%" PRId64 " != %" PRId64 ")\n", result, len);
-    close(fd);
+    fprintf(stderr, "File Size:        %" PRId64 "\n", filesize);
+    fprintf(stderr, "Requested Offset: %" PRId64 "\n", offset);
+    fprintf(stderr, "Requested Length: %" PRId64 "\n", length);
+    fprintf(stderr, "Expected Length:  %" PRId64 "\n", len);
     exit(1);
   }
 
   if(offset < 0) {
     if(memcmp(data, zeros, -offset) != 0) {
       fprintf(stderr, "READ ZERO FAIL\n");
-      close(fd);
       exit(1);
     }
 
@@ -71,15 +84,15 @@ void read(const char* file, char* data, int64_t length, int64_t offset) {
 
   if(memcmp(data, filedata + offset, len) != 0) {
     fprintf(stderr, "READ DATA FAIL\n");
-    close(fd);
     exit(1);
   }
 
-  close(fd);
+  bytes_read += len;
+  n_reads += 1;
 }
 
 void write(const char* file, const char* data, int64_t length, int64_t offset) {
-  printf("WRITE: %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
+  // printf("WRITE: %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
 
   // Update our in-memory copy of the file:
   memcpy(filedata + offset, data, length);
@@ -96,17 +109,27 @@ void write(const char* file, const char* data, int64_t length, int64_t offset) {
   }
 
   result = fsync(fd);
+  close(fd);
+
   if(result != 0) {
     fprintf(stderr, "WRITE SYNC FAIL\n");
-    close(fd);
     exit(1);
   }
 
-  close(fd);
+  bytes_written += length;
+  n_writes += 1;
 }
 
 void trunc(const char* file, int64_t offset) {
-  printf("TRUNC: %8" PRId64 " bytes\n", offset);
+  // printf("TRUNC: %8" PRId64 " bytes\n", offset);
+  if(offset < filesize) {
+    bytes_chopped  += filesize - offset;
+    n_chops += 1;
+  }
+  else {
+    bytes_extended += offset - filesize;
+    n_exts += 1;
+  }
 
   // Update our in-memory copy of the file:
   memset(filedata + offset, 0, MAX_SIZE - offset);
@@ -114,16 +137,14 @@ void trunc(const char* file, int64_t offset) {
 
   // Update the real file:
   int fd = openfile(file, O_WRONLY);
-  int result = truncate(file, offset);
+  int result = ftruncate(fd, fileoffset + offset);
+  close(fd);
 
   if(result != 0) {
     fprintf(stderr, "TRUNCATE FAIL\n");
-    close(fd);
     exit(1);
   }
 }
-
-// void testr(const char* file, )
 
 void test_write(const char* file, int64_t length, int64_t offset) {
   assert(offset + length <= MAX_SIZE);
@@ -152,7 +173,7 @@ void test_trunc(const char* file, int64_t offset) {
   }
 
   char buffer[2048];
-  read(file, buffer + 7, 2048, offset);
+  read(file, buffer, 2048, offset);
 }
 
 int main(int argc, char** argv) {
@@ -165,19 +186,34 @@ int main(int argc, char** argv) {
   printf("Running with file %s and seed %d...\n", argv[1], seed);
   srand(seed);
 
-  int fd = open(argv[1], O_WRONLY | O_CREAT | O_TRUNC);
-  chmod(argv[1], 0644);
-  close(fd);
+  int64_t offsets[] = {0, 3072, 36864, 2101760};
 
-  for(int i = 0; i < 50; ++i) {
-    test_write(argv[1], randomize(MAX_CALL,    1), randomize(MAX_CALL,    1));
-    test_write(argv[1], randomize(1024,        1), randomize(1024,        1));
-    test_write(argv[1], randomize(MAX_CALL, 1024), randomize(MAX_CALL, 1024));
-    test_write(argv[1], randomize(4096,     1024), randomize(4096,     1024));
+  for(int i = 0; i < 4; ++i) {
+    int fd = open(argv[1], O_WRONLY | O_CREAT | O_TRUNC);
+    chmod(argv[1], 0644);
+    close(fd);
 
-    test_trunc(argv[1], randomize(MAX_CALL,    1));
-    test_trunc(argv[1], randomize(MAX_CALL, 1024));
+    filesize = 0;
+    fileoffset = offsets[i];
+    memset(filedata, 0, MAX_SIZE);
+    printf("Running tests at offset %" PRId64 "...\n", fileoffset);
+
+    for(int j = 0; j < 50; ++j) {
+      test_write(argv[1], randomize(MAX_CALL,    1), randomize(MAX_CALL,    1));
+      test_write(argv[1], randomize(1024,        1), randomize(1024,        1));
+      test_write(argv[1], randomize(MAX_CALL, 1024), randomize(MAX_CALL, 1024));
+      test_write(argv[1], randomize(4096,     1024), randomize(4096,     1024));
+
+      test_trunc(argv[1], randomize(MAX_CALL,    1));
+      test_trunc(argv[1], randomize(MAX_CALL, 1024));
+    }
   }
+
+  printf("All tests passed!\n");
+  printf("  %5" PRId64 " reads   (%8" PRId64 " bytes)\n", n_reads,  bytes_read);
+  printf("  %5" PRId64 " writes  (%8" PRId64 " bytes)\n", n_writes, bytes_written);
+  printf("  %5" PRId64 " extends (%8" PRId64 " bytes)\n", n_exts,   bytes_extended);
+  printf("  %5" PRId64 " chops   (%8" PRId64 " bytes)\n", n_chops,  bytes_chopped);
 
   return 0;
 }
