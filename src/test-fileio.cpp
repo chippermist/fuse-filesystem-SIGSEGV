@@ -6,6 +6,7 @@
 #include <ctime>
 
 #include <fcntl.h>
+#include <getopt.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -179,37 +180,78 @@ void test_trunc(const char* file, int64_t offset) {
   read(file, buffer, 2048, offset);
 }
 
-int main(int argc, char** argv) {
-  if(argc != 2) {
-    fprintf(stderr, "USAGE: %s [testfile]\n", argv[0]);
-    exit(1);
+void usage(const char* message = NULL) {
+  if(message) {
+    fprintf(stderr, "%s\n\n", message);
   }
 
-  int seed = time(NULL);
-  printf("Running with file %s and seed %d...\n", argv[1], seed);
+  fprintf(stderr, "USAGE: test-fileio [options] [test-file]\n");
+  fprintf(stderr, "  -s <seed>   Run with a specific random seed.\n");
+  fprintf(stderr, "  -d <depth>  \n");
+  fprintf(stderr, "  -n <loops>  \n");
+  exit(1);
+}
+
+int main(int argc, char** argv) {
+  int seed  = time(NULL);
+  int loops = 100;
+  int depth = 4;
+  int c;
+
+  while((c = getopt(argc, argv, "s:d:n:")) != -1) {
+    switch(c) {
+    case 's': seed  = atoi(optarg); break;
+    case 'n': loops = atoi(optarg); break;
+    case 'd': depth = atoi(optarg); break;
+    default:
+      usage();
+    }
+  }
+
+  if(optind != argc - 1) {
+    usage("No test file given.");
+  }
+
+  if(seed == 0) {
+    usage("Failed to parse seed.");
+  }
+
+  if(depth < 1 || depth > 5) {
+    usage("Depth must be between one and five.");
+  }
+
+  if(loops < 1 ) {
+    usage("Loops must be positive.");
+  }
+
+  const char* file = argv[optind];
+  printf("Running tests on file %s...\n", file);
+  printf(" - Seed:  %d\n", seed);
+  printf(" - Loops: %d\n", loops);
+  printf(" - Depth: %d\n", depth);
   srand(seed);
 
   int64_t offsets[] = {0, 3072, 36864, 2101760, 1075879936};
 
   int64_t start = getusec();
   for(int i = 0; i < 4; ++i) {
-    int fd = open(argv[1], O_WRONLY | O_CREAT | O_TRUNC);
-    chmod(argv[1], 0644);
+    int fd = open(file, O_WRONLY | O_CREAT | O_TRUNC);
+    chmod(file, 0644);
     close(fd);
 
     filesize = 0;
     fileoffset = offsets[i];
     memset(filedata, 0, MAX_SIZE);
-    printf("Running tests at offset %" PRId64 "...\n", fileoffset);
+    printf("Running %d loops at depth %" PRId64 "...\n", loops, fileoffset);
 
     for(int j = 0; j < 100; ++j) {
-      test_write(argv[1], randomize(MAX_CALL,    1), randomize(MAX_CALL,    1));
-      test_write(argv[1], randomize(1024,        1), randomize(1024,        1));
-      test_write(argv[1], randomize(MAX_CALL, 1024), randomize(MAX_CALL, 1024));
-      test_write(argv[1], randomize(4096,     1024), randomize(4096,     1024));
+      test_write(file, randomize(MAX_CALL,    1), randomize(MAX_CALL,    1));
+      test_write(file, randomize(1024,        1), randomize(1024,        1));
+      test_write(file, randomize(MAX_CALL, 1024), randomize(MAX_CALL, 1024));
+      test_write(file, randomize(4096,     1024), randomize(4096,     1024));
 
-      test_trunc(argv[1], randomize(MAX_CALL,    1));
-      test_trunc(argv[1], randomize(MAX_CALL, 1024));
+      test_trunc(file, randomize(MAX_CALL,    1));
+      test_trunc(file, randomize(MAX_CALL, 1024));
     }
   }
 
