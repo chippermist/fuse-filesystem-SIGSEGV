@@ -3,7 +3,7 @@
 // Compile as
 // g++ -std=c++11 -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_DARWIN_USE_64_BIT_INODE -I/usr/local/include/osxfuse/fuse -losxfuse -L/usr/local/lib directory_test.cpp -o directory_test
 
-LinearINodeManager *inode_manager;
+ListINodeManager *inode_manager;
 StackBasedBlockManager *block_manager;
 Filesystem *filesystem;
 int count = 0;
@@ -183,7 +183,7 @@ int main() {
   disk->set(0, block);
 
   // Initialize managers and call mkfs
-  inode_manager = new LinearINodeManager(*disk);
+  inode_manager = new ListINodeManager(*disk);
   block_manager = new StackBasedBlockManager(*disk);
   filesystem = new Filesystem(*block_manager, *inode_manager, *disk);
   filesystem->mkfs();

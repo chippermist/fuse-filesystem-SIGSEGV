@@ -3,7 +3,7 @@
 #include "lib/Storage.h"
 #include "lib/storage/MemoryStorage.h"
 #include "lib/blocks/StackBasedBlockManager.h"
-#include "lib/inodes/LinearINodeManager.h"
+#include "lib/inodes/ListINodeManager.h"
 #include "lib/Filesystem.h"
 #include "lib/INode.h"
 #include "lib/Block.h"

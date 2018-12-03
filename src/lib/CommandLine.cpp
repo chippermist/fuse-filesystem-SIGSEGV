@@ -1,7 +1,7 @@
 #include "Filesystem.h"
 
 #include "blocks/StackBasedBlockManager.h"
-#include "inodes/LinearINodeManager.h"
+#include "inodes/ListINodeManager.h"
 #include "storage/MemoryStorage.h"
 #include "storage/FileStorage.h"
 
@@ -147,7 +147,7 @@ Filesystem::Filesystem(int argc, char** argv, bool mkfs) {
   max_file_size += INode::TRIPLE_INDIRECT_POINTERS * ipb * ipb * ipb;
   max_file_size *= Block::SIZE;
 
-  inode_manager = new LinearINodeManager(*disk);
+  inode_manager = new ListINodeManager(*disk);
   block_manager = new StackBasedBlockManager(*disk);
   if(mkfs) this->mkfs(block_count, inode_blocks);
 }
