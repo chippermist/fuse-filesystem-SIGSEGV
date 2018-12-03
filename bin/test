@@ -17,11 +17,11 @@ fi
 bin/test-syscalls "$(pwd)/tmp/tests/mnt"
 [ $? -eq 0 ] || passed="false"
 
-bin/test-fileio "$(pwd)/tmp/tests/mnt/testfile"
+bin/test-fileio -d 5 "$(pwd)/tmp/tests/mnt/testfile"
 [ $? -eq 0 ] || passed="false"
 
 kill "$pid"
-sleep 0.1
+sleep 0.2
 kill -9 "$pid" 2> /dev/null
 
 if [ "$passed" = "false" ]; then
@@ -43,7 +43,7 @@ fi
 bin/test-syscalls "$(pwd)/tmp/tests/mnt"
 [ $? -eq 0 ] || passed="false"
 
-bin/test-fileio "$(pwd)/tmp/tests/mnt/testfile"
+bin/test-fileio -d 5 "$(pwd)/tmp/tests/mnt/testfile"
 [ $? -eq 0 ] || passed="false"
 
 kill "$pid"
