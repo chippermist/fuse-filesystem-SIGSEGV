@@ -165,9 +165,8 @@ int main(int argc, char** argv) {
   printf("Running with file %s and seed %d...\n", argv[1], seed);
   srand(seed);
 
-  int fd = open(argv[1], O_WRONLY | O_CREAT);
+  int fd = open(argv[1], O_WRONLY | O_CREAT | O_TRUNC);
   chmod(argv[1], 0644);
-  ftruncate(fd, 0);
   close(fd);
 
   for(int i = 0; i < 50; ++i) {
