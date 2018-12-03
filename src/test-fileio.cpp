@@ -24,6 +24,7 @@ const char    zeros[1024] = {0};
 int64_t filesize   = 0;
 int64_t fileoffset = 0;
 char    filedata[MAX_SIZE];
+bool    verbose = false;
 
 int64_t n_reads  = 0;
 int64_t n_writes = 0;
@@ -64,7 +65,7 @@ int openfile(const char* file, int mode) {
 }
 
 void read(const char* file, char* data, int64_t length, int64_t offset) {
-  // printf("READ:  %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
+  if(verbose) printf("READ:  %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
   int64_t len = min(filesize - offset, length);
   len = max(len, 0);
 
@@ -74,6 +75,9 @@ void read(const char* file, char* data, int64_t length, int64_t offset) {
 
   if(result != len) {
     fprintf(stderr, "READ FAIL (%" PRId64 " != %" PRId64 "): %d\n", result, len, errno);
+    fprintf(stderr, "Read Offset: %" PRId64 "\n", offset);
+    fprintf(stderr, "Read Length: %" PRId64 "\n", length);
+    fprintf(stderr, "File Length: %" PRId64 "\n", filesize);
     exit(1);
   }
 
@@ -98,7 +102,7 @@ void read(const char* file, char* data, int64_t length, int64_t offset) {
 }
 
 void write(const char* file, const char* data, int64_t length, int64_t offset) {
-  // printf("WRITE: %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
+  if(verbose) printf("WRITE: %8" PRId64 " bytes at %8" PRId64 "\n", length, offset);
 
   // Update our in-memory copy of the file:
   memcpy(filedata + offset, data, length);
@@ -130,7 +134,7 @@ void write(const char* file, const char* data, int64_t length, int64_t offset) {
 }
 
 void trunc(const char* file, int64_t offset) {
-  // printf("TRUNC: %8" PRId64 " bytes\n", offset);
+  if(verbose) printf("TRUNC: %8" PRId64 " bytes\n", offset);
   if(offset < filesize) {
     bytes_chopped  += filesize - offset;
     n_chops += 1;
@@ -203,11 +207,12 @@ int main(int argc, char** argv) {
   int depth = 6;
   int c;
 
-  while((c = getopt(argc, argv, "s:d:n:")) != -1) {
+  while((c = getopt(argc, argv, "s:d:n:v")) != -1) {
     switch(c) {
     case 's': seed  = atoi(optarg); break;
     case 'n': loops = atoi(optarg); break;
     case 'd': depth = atoi(optarg); break;
+    case 'v': verbose = true;       break;
     default:
       usage();
     }
