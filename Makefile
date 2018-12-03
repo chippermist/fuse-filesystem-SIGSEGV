@@ -1,4 +1,4 @@
-BINARIES = mkfs fuse fsck test-syscalls
+BINARIES = mkfs fuse fsck test-syscalls test-fileio
 SOURCES  = $(shell find src/lib -name '*.cpp')
 OBJECTS  = $(patsubst src/%.cpp, obj/%.o, $(SOURCES))
 
@@ -28,6 +28,7 @@ fuse: bin/fuse
 fsck: bin/fsck
 
 test-syscalls: bin/test-syscalls
+test-fileio:   bin/test-fileio
 
 # Pattern for executables:
 bin/%: obj/%.o $(OBJECTS)
@@ -39,11 +40,10 @@ obj/%.o: src/%.cpp
 	${CXX} $(CXXFLAGS) -MMD -c -o $@ $<
 
 tests: $(BINARIES)
-	@mkdir -p tmp/mnt
-	bin/test tmp/mnt
+	bin/test
 
 clean:
-	rm -rf obj tmp/tests $(patsubst %, bin/%, $(BINARIES))
+	rm -rf obj/* tmp/tests $(patsubst %, bin/%, $(BINARIES))
 
 # Automatic dependencies:
 -include $(OBJECTS:.o=.d)
