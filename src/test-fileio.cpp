@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
   int64_t offsets[] = {0, 3072, 36864, 2101760, 1075879936};
 
   int64_t start = getusec();
-  for(int i = 0; i < 4; ++i) {
+  for(int i = 0; i < depth; ++i) {
     int fd = open(file, O_WRONLY | O_CREAT | O_TRUNC);
     chmod(file, 0644);
     close(fd);
@@ -244,7 +244,7 @@ int main(int argc, char** argv) {
     memset(filedata, 0, MAX_SIZE);
     printf("Running %d loops at depth %" PRId64 "...\n", loops, fileoffset);
 
-    for(int j = 0; j < 100; ++j) {
+    for(int j = 0; j < loops; ++j) {
       test_write(file, randomize(MAX_CALL,    1), randomize(MAX_CALL,    1));
       test_write(file, randomize(1024,        1), randomize(1024,        1));
       test_write(file, randomize(MAX_CALL, 1024), randomize(MAX_CALL, 1024));
