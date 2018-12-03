@@ -14,4 +14,4 @@ notifications:
 language: cpp
 script:
   - make clean
-  - sudo make tests
+  - make tests

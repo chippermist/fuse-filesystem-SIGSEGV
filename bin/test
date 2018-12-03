@@ -2,55 +2,34 @@
 
 # Make a test folder:
 mkdir -p "tmp/tests/mnt"
-passed="true"
 
 # Test writing to memory:
-bin/fuse -n 4096 "tmp/tests/mnt" &> "tmp/tests/memory.log" &
+bin/fuse -n 1024 "tmp/tests/mnt" &> "tmp/tests/memory.log" &
 pid=$!
 
-sleep 0.2
-if ! kill -0 "$pid"; then
-  echo "Filesystem crashed on startup!" 1>&2
-  exit 1
-fi
-
 bin/test-syscalls "$(pwd)/tmp/tests/mnt"
-[ $? -eq 0 ] || passed="false"
-
-bin/test-fileio "$(pwd)/tmp/tests/mnt/testfile"
-[ $? -eq 0 ] || passed="false"
+status=$?
 
 kill "$pid"
 sleep 0.1
 kill -9 "$pid" 2> /dev/null
 
-if [ "$passed" = "false" ]; then
-  echo "In-memory tests failed!" 1>&2
+if [ $status -ne 0 ]; then
   exit 1
 fi
 
 # Test writing to a test file:
-bin/mkfs -n 4096 -f "tmp/tests/disk"
-bin/fuse -n 4096 -f "tmp/tests/disk" "tmp/tests/mnt" &> "tmp/tests/file.log" &
+bin/mkfs -n 1024 -f "tmp/tests/disk"
+bin/fuse -n 1024 -f "tmp/tests/disk" "tmp/tests/mnt" &> "tmp/tests/file.log" &
 pid=$!
 
-sleep 0.2
-if ! kill -0 "$pid"; then
-  echo "Filesystem crashed on startup!" 1>&2
-  exit 1
-fi
-
 bin/test-syscalls "$(pwd)/tmp/tests/mnt"
-[ $? -eq 0 ] || passed="false"
-
-bin/test-fileio "$(pwd)/tmp/tests/mnt/testfile"
-[ $? -eq 0 ] || passed="false"
+status=$?
 
 kill "$pid"
 sleep 0.1
 kill -9 "$pid" 2> /dev/null
 
-if [ "$passed" = "false" ]; then
-  echo "On-disk tests failed!" 1>&2
+if [ $status -ne 0 ]; then
   exit 1
 fi
