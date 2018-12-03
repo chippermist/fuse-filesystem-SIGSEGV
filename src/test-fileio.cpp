@@ -78,12 +78,17 @@ void read(const char* file, char* data, int64_t length, int64_t offset) {
     fprintf(stderr, "Read Offset: %" PRId64 "\n", offset);
     fprintf(stderr, "Read Length: %" PRId64 "\n", length);
     fprintf(stderr, "File Length: %" PRId64 "\n", filesize);
+    fprintf(stderr, "Expected:    %" PRId64 "\n", len);
     exit(1);
   }
 
   if(offset < 0) {
     if(memcmp(data, zeros, -offset) != 0) {
       fprintf(stderr, "READ ZERO FAIL: %d\n", errno);
+      fprintf(stderr, "Read Offset: %" PRId64 "\n", offset);
+      fprintf(stderr, "Read Length: %" PRId64 "\n", length);
+      fprintf(stderr, "File Length: %" PRId64 "\n", filesize);
+      fprintf(stderr, "Expected:    %" PRId64 "\n", len);
       exit(1);
     }
 
@@ -94,6 +99,10 @@ void read(const char* file, char* data, int64_t length, int64_t offset) {
 
   if(memcmp(data, filedata + offset, len) != 0) {
     fprintf(stderr, "READ DATA FAIL: %d\n", errno);
+    fprintf(stderr, "Read Offset: %" PRId64 "\n", offset);
+    fprintf(stderr, "Read Length: %" PRId64 "\n", length);
+    fprintf(stderr, "File Length: %" PRId64 "\n", filesize);
+    fprintf(stderr, "Expected:    %" PRId64 "\n", len);
     exit(1);
   }
 
