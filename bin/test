@@ -7,11 +7,17 @@ mkdir -p "tmp/tests/mnt"
 bin/fuse -n 1024 "tmp/tests/mnt" &> "tmp/tests/memory.log" &
 pid=$!
 
+sleep 0.2
+if ! kill -0 "$pid"; then
+  echo "Filesystem crashed on startup!" 1>&2
+  exit 1
+fi
+
 bin/test-syscalls "$(pwd)/tmp/tests/mnt"
 [ $? -eq 0 ] || passed="false"
 
-bin/test-fileio -d 5 "$(pwd)/tmp/tests/mnt/testfile"
-[ $? -eq 0 ] || passed="false"
+# bin/test-fileio -d 1 -v "$(pwd)/tmp/tests/mnt/testfile"
+# [ $? -eq 0 ] || passed="false"
 
 kill "$pid"
 sleep 0.2
@@ -26,11 +32,17 @@ bin/mkfs -n 1024 -f "tmp/tests/disk"
 bin/fuse -n 1024 -f "tmp/tests/disk" "tmp/tests/mnt" &> "tmp/tests/file.log" &
 pid=$!
 
+sleep 0.2
+if ! kill -0 "$pid"; then
+  echo "Filesystem crashed on startup!" 1>&2
+  exit 1
+fi
+
 bin/test-syscalls "$(pwd)/tmp/tests/mnt"
 [ $? -eq 0 ] || passed="false"
 
-bin/test-fileio -d 5 "$(pwd)/tmp/tests/mnt/testfile"
-[ $? -eq 0 ] || passed="false"
+# bin/test-fileio -d 1 -v "$(pwd)/tmp/tests/mnt/testfile"
+# [ $? -eq 0 ] || passed="false"
 
 kill "$pid"
 sleep 0.1
