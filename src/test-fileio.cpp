@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #define min(a, b) ((a) < (b)? (a) : (b))
 #define max(a, b) ((a) > (b)? (a) : (b))
@@ -32,6 +33,12 @@ int64_t bytes_written  = 0;
 int64_t bytes_chopped  = 0;
 int64_t bytes_extended = 0;
 
+
+int64_t getusec() {
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return 1000000 * tv.tv_sec + tv.tv_usec;
+}
 
 int64_t randomize(int64_t max, int64_t align) {
   assert(max <= RAND_MAX);
@@ -64,10 +71,6 @@ void read(const char* file, char* data, int64_t length, int64_t offset) {
 
   if(result != len) {
     fprintf(stderr, "READ FAIL (%" PRId64 " != %" PRId64 ")\n", result, len);
-    fprintf(stderr, "File Size:        %" PRId64 "\n", filesize);
-    fprintf(stderr, "Requested Offset: %" PRId64 "\n", offset);
-    fprintf(stderr, "Requested Length: %" PRId64 "\n", length);
-    fprintf(stderr, "Expected Length:  %" PRId64 "\n", len);
     exit(1);
   }
 
@@ -188,6 +191,7 @@ int main(int argc, char** argv) {
 
   int64_t offsets[] = {0, 3072, 36864, 2101760};
 
+  int64_t start = getusec();
   for(int i = 0; i < 4; ++i) {
     int fd = open(argv[1], O_WRONLY | O_CREAT | O_TRUNC);
     chmod(argv[1], 0644);
@@ -198,7 +202,7 @@ int main(int argc, char** argv) {
     memset(filedata, 0, MAX_SIZE);
     printf("Running tests at offset %" PRId64 "...\n", fileoffset);
 
-    for(int j = 0; j < 50; ++j) {
+    for(int j = 0; j < 100; ++j) {
       test_write(argv[1], randomize(MAX_CALL,    1), randomize(MAX_CALL,    1));
       test_write(argv[1], randomize(1024,        1), randomize(1024,        1));
       test_write(argv[1], randomize(MAX_CALL, 1024), randomize(MAX_CALL, 1024));
@@ -209,11 +213,12 @@ int main(int argc, char** argv) {
     }
   }
 
-  printf("All tests passed!\n");
-  printf("  %5" PRId64 " reads   (%8" PRId64 " bytes)\n", n_reads,  bytes_read);
-  printf("  %5" PRId64 " writes  (%8" PRId64 " bytes)\n", n_writes, bytes_written);
-  printf("  %5" PRId64 " extends (%8" PRId64 " bytes)\n", n_exts,   bytes_extended);
-  printf("  %5" PRId64 " chops   (%8" PRId64 " bytes)\n", n_chops,  bytes_chopped);
+  int64_t end = getusec() - start;
+  printf("All tests passed in %f seconds!\n", float(end) / 1000000);
+  printf("  %5" PRId64 " reads:   %12" PRId64 " bytes\n", n_reads,  bytes_read);
+  printf("  %5" PRId64 " writes:  %12" PRId64 " bytes\n", n_writes, bytes_written);
+  printf("  %5" PRId64 " extends: %12" PRId64 " bytes\n", n_exts,   bytes_extended);
+  printf("  %5" PRId64 " chops:   %12" PRId64 " bytes\n", n_chops,  bytes_chopped);
 
   return 0;
 }
