@@ -195,7 +195,7 @@ void usage(const char* message = NULL) {
 int main(int argc, char** argv) {
   int seed  = time(NULL);
   int loops = 100;
-  int depth = 4;
+  int depth = 6;
   int c;
 
   while((c = getopt(argc, argv, "s:d:n:")) != -1) {
@@ -216,8 +216,8 @@ int main(int argc, char** argv) {
     usage("Failed to parse seed.");
   }
 
-  if(depth < 1 || depth > 5) {
-    usage("Depth must be between one and five.");
+  if(depth < 1 || depth > 9) {
+    usage("Depth must be between one and nine.");
   }
 
   if(loops < 1 ) {
@@ -231,7 +231,17 @@ int main(int argc, char** argv) {
   printf(" - Depth: %d\n", depth);
   srand(seed);
 
-  int64_t offsets[] = {0, 3072, 36864, 2101760, 1075879936};
+  int64_t offsets[] = {
+    0,            // The very start of the file
+    20480,        // In the middle of the direct blocks
+    40960,        // At the end of the direct blocks
+    1089536,      // In the middle of the singly-indirect blocks
+    2138112,      // At the end of the singly-indirect blocks
+    539009024,    // In the middle of the doubly-indirect blocks
+    1075879936,   // At the end of the doubly-indirect blocks
+    275953786880, // In the middle of the triply-indirect blocks
+    550831693824  // At the end of the triply-indirect blocks
+  };
 
   int64_t start = getusec();
   for(int i = 0; i < depth; ++i) {
