@@ -29,7 +29,7 @@ namespace {
 StackBasedBlockManager::StackBasedBlockManager(Storage& storage): disk(&storage) {
   Superblock* superblock = (Superblock*) &incore_superblock;
   Config* config = (Config*) superblock->data_config;
-  this->getSuperblock(incore_superblock);
+  this->disk->get(0, incore_superblock);
 
   this->top_block   = config->top_block;
   this->top_index   = config->top_index;
@@ -59,7 +59,7 @@ void StackBasedBlockManager::mkfs() {
 
   // Read superblock
   Block superblock_blk;
-  this->getSuperblock(superblock_blk);
+  this->disk->get(0, superblock_blk);
   Superblock *superblock = (Superblock *) &superblock_blk;
   Config* config = (Config*) superblock->data_config;
   Block::ID start = superblock->data_block_start;
@@ -196,6 +196,7 @@ void StackBasedBlockManager::set(Block::ID id, const Block& src) {
 
 void StackBasedBlockManager::setSuperblock(const Block& src) {
   disk->set(0, src);
+  memcpy(&incore_superblock, &src, Block::SIZE);
 }
 
 void StackBasedBlockManager::statfs(struct statvfs* info) {

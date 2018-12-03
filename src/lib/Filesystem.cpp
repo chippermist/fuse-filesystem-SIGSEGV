@@ -98,9 +98,10 @@ int Filesystem::mount(char* program, fuse_operations* ops) {
   char o[] = "-o"; // Other options
   char p[] = "default_permissions"; // Defer permissions checks to kernel
   char r[] = "allow_other"; // Allow all users to access files
+  char suid[] = "suid";
 
   int argc = 0;
-  char* argv[12] = {0};
+  char* argv[30] = {0};
 
   argv[argc++] = program;
   if(!parallel) argv[argc++] = s;
@@ -111,6 +112,8 @@ int Filesystem::mount(char* program, fuse_operations* ops) {
   argv[argc++] = p;
   argv[argc++] = o;
   argv[argc++] = r;
+  argv[argc++] = o;
+  argv[argc++] = suid;
 
   return fuse_main(argc, argv, ops, 0);
 }
