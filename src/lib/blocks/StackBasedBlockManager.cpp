@@ -1,4 +1,5 @@
 #include "StackBasedBlockManager.h"
+#include "../FSExceptions.h"
 
 #if defined(__linux__)
   #include <sys/statfs.h>
@@ -148,7 +149,7 @@ Block::ID StackBasedBlockManager::reserve() {
 
   // Check if free list is almost empty and refuse allocation of last block
   if (this->top_block == this->last_block && this->top_index == this->last_index) {
-    throw std::out_of_range("Can't get any more free blocks - free list is empty!");
+    throw OutOfDataBlocks();
   }
 
   // Get next free block

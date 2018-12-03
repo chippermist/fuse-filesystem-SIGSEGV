@@ -1,4 +1,5 @@
 #include "LinearINodeManager.h"
+#include "../FSExceptions.h"
 
 #if defined(__linux__)
   #include <sys/statfs.h>
@@ -47,7 +48,7 @@ INode::ID LinearINodeManager::reserve() {
     }
   }
 
-  throw std::out_of_range("Can't allocate any more inodes!");
+  throw OutOfINodes();
 }
 
 // Free an inode and return to the freelist

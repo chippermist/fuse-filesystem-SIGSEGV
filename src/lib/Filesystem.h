@@ -17,6 +17,8 @@ class Filesystem {
   bool          parallel;
   bool          debug;
 public:
+  int           verbosity;
+public:
   Filesystem(int argc, char** argv, bool mkfs);
   Filesystem(BlockManager &block_manager, INodeManager& inode_manager);
   ~Filesystem();

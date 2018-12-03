@@ -94,10 +94,10 @@ int Filesystem::mount(char* program, fuse_operations* ops) {
   char f[] = "-f"; // Run in the foreground.
   char o[] = "-o"; // Other options
   char p[] = "default_permissions"; // Defer permissions checks to kernel
-  char r[] = "allow_root"; // Only allow root and user to access files
+  char r[] = "allow_other"; // Allow all users to access files
 
   int argc = 0;
-  char* argv[8] = {0};
+  char* argv[12] = {0};
 
   argv[argc++] = program;
   if(!parallel) argv[argc++] = s;
@@ -244,7 +244,7 @@ int Filesystem::write(INode::ID file_inode_num, const char *buf, size_t size, si
     total_written += to_write;
   }
 
-  if (size == 0) {
+  if (size == 0 && offset <= file_inode.size) {
     return total_written;
   }
 
@@ -259,7 +259,7 @@ int Filesystem::write(INode::ID file_inode_num, const char *buf, size_t size, si
 
   // 4. Write back changes to file_inode
   this->inode_manager->set(file_inode_num, file_inode);
-  return total_written;
+  return total_written - null_filler;
 }
 
 /**
