@@ -523,8 +523,8 @@ int Filesystem::read(INode::ID file_inode_num, char *buf, size_t size, size_t of
 
     total_read += to_read;
   }
-  // Write back changes to file_inode
-  this->inode_manager->set(file_inode_num, file_inode);
+  // relatime - don't write back changes to file_inode!
+  // this->inode_manager->set(file_inode_num, file_inode);
   return total_read;
 }
 
