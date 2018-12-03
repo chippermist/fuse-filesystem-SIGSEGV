@@ -288,10 +288,11 @@ extern "C" {
 
   int fs_open(const char* path, fuse_file_info* info) {
     debug1("open", "%s", path);
-    UNUSED(info);
-
-    // TODO...
-    return 0;
+    return handle([=] {
+      // Cache the INode number
+      info->fh = fs->getINodeID(path);
+      return 0;
+    });
   }
 
   int fs_read(const char* path, char* buffer, size_t size, off_t offset, fuse_file_info* info) {
@@ -299,7 +300,7 @@ extern "C" {
     UNUSED(info);
 
     return handle([=]{
-      INode::ID id = fs->getINodeID(path);
+      INode::ID id = fs->getINodeID(path, info);
       INode inode  = fs->getINode(id);
       if(inode.type != FileType::REGULAR) {
         throw NotAFile(path);
@@ -341,9 +342,7 @@ extern "C" {
 
   int fs_release(const char* path, fuse_file_info* info) {
     debug1("release", "%s", path);
-    UNUSED(info);
-
-    // TODO...
+    info->fh = 0;
     return 0;
   }
 
@@ -513,7 +512,7 @@ extern "C" {
     UNUSED(info);
 
     return handle([=]{
-      INode::ID id = fs->getINodeID(path);
+      INode::ID id = fs->getINodeID(path, info);
       INode inode  = fs->getINode(id);
       if(inode.type != FileType::REGULAR) {
         throw NotAFile(path);
