@@ -25,6 +25,7 @@ public:
   virtual Block::ID reserve();
 
   void update_superblock();
+  void flush_superblock();
 
 private:
   Block::ID top_block;

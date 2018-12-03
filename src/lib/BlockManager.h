@@ -26,6 +26,7 @@ public:
 
   virtual void getSuperblock(Block& dst) = 0;
   virtual void setSuperblock(const Block& src) = 0;
+  virtual void flush_superblock() = 0;
 
   virtual Block::ID reserve() = 0;
   virtual void release(Block::ID id) = 0;

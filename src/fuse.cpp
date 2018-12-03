@@ -126,11 +126,17 @@ extern "C" {
     });
   }
 
+  void fs_destroy(void* private_data) {
+    debug2("destroy", "%p", private_data);
+    UNUSED(private_data);
+    fs->flush_superblock();
+  }
+
   int fs_flush(const char* path, fuse_file_info* info) {
     debug1("flush", "%s", path);
     UNUSED(info);
 
-    // TODO...
+    fs->flush_superblock();
     return 0;
   }
 
@@ -528,8 +534,8 @@ int main(int argc, char** argv) {
   // ops.access      = &fs_access;
   ops.chmod       = &fs_chmod;
   ops.chown       = &fs_chown;
-  // ops.destroy     = &fs_destroy;
-  // ops.flush       = &fs_flush;
+  ops.destroy     = &fs_destroy;
+  ops.flush       = &fs_flush;
   // ops.fsync       = &fs_fsync;
   // ops.fsyncdir    = &fs_fsyncdir;
   ops.getattr     = &fs_getattr;

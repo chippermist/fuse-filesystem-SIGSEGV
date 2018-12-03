@@ -19,7 +19,6 @@
 
 #include <fuse.h>
 
-
 Filesystem::Filesystem(BlockManager& block_manager, INodeManager& inode_manager) {
   this->block_manager = &block_manager;
   this->inode_manager = &inode_manager;
@@ -34,6 +33,10 @@ Filesystem::Filesystem(BlockManager& block_manager, INodeManager& inode_manager)
 
 Filesystem::~Filesystem() {
   // Nothing to do.
+}
+
+void Filesystem::flush_superblock() {
+  this->block_manager->flush_superblock();
 }
 
 void Filesystem::mkfs(uint64_t nblocks, uint64_t niblocks) {

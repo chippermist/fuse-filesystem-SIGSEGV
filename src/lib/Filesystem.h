@@ -44,6 +44,7 @@ public:
 
   void save(const Directory& directory);
   void save(INode::ID id, const INode& inode);
+  void flush_superblock();
 
 private:
   Block::ID blockAt(const INode& inode, uint64_t offset);

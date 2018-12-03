@@ -12,7 +12,6 @@ enum FileType: uint8_t {
 
 struct INode {
 
-  // TODO: Pad out to actually be 256 bytes! -- DONE
   typedef uint64_t ID;
   static const uint64_t SIZE = 256;
   static const uint64_t REF_BLOCKS_COUNT = 13;

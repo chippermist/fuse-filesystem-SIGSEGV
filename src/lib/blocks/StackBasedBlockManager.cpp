@@ -52,7 +52,7 @@ void StackBasedBlockManager::get(Block::ID id, Block& dst) {
 }
 
 void StackBasedBlockManager::getSuperblock(Block& dst) {
-  disk->get(0, dst);
+  memcpy(&dst, &incore_superblock, Block::SIZE);
 }
 
 void StackBasedBlockManager::mkfs() {
@@ -96,6 +96,7 @@ void StackBasedBlockManager::mkfs() {
         config->top_index = DatablockNode::NREFS - 1;
         config->first_block = start + count - 1;
         superblock->data_block_count = free_block - start - 1; // we don't allow allocation of last free block
+        memcpy(&incore_superblock, &superblock_blk, Block::SIZE);
         this->setSuperblock(superblock_blk);
 
         // Update class members with true values
@@ -131,6 +132,10 @@ void StackBasedBlockManager::update_superblock() {
   } else {
     this->update_count++;
   }
+}
+
+void StackBasedBlockManager::flush_superblock() {
+  this->setSuperblock(incore_superblock);
 }
 
 void StackBasedBlockManager::release(Block::ID free_block_num) {
