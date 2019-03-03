@@ -1,6 +1,6 @@
 # SIGSEGV
 
-<img src="https://travis-ci.com/chippermist/SIGSEGV.svg?branch=master" />
+<img src="https://travis-ci.com/chippermist/fuse-filesystem-SIGSEGV.svg?branch=master" />
 
 ## Usage
 
